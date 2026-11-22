@@ -4850,6 +4850,51 @@ test("a version dismissed before this launch is not announced at the next, not e
 	expect(await page.evaluate(() => (window as unknown as { __pillSeen: string[] }).__pillSeen), "the pill was never shown").toEqual([]);
 });
 
+/** A window not given the turn at launch, whose user then chooses Help →
+ *  Check for Updates…: Rust gives that one the turn whatever the hour says. */
+async function checkForUpdates(page: import("@playwright/test").Page): Promise<void> {
+	await expect.poll(async () => (await ptyCalls(page, "update_claim")).length, "the launch's own ask is over").toBeGreaterThan(0);
+	await answerFromNow(page, "update_claim", { kind: "github" });
+	await emitToPage(page, "menu", "check-updates");
+}
+
+test("Check for Updates… in a current build asks at once and says it is the newest", async ({ page }) => {
+	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", { update_state: { current: "0.2.0", latest: null }, update_claim: { kind: "none" }, update_found: { emit: ["update-latest", "v0.2.0"] } });
+	await checkForUpdates(page);
+	await expect(page.locator("#status")).toHaveText("Piary 0.2.0 is the newest version.");
+	expect((await ptyCalls(page, "update_claim")).at(-1), "asked for as the user's own check").toEqual({ asked: true });
+	expect(asked.count).toBe(1);
+	await expect(updatePill(page)).toBeHidden();
+});
+
+test("Check for Updates… says a newer version is available and shows its notice, though it was dismissed and the check is off", async ({ page }) => {
+	await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", {
+		update_state: { current: "0.1.0", latest: null },
+		update_claim: { kind: "none" },
+		update_found: { emit: ["update-latest", "v0.2.0"] },
+		preferences_read: { updateCheck: false, updateDismissed: "0.2.0" },
+		preferences_write: { emit: ["preferences-changed", { updateCheck: false, updateDismissed: "0.2.0" }] },
+	});
+	await checkForUpdates(page);
+	await expect(page.locator("#status")).toHaveText("Piary 0.2.0 is available. This is 0.1.0.");
+	await expect(updatePill(page)).toHaveText("Update 0.2.0");
+	// Dismissed again from the notice, it goes.
+	await updatePill(page).click();
+	await page.locator(".doc-block-menu").getByRole("button", { name: "Dismiss this version" }).click();
+	await expect(updatePill(page)).toBeHidden();
+});
+
+test("Check for Updates… that could not ask says why: the user asked", async ({ page }) => {
+	allowConsoleError(page, /^Failed to load resource: the server responded with a status of 404/);
+	await githubAnswers(page, { status: 404, body: { message: "Not Found" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", { update_state: { current: "0.1.0", latest: null }, update_claim: { kind: "none" } });
+	await checkForUpdates(page);
+	await expect(page.locator("#status")).toHaveText("Could not check for a newer version: GitHub answered 404");
+	await expect(updatePill(page)).toBeHidden();
+});
+
 test("a first run looks nothing up behind its splash or under its tour", async ({ page }) => {
 	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
 	await takeTheTour(page, { ...withTheTurn("0.1.0", "v0.2.0") });

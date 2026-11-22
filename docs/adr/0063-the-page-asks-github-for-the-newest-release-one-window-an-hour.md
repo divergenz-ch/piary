@@ -50,7 +50,14 @@ once per window. And the version was written in three files, none of which the r
    as for the face's camera): GitHub, or in a driven run the answer `PIARY_UPDATE_SCRIPT` names,
    or nowhere. A suite that asked would make a request per launch and pass or fail by what is
    released that day.
-10. **The version is written in `package.json`.** `tauri.conf.json` names that file as its
+10. **Help → Check for Updates… asks now.** It is the user asking, so neither the hour nor the
+    `updateCheck` preference refuses it (`update_claim` with `asked`), and the hour is counted
+    again from it. Its outcome is said on the status line either way: the newer version, that
+    this build is the newest, or why the check could not be made. A newer version it finds
+    shows its pill in that window even if it was dismissed or the check is off, until it is
+    dismissed there. The tour holds the item like any other (ADR 0038); the Preferences, Import
+    and Export windows do not answer it.
+11. **The version is written in `package.json`.** `tauri.conf.json` names that file as its
     version, so the bundle and the running app (`package_info`) read it from there. Cargo cannot,
     so `Cargo.toml` and `Cargo.lock` repeat it, held by `tests/contract/version.test.ts`.
 

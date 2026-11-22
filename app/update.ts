@@ -9,7 +9,10 @@
 // button goes, are rules (`update-check.ts`).
 //
 // A check that could not be made, or was refused, is written to the log and
-// shown nowhere: it is no failure of anything the user asked for.
+// shown nowhere: it is no failure of anything the user asked for. Help →
+// Check for Updates… is the user asking: that check is made at once, whatever
+// the hour and the preference say, and its outcome is said on the status line
+// either way.
 
 import { logLine, onUpdateLatest, openUrl, preferencesWrite, updateClaim, updateFound, updateState } from "../src/bridge.ts";
 import { sender } from "../src/console-line.ts";
@@ -37,9 +40,10 @@ async function askGithub(): Promise<string> {
 	return response.text();
 }
 
-/** Puts the pill in `chip`, before what it holds, and keeps it true. `notify` says what the
- *  pill's own menu could not do. */
-export function mountUpdate(chip: HTMLElement, notify: (message: string) => void): void {
+/** Puts the pill in `chip`, before what it holds, and keeps it true. `notify`
+ *  says what the pill's own menu could not do, and what a check the user asked
+ *  for found. `ask` is that check. */
+export function mountUpdate(chip: HTMLElement, notify: (message: string) => void): { ask(): void } {
 	const pill = document.createElement("button");
 	pill.type = "button";
 	pill.className = "update-pill";
@@ -56,7 +60,15 @@ export function mountUpdate(chip: HTMLElement, notify: (message: string) => void
 	 *  dismissed, or a check they switched off, is not known to be either. */
 	let kept = false;
 
-	const shown = () => (kept ? announced({ current, latest, check: preferences().updateCheck, dismissed: preferences().updateDismissed }) : null);
+	/** The version a check the user asked for found: announced in this window
+	 *  with the check off or the version dismissed, until it is dismissed here. */
+	let askedFor: string | null = null;
+
+	const shown = () => {
+		if (!kept) return null;
+		const facts = { current, latest, check: preferences().updateCheck, dismissed: preferences().updateDismissed };
+		return announced(facts) ?? (askedFor !== null && askedFor === announced({ ...facts, check: true, dismissed: "" }) ? askedFor : null);
+	};
 
 	const paint = () => {
 		const version = shown();
@@ -81,27 +93,46 @@ export function mountUpdate(chip: HTMLElement, notify: (message: string) => void
 				{
 					label: "Dismiss this version",
 					title: "This version is not announced again; the next one is",
-					run: () => void preferencesWrite({ ...preferences(), updateDismissed: version }).catch((error: unknown) => notify(`The notice could not be dismissed: ${String(error)}`)),
+					run: () =>
+						void preferencesWrite({ ...preferences(), updateDismissed: version }).then(() => {
+							askedFor = null;
+							paint();
+						}).catch((error: unknown) => notify(`The notice could not be dismissed: ${String(error)}`)),
 				},
 			],
 			{ above: true },
 		);
 	});
 
-	/** Asks for the turn, and with it asks for the newest release. */
+	/** Asks for the turn, and with it asks for the newest release. `asked` is
+	 *  the user's own check: answers the tag read, or throws why none was. */
+	const lookUp = async (asked: boolean): Promise<string | null> => {
+		const source = await updateClaim(asked).catch(() => null);
+		if (!source || source.kind === "none") return null;
+		const answer = source.kind === "script" ? source.answer : await askGithub();
+		const tag = latestTag(answer);
+		if (tag === null) throw new Error("the answer names no released version");
+		await updateFound(tag);
+		return tag;
+	};
+
 	const check = async (): Promise<void> => {
 		// A first run's splash, or the tour walking the window
 		// (`app/onboarding.ts`): nothing it did not ask for is started under it.
 		if (document.querySelector(".splash") || document.body.classList.contains("coaching")) return;
-		const source = await updateClaim().catch(() => null);
-		if (!source || source.kind === "none") return;
+		await lookUp(false).catch((error: unknown) => log("update", [`no newer version was looked up: ${error instanceof Error ? error.message : String(error)}`]));
+	};
+
+	const ask = async (): Promise<void> => {
 		try {
-			const answer = source.kind === "script" ? source.answer : await askGithub();
-			const tag = latestTag(answer);
-			if (tag === null) throw new Error("the answer names no released version");
-			await updateFound(tag);
+			const tag = await lookUp(true);
+			if (tag === null) throw new Error("this run has nowhere to ask");
+			latest = tag;
+			askedFor = announced({ current, latest, check: true, dismissed: "" });
+			paint();
+			notify(askedFor === null ? `Piary ${current} is the newest version.` : `Piary ${askedFor} is available. This is ${current}.`);
 		} catch (error) {
-			log("update", [`no newer version was looked up: ${error instanceof Error ? error.message : String(error)}`]);
+			notify(`Could not check for a newer version: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -124,4 +155,5 @@ export function mountUpdate(chip: HTMLElement, notify: (message: string) => void
 		void check();
 	});
 	setInterval(() => void check(), ASK_EVERY_MS);
+	return { ask: () => void ask() };
 }

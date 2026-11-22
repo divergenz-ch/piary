@@ -417,6 +417,7 @@ The steps stay written for when each lands.
      - **The caret keys** are the ones every Mac text field has: ⌘← and ⌘→ go
        to the line's start and end, ⌥← and ⌥→ by word, ⌘↑ and ⌘↓ to the
        document's start and end.
+     - **Help → Check for Updates…** says on the status line what it found (step 20).
      - **Help → Welcome to Piary** opens a fresh tour in a new window, and
        leaves this window's document as it was.
      - **Open…** (⌘O) lists the workspace's documents by heading, this window's
@@ -543,6 +544,10 @@ The steps stay written for when each lands.
        network watched (Little Snitch, or `nettop -p $(pgrep -x piary)`): no connection to
        `api.github.com`.
      - With the network off, launch: nothing on screen, one `PAGE update` line in the log.
+     - **Help → Check for Updates…**, with the switch off and the network on: the status line
+       says the newer version, or that this build is the newest; with no such release yet it
+       says `Could not check for a newer version: GitHub answered 404`. With the network off
+       it says why. Chosen from the Preferences window it does nothing.
 
 ## Importing and exporting a conversation
 

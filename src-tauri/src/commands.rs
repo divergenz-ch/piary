@@ -842,9 +842,14 @@ pub fn update_state<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) 
 /// `PIARY_UPDATE_SCRIPT` names. `None` is no turn: another window asked within
 /// the hour, the preference is off, or a driven run has no script. Decided
 /// here, for every window at once, so the preference off is no request from
-/// any of them (`update.rs`).
+/// any of them (`update.rs`). With `asked` the user chose Check for Updates…:
+/// the turn is given whatever the hour and the preference say.
 #[tauri::command]
-pub fn update_claim<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) -> UpdateSource {
+pub fn update_claim<R: Runtime>(
+    app: AppHandle<R>,
+    updates: State<'_, Updates>,
+    asked: bool,
+) -> UpdateSource {
     let driven = harness::driven(
         cfg!(all(feature = "e2e", debug_assertions)),
         std::env::var("PIARY_E2E").ok().as_deref(),
@@ -853,6 +858,10 @@ pub fn update_claim<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) 
         .filter(|_| driven)
         .and_then(|path| std::fs::read_to_string(path).ok());
     let source = harness::update_source(driven, script);
+    if asked {
+        updates.take(std::time::Instant::now());
+        return source;
+    }
     // Preferences that cannot be found are the defaults, which check.
     let wanted = preferences_path(&app)
         .map_or_else(|_| Preferences::default(), |path| preferences::read(&path))

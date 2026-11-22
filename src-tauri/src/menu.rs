@@ -45,6 +45,7 @@ pub mod ids {
     pub const COMMANDS: &str = "commands";
     pub const TOGGLE_FACE: &str = "toggle-face";
     pub const WELCOME: &str = "welcome";
+    pub const CHECK_UPDATES: &str = "check-updates";
     pub const SETTINGS: &str = "settings";
     pub const QUIT: &str = "quit";
 }
@@ -175,13 +176,18 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         app,
         "Help",
         true,
-        &[&MenuItem::with_id(
-            app,
-            ids::WELCOME,
-            "Welcome to Piary",
-            true,
-            None::<&str>,
-        )?],
+        &[
+            &MenuItem::with_id(app, ids::WELCOME, "Welcome to Piary", true, None::<&str>)?,
+            // Asks now, whatever the hour and the preference say: the user
+            // asked (ADR 0063).
+            &MenuItem::with_id(
+                app,
+                ids::CHECK_UPDATES,
+                "Check for Updates…",
+                true,
+                None::<&str>,
+            )?,
+        ],
     )?;
 
     let menu = Menu::with_items(
@@ -383,6 +389,7 @@ mod tests {
             ids::CHOOSE_MODEL,
             ids::CHOOSE_EFFORT,
             ids::WELCOME,
+            ids::CHECK_UPDATES,
             ids::SETTINGS,
             ids::QUIT,
         ];

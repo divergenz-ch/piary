@@ -57,6 +57,12 @@ impl Updates {
         due
     }
 
+    /// Takes the turn at `now` whatever the hour says: the user asked for a
+    /// check. The next unasked one is an hour after it.
+    pub fn take(&self, now: Instant) {
+        self.0.lock().unwrap_or_else(|e| e.into_inner()).checked = Some(now);
+    }
+
     /// Keeps `tag` as the newest release heard of. Answers whether it was
     /// kept: an empty or overlong one is not.
     pub fn found(&self, tag: &str) -> bool {
@@ -102,6 +108,17 @@ mod tests {
         assert!(!updates.claim(start + CHECK_EVERY, false));
         // Switched on: the asks made while it was off cost nothing.
         assert!(updates.claim(start + CHECK_EVERY + Duration::from_secs(1), true));
+    }
+
+    #[test]
+    fn a_check_the_user_asked_for_is_the_turn_the_hour_counts_from() {
+        let updates = Updates::default();
+        let start = Instant::now();
+        assert!(updates.claim(start, true));
+        let asked = start + Duration::from_secs(600);
+        updates.take(asked);
+        assert!(!updates.claim(start + CHECK_EVERY, true));
+        assert!(updates.claim(asked + CHECK_EVERY, true));
     }
 
     #[test]

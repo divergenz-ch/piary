@@ -59,7 +59,7 @@ export function mountModelPicker({ sid, notify, signIn }: Pick<AppContext, "sid"
 	chip.append(modelPill, effortPill);
 	document.body.append(chip);
 	// The notice of a newer version, left of the model (ADR 0063).
-	mountUpdate(chip, notify);
+	const update = mountUpdate(chip, notify);
 
 	/** What pi runs, as it last said; `null` until it has been asked. */
 	let current: ModelPick | null = null;
@@ -241,6 +241,7 @@ export function mountModelPicker({ sid, notify, signIn }: Pick<AppContext, "sid"
 		},
 		chooseModel,
 		chooseEffort,
+		checkUpdates: update.ask,
 		chip,
 		onState: (listener) => void listeners.push(listener),
 		addRow: (row) => void extraRows.push(row),

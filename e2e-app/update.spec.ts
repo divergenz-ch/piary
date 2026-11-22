@@ -50,12 +50,14 @@ describe("the notice of a newer version", () => {
 		const { version } = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")) as { version: string };
 		expect(await driver.invoke("update_state")).toEqual({ current: version, latest: "v9999.0.0" });
 		// The page took the turn at launch: within the hour there is no other.
-		expect(await driver.invoke("update_claim")).toEqual({ kind: "none" });
+		expect(await driver.invoke("update_claim", { asked: false })).toEqual({ kind: "none" });
+		// Help → Check for Updates… is the user asking, and is not refused.
+		expect(await driver.invoke("update_claim", { asked: true })).toEqual({ kind: "script", answer: ANSWER });
 	});
 
 	it("is not looked up with the preference off, and is once it is switched on", async () => {
 		const driver = await launch("update-off", { updateCheck: false }, true);
-		expect(await driver.invoke("update_claim")).toEqual({ kind: "none" });
+		expect(await driver.invoke("update_claim", { asked: false })).toEqual({ kind: "none" });
 		expect(await driver.invoke("update_state")).toMatchObject({ latest: null });
 		// Switched on, as the Preferences window does: the page hears it and asks.
 		await driver.invoke("preferences_write", { preferences: { updateCheck: true } });
@@ -64,7 +66,8 @@ describe("the notice of a newer version", () => {
 
 	it("asks nothing in a driven run that was handed no answer", async () => {
 		const driver = await launch("update-none", {}, false);
-		expect(await driver.invoke("update_claim")).toEqual({ kind: "none" });
+		expect(await driver.invoke("update_claim", { asked: false })).toEqual({ kind: "none" });
+		expect(await driver.invoke("update_claim", { asked: true })).toEqual({ kind: "none" });
 		expect(await pill(driver)).toBe(null);
 	});
 });

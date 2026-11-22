@@ -356,9 +356,10 @@ export function updateState(): Promise<UpdateState> {
 
 /** Asks for the turn to check for a newer Piary. `none` is no turn: another
  *  window checked within the hour, the preference is off, or a driven run has
- *  nothing to ask. Otherwise, where to ask. */
-export function updateClaim(): Promise<UpdateSource> {
-	return invoke("update_claim");
+ *  nothing to ask. Otherwise, where to ask. With `asked` the user chose Check
+ *  for Updates…, and neither the hour nor the preference refuses it. */
+export function updateClaim(asked: boolean): Promise<UpdateSource> {
+	return invoke("update_claim", { asked });
 }
 
 /** A check read the release tag `tag`: every window then hears it through

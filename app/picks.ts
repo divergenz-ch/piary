@@ -82,6 +82,9 @@ export interface ModelPicker {
 	/** Model… and Effort… in the menu: the pills' own menus, opened. */
 	chooseModel(): Promise<void>;
 	chooseEffort(): Promise<void>;
+	/** Looks up the newest version now and says what was found: Help → Check
+	 *  for Updates… (`app/update.ts`). */
+	checkUpdates(): void;
 	/** The chip itself, for what else it shows beside the pills (`app/usage.ts`). */
 	chip: HTMLElement;
 	/** Hears each `get_state` pi answers this conversation's chip with: pi is up,

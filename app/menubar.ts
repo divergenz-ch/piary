@@ -15,7 +15,7 @@ import { openTerminal } from "./terminals.ts";
 import { transferVerbs } from "./transfer.ts";
 
 /** Every id `menu.rs` emits to the page. Quit is Rust's own and never comes. */
-export const MENU_IDS = ["new-document", "open-document", "import", "export", "save", "send", "stop", "new-terminal", "toggle-source", "toggle-focus", "choose-model", "choose-effort", "toggle-face", "commands", "welcome", "settings"] as const;
+export const MENU_IDS = ["new-document", "open-document", "import", "export", "save", "send", "stop", "new-terminal", "toggle-source", "toggle-focus", "choose-model", "choose-effort", "toggle-face", "commands", "welcome", "check-updates", "settings"] as const;
 export type MenuId = (typeof MENU_IDS)[number];
 
 /** Said when Show Source has nothing under the caret to show. */
@@ -27,7 +27,7 @@ const isMenuId = (id: string): id is MenuId => (MENU_IDS as readonly string[]).i
 export function menuTable(
 	ctx: Pick<AppContext, "chat" | "sid" | "turn" | "notify">,
 	sync: Pick<DocumentSync, "save">,
-	model: Pick<ModelPicker, "stageFor" | "chooseModel" | "chooseEffort">,
+	model: Pick<ModelPicker, "stageFor" | "chooseModel" | "chooseEffort" | "checkUpdates">,
 	// Structural, not `FocusMode`: `app/focus.ts` imports its stylesheet, which the
 	// contract test that reads this module cannot resolve.
 	focus: { toggle(): void },
@@ -51,6 +51,7 @@ export function menuTable(
 		"choose-effort": () => void model.chooseEffort(),
 		"toggle-face": () => face.toggle(),
 		commands: openCommands,
+		"check-updates": () => model.checkUpdates(),
 		// The app's one Preferences window, whichever window asked (ADR 0048).
 		settings: () => void openPreferences().catch((error: unknown) => notify(String(error))),
 	};

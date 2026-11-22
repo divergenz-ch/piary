@@ -475,7 +475,11 @@ UPDATES          the app says when a newer version exists (ADR 0063). A document
                  dismisses that version for every window and launch (the `updateDismissed`
                  preference); the next version is announced again. No network, a refusal
                  or an answer naming no version shows nothing and is a `PAGE update` line
-                 in the log. Not shown during the tour. The rules are pure
+                 in the log. Not shown during the tour. Help → Check for Updates… asks
+                 at once, whatever the hour and the preference say (`update_claim` with
+                 `asked`), and says on the status line what it found: the newer version,
+                 whose pill then shows in that window even if dismissed, that this build
+                 is the newest, or why it could not ask. The rules are pure
                  (`app/update-check.ts`). The app's version is written in `package.json`:
                  `tauri.conf.json` names that file, and `tests/contract/version.test.ts`
                  holds `Cargo.toml` and `Cargo.lock` to it. Nothing installs an update.
