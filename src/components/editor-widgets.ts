@@ -378,6 +378,16 @@ export function blockOpenerAt(view: EditorView, pos: number): number | null {
 }
 
 /**
+ * A press on a menu's hit target places no caret. A press on the outer half of
+ * its first or last glyph is, to the engine, a press beside it: left alone it
+ * puts the caret there, the head's line is drawn again for that caret, and the
+ * release finds another element, so no click comes.
+ */
+function keepCaret(event: MouseEvent) {
+	event.preventDefault();
+}
+
+/**
  * Make a role label the block menu's hit target: the ⋯ that says a menu is
  * there, and the click that opens it. The whole head is the target — the dots
  * are the cue, not the button.
@@ -402,6 +412,7 @@ export function segmentMenuDots(from: number): HTMLElement {
 	dots.textContent = "⋯";
 	dots.title = "Segment options";
 	dots.contentEditable = "false";
+	dots.addEventListener("mousedown", keepCaret);
 	dots.addEventListener("click", (event) => {
 		event.preventDefault();
 		// Without this the click also reaches the head, which folds or opens the
@@ -423,6 +434,7 @@ export function blockMenuTarget(span: HTMLElement, from: number): HTMLElement {
 	dots.className = "doc-role-dots";
 	dots.textContent = "⋯";
 	span.append(dots);
+	span.addEventListener("mousedown", keepCaret);
 	span.addEventListener("click", (event) => {
 		event.preventDefault();
 		const rect = span.getBoundingClientRect();

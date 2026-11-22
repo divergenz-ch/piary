@@ -613,6 +613,37 @@ test("the step menu does not open while a turn writes into the page", async ({ p
 	await expect(page.locator(".doc-block-menu")).toHaveCount(1);
 });
 
+// A press on the outer half of a head's first or last glyph is, to the engine,
+// a press beside it: it places a caret there, the head's line is drawn again
+// for the new caret and the release finds another element, so no click is
+// sent. `locator.click()` presses the exact centre, which always worked.
+
+/** How long a press is held. A hand's lasts longer; this is enough for the
+ *  page to draw the line again between the press and the release, which a
+ *  release sent in the same instant gives it no time for. */
+const PRESS_HELD_MS = 40;
+
+for (const [what, selector, across] of [
+	["the left half of a step's ⋯", ".doc-seg-dots", 0.25],
+	["the right half of a step's ⋯", ".doc-seg-dots", 0.75],
+	["the left half of a block's ⋯", ".doc-role-menu > .doc-role-dots:not(.doc-seg-dots)", 0.25],
+	["the right half of a block's ⋯", ".doc-role-menu > .doc-role-dots:not(.doc-seg-dots)", 0.75],
+	["the left edge of a block's head", ".doc-role-menu:has(> .doc-role-dots:not(.doc-seg-dots))", 0.1],
+] as const) {
+	test(`a press on ${what} opens its menu`, async ({ page }) => {
+		await openApp(page, STEPS);
+		// The last on the page: a caret the engine places at the very start of
+		// the document, just after the canvas took the focus, CodeMirror puts
+		// back, so the first block's head loses no click for a moment after a load.
+		const target = page.locator(selector).last();
+		await target.hover();
+		const box = (await target.boundingBox())!;
+		// Not rounded: half a pixel decides which side of the glyph is pressed.
+		await page.mouse.click(box.x + box.width * across, box.y + box.height / 2, { delay: PRESS_HELD_MS });
+		await expect(page.locator(".doc-block-menu")).toHaveCount(1);
+	});
+}
+
 /** Selects the whole line holding `text` and right-clicks inside the selection. */
 async function rightClickSelection(page: import("@playwright/test").Page, text: string) {
 	const line = page.locator(".cm-line", { hasText: text });
