@@ -237,7 +237,8 @@ once, inside one block; `newText` replaces it. An empty `newText` removes the
 text, and a block left with no text is removed whole (to delete a block, quote
 all of it); to add after something, repeat it in `newText` and add to it. The open
 page applies the change and answers `ok`, or why not — not found, found in
-several places, a cell, more than one block — and a refusal means nothing
+several places, a cell, more than one block, lines added under the prompt you
+are answering (an answer is your reply, never an edit) — and a refusal means nothing
 changed, so requote rather than report it done. The `[now: …]` and `[attached: …]` lines you
 see on the user's messages are added on the way to you and are not in the
 document: leave them out of a quote.

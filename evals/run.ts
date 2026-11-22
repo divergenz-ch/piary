@@ -230,6 +230,8 @@ interface Ask {
 	workspace: string;
 	conversation: string;
 	md: string;
+	/** Where the prompt being answered ends in `md`. */
+	answering: number;
 	/** The conversation above the prompt, as the messages pi's history is rebuilt from, and as its text. */
 	history: DocumentHistory;
 	above: string;
@@ -247,7 +249,7 @@ interface Asked {
 }
 
 /** The turn asked of the user's own pi over RPC, as the app asks it. */
-async function viaPi({ source, slug, model, promptFile, draw, pi, scratch, workspace, md, history, message }: Ask): Promise<Asked> {
+async function viaPi({ source, slug, model, promptFile, draw, pi, scratch, workspace, md, answering, history, message }: Ask): Promise<Asked> {
 	const sid = `eval-${slug}`.slice(0, 40);
 	let n = 0;
 	const declared = await declaredPrompt(pi, workspace, scratch, sid, model, promptFile, draw);
@@ -257,7 +259,7 @@ async function viaPi({ source, slug, model, promptFile, draw, pi, scratch, works
 	writeFileSync(session, [header, ...entries].map((e) => JSON.stringify(e)).join("\n") + "\n");
 
 	const { provider, id } = splitModel(model);
-	const page = new Page(md, source.acceptEdits === true);
+	const page = new Page(md, source.acceptEdits === true, answering);
 	const client = new RpcClient({
 		cliPath: pi.cli,
 		cwd: workspace,
@@ -300,12 +302,12 @@ async function viaPi({ source, slug, model, promptFile, draw, pi, scratch, works
 }
 
 /** The turn asked of `claude -p`, with the user's own pi serving its prompt and tools (`claude/host.ts`). */
-async function viaClaude({ source, model, promptFile, draw, pi, scratch, workspace, conversation, above, message }: Ask): Promise<Asked> {
+async function viaClaude({ source, model, promptFile, draw, pi, scratch, workspace, conversation, answering, above, message }: Ask): Promise<Asked> {
 	return askClaude({
 		model: claudeModel(model),
 		effort: claudeEffort(source.thinking),
 		message: withHistory(above, message),
-		host: { pi: pi.index, workspace, extension: PACKAGE, promptFile, conversation, acceptEdits: source.acceptEdits === true },
+		host: { pi: pi.index, workspace, extension: PACKAGE, promptFile, conversation, answering, acceptEdits: source.acceptEdits === true },
 		env: { PI_MANAGED_INSTALL_ROOT: pi.installRoot, PIARY_VERDICTS: "1", PIARY_DRAW: draw },
 		scratch,
 		timeoutMs: TURN_TIMEOUT_MS,
@@ -342,7 +344,7 @@ async function runOne(source: Source, slug: string, model: string, promptFile: s
 		if (!said) throw new Error("nothing to send: the prompt is empty and the arm has no signal");
 		const message = withNow(said, nowLine(new Date(), EVAL_ZONE));
 		const above = historyAbove(md, segment);
-		const ask: Ask = { source, slug, model, promptFile, draw, pi, scratch, workspace, conversation, md, history, above, message };
+		const ask: Ask = { source, slug, model, promptFile, draw, pi, scratch, workspace, conversation, md, answering: segment.to, history, above, message };
 		const { turn, toolCalls, error, refused, effort } = await (harness === "claude" ? viaClaude(ask) : viaPi(ask));
 		const historyAsText = harness === "claude" && above.trim() !== "" ? true : undefined;
 

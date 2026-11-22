@@ -427,7 +427,9 @@ CANVAS EDITS     pi changes prose already in the document with `canvas_edit(oldT
                  the user" (`src/document/canvas-edit.ts`, `app/canvas-edits.ts`, ADR 0033). An edit
                  that leaves its block with no text removes the block, marker included, as the
                  user's own delete of a segment does; the prompt being answered is refused, and the
-                 trailing prompt keeps its marker (ADR 0065).
+                 trailing prompt keeps its marker (ADR 0065). An edit that adds lines under the
+                 prompt being answered is refused too, and told to write them as the reply: an
+                 answer is never an edit of its question (ADR 0033 §6).
 RUN BOUNDS       the agent proposes, the app enforces (ADR 0031). The app's pi gets
                  `PIARY_VERDICTS=1`, and its `cell` tool waits for the page's verdict on the cell
                  (`app/cell-verdicts.ts`, `notebook-cells.md` §Policy): 3 failed writes per cell per

@@ -17,10 +17,13 @@ export class Page {
 	readonly #acceptEdits: boolean;
 	/** The conversation as accepted edits leave it: a second edit is planned against the first. */
 	#md: string;
+	/** Where the prompt being answered ends in the conversation: the turn's region opens there, as on the page. */
+	#answering: number;
 
-	constructor(md: string, acceptEdits: boolean) {
+	constructor(md: string, acceptEdits: boolean, answering: number) {
 		this.#md = md;
 		this.#acceptEdits = acceptEdits;
+		this.#answering = answering;
 	}
 
 	/** Hears one of pi's events. The reply to write back when it asks the page something, else null. */
@@ -28,8 +31,11 @@ export class Page {
 		this.calls.hear(event);
 		const edit = this.#acceptEdits ? requestedEdit(event) : null;
 		if (edit) {
-			const plan = planCanvasEdit(this.#md, edit.edit);
-			if (plan.ok) this.#md = this.#md.slice(0, plan.from) + plan.insert + this.#md.slice(plan.to);
+			const plan = planCanvasEdit(this.#md, edit.edit, { from: this.#answering, to: this.#answering });
+			if (plan.ok) {
+				this.#md = this.#md.slice(0, plan.from) + plan.insert + this.#md.slice(plan.to);
+				if (plan.to <= this.#answering) this.#answering += plan.insert.length - (plan.to - plan.from);
+			}
 			return { type: "extension_ui_response", id: edit.requestId, value: JSON.stringify(plan.ok ? { ok: true } : { error: plan.error }) };
 		}
 		return dialogReply(event, (cell) => this.calls.cell(cell), this.#verdicts);

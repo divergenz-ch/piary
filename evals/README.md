@@ -85,7 +85,8 @@ holds. An arm with no file sends nothing, which is the control. Both are for exp
 applied, which is the nearest level the model takes and not always the one asked for.
 
 `--accept-edits` answers a `canvas_edit` as the app would: the edit is planned against the
-conversation and reported as applied or refused, and the call is recorded with the answer.
+conversation and reported as applied or refused, and the call is recorded with the answer. The
+plan knows which prompt is being answered, so an answer written into it is refused as in the app.
 Left out, a `canvas_edit` is cancelled, as any question pi asks a run is. A case whose prompt
 is empty sends its signal alone: a message nobody typed.
 

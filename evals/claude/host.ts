@@ -39,7 +39,7 @@ const resourceLoader = new pi.DefaultResourceLoader({
 await resourceLoader.reload();
 const { session } = await pi.createAgentSession({ cwd: config.workspace, resourceLoader, settingsManager, sessionManager: pi.SessionManager.inMemory() });
 
-const page = new Page(readFileSync(config.conversation, "utf8"), config.acceptEdits);
+const page = new Page(readFileSync(config.conversation, "utf8"), config.acceptEdits, config.answering);
 let asked = 0;
 // The page a tool reaches through pi's dialogs. `input` is the one that carries
 // an answer back, as in rpc mode; everything else a tool might draw is nothing here.

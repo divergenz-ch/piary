@@ -130,7 +130,7 @@ test("a run that did not go as the harness means it to is told apart from an ans
 const ask = (title: string, payload: unknown) => ({ type: "extension_ui_request", id: "ask-1", method: "input", title, placeholder: JSON.stringify(payload) });
 
 test("the page answers a cell that does not compile as failed, and says nothing of one that does", () => {
-	const page = new Page("<!-- you -->\n\nHi\n", false);
+	const page = new Page("<!-- you -->\n\nHi\n", false, 0);
 	page.hear({ type: "tool_execution_start", toolName: "cell", toolCallId: "toolu_01abc123", args: { source: "const a = 1; return a" } });
 	const reply = page.hear(ask(VERDICT_REQUEST, { id: "abc123" }));
 	assert.equal((JSON.parse(String(reply?.["value"])) as { verdict: string }).verdict, "failed");
@@ -141,8 +141,17 @@ test("the page answers a cell that does not compile as failed, and says nothing 
 test("the page applies an edit only when the run accepts edits, each planned against the last", () => {
 	const md = "<!-- you -->\n\nThe quick fox\n";
 	const edit = ask(EDIT_REQUEST, { oldText: "quick", newText: "slow" });
-	assert.deepEqual(new Page(md, false).hear(edit), { type: "extension_ui_response", id: "ask-1", cancelled: true });
-	const page = new Page(md, true);
+	assert.deepEqual(new Page(md, false, md.length).hear(edit), { type: "extension_ui_response", id: "ask-1", cancelled: true });
+	const page = new Page(md, true, md.length);
 	assert.equal(page.hear(edit)?.["value"], JSON.stringify({ ok: true }));
 	assert.match(String(page.hear(edit)?.["value"]), /error/, "the quote is gone once the first edit is applied");
+});
+
+test("the page knows which prompt is being answered, as the app's does: an answer written into it is refused", () => {
+	const md = "<!-- you -->\n\nFirst\n\n<!-- pi -->\n\nOne\n\n<!-- you -->\n\nName a fox\n";
+	const page = new Page(md, true, md.length);
+	// An edit above the prompt moves it, and it is still the one being answered.
+	assert.equal(page.hear(ask(EDIT_REQUEST, { oldText: "First", newText: "The very first" }))?.["value"], JSON.stringify({ ok: true }));
+	assert.match(String(page.hear(ask(EDIT_REQUEST, { oldText: "Name a fox", newText: "Name a fox\n\nReynard" }))?.["value"]), /prompt you are answering/);
+	assert.equal(page.hear(ask(EDIT_REQUEST, { oldText: "The very first", newText: "The very first\n\nAnd more" }))?.["value"], JSON.stringify({ ok: true }));
 });

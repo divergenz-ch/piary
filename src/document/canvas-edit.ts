@@ -52,7 +52,8 @@ function withoutAppLines(text: string): string {
  * may not see — the running turn's own region, which is the answer being
  * written, not the canvas it writes about: a quote found only there is not
  * found, and one found there and elsewhere counts once. The prompt above it
- * is the one being answered, which an edit may reword and may not empty.
+ * is the one being answered, which an edit may reword, may not empty and may
+ * not add lines under: the answer is the reply, not more of the question.
  */
 export function planCanvasEdit(md: string, quoted: CanvasEdit, outside?: { from: number; to: number }): CanvasEditPlan {
 	const edit = { oldText: withoutAppLines(quoted.oldText), newText: withoutAppLines(quoted.newText) };
@@ -74,13 +75,16 @@ export function planCanvasEdit(md: string, quoted: CanvasEdit, outside?: { from:
 		return { ok: false, error: "that quote spans more than one block: change one block at a time, inside it" };
 	if (segment.kind === "cell") return { ok: false, error: `that text is cell #${segment.id}: change it with the \`cell\` tool, passing id "${segment.id}"` };
 	if (!PROSE.has(segment.kind)) return { ok: false, error: `that text is part of a ${segment.kind} block, a record Piary keeps; only prose can be changed` };
+	const answering = outside && segment === parsed.segments.findLast((s) => s.kind === "user" && s.from < outside.from);
+	if (answering && addsLinesUnder(edit))
+		return { ok: false, error: "that adds lines under the prompt you are answering, which holds only what the user asked: write them as your reply, and Piary places it under the prompt" };
 	const insert = escapeBody(edit.newText);
 	if ((md.slice(segment.bodyFrom, from) + insert + md.slice(to, segment.to)).trim()) return { ok: true, from, to, insert };
 	// The edit leaves the block empty. The page's trailing prompt is where the
 	// user types next, so it keeps its marker, as `deleteSegment` would have it.
 	const index = parsed.segments.indexOf(segment);
 	if (segment.kind === "user" && index === parsed.segments.length - 1) return { ok: true, from, to, insert };
-	if (outside && segment === parsed.segments.findLast((s) => s.kind === "user" && s.from < outside.from))
+	if (answering)
 		return { ok: false, error: "that would remove the prompt you are answering, and its answer would be left with no question: leave text in it" };
 	const next = deleteSegment(md, parsed.segments, index);
 	if (next === null) return { ok: true, from, to, insert };
@@ -89,6 +93,16 @@ export function planCanvasEdit(md: string, quoted: CanvasEdit, outside?: { from:
 	// drops one that clips a marker.
 	const lead = opensBlock(segment.kind) && parsed.segments[index - 1]?.kind === "block" ? parsed.segments[index - 1]!.from : segment.from;
 	return { ok: true, ...spliceCovering(md, next, lead, segment.to) };
+}
+
+/** Whether `edit` keeps its quote whole and goes on under it on lines of its
+ *  own: the tool's insert-after. Text put inside the quote's lines, or on the
+ *  end of its last one, is a rewording. */
+function addsLinesUnder(edit: CanvasEdit): boolean {
+	const kept = edit.oldText.trimEnd();
+	if (!edit.newText.startsWith(kept)) return false;
+	const added = edit.newText.slice(kept.length);
+	return /^[ \t]*\n/.test(added) && added.trim() !== "";
 }
 
 /** The one change that turns `before` into `after` and covers `from`..`to` of

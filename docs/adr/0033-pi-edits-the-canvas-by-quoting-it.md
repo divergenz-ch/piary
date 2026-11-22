@@ -2,7 +2,7 @@
 
 **Status:** accepted (2026-11-14). Quoted text is the block addressing, chosen over block ids and
 positions. Amended by [ADR 0065](0065-a-canvas-edit-that-empties-a-block-removes-it.md): an edit
-that empties a block removes it.
+that empties a block removes it. §6 was added on 2026-11-23: an edit does not answer the prompt.
 
 ## Context
 
@@ -59,12 +59,29 @@ as the record of what was asked.
 **5. Bounded like a cell.** Three refused edits in a run, then the answer tells pi to stop and tell
 the user (`app/canvas-edits.ts`), the bound and reason of ADR 0031.
 
+**6. An edit does not answer.** A model has answered a plain question by quoting it and repeating
+it with the answer on new lines under it, the tool's own insert-after. The answer then sat inside
+the user's prompt block, the run had no answer block, and the next send would have handed pi its
+own answer as the user's words. So an edit that keeps its quote whole and goes on under it on new
+lines is refused when the block is the prompt being answered, with where the lines belong: the
+reply, which Piary places under the prompt. Rewording that prompt is still an edit like any other:
+a word put in, a line's end completed. The same insert under every other block is untouched, and
+with no turn running no prompt is being answered.
+
+It is a rule of the tool and not a line of the system prompt because it was seen once, on one
+model, and in some forty runs of the same question since, on that model and four others, not again: no wording could be measured
+against it. A refusal needs no measuring, and a model made to edit the question wrote its answer
+as the reply after being refused, each time it was tried. A request to add lines to the very
+prompt that asks for them ("add a P.S. to this message") is refused with it; pi says so in its
+answer, and the user's own typing is one keystroke away.
+
 ## Consequences
 
 - A send after a turn that edited earlier prose rebuilds pi's history and restarts pi, which costs
   seconds. That is the price of the document being the history, paid by every edit above a prompt.
 - The eval runner has no page, so it measures whether pi reaches for `canvas_edit` rather than the
-  file, not whether the edit lands; the page's half is held by `e2e/flows.spec.ts`.
+  file, not whether the edit lands; the page's half is held by `e2e/flows.spec.ts`. With
+  `--accept-edits` it plans each edit as the page would, the prompt being answered included.
 - Moving a block is not offered. Removing one is: an edit that empties a block takes its marker
   too ([ADR 0065](0065-a-canvas-edit-that-empties-a-block-removes-it.md)).
 

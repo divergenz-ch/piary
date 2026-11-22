@@ -27,6 +27,8 @@ export interface HostConfig {
 	promptFile: string | null;
 	/** The case's conversation, which a `canvas_edit` is planned against. */
 	conversation: string;
+	/** Where the prompt being answered ends in it. */
+	answering: number;
 	acceptEdits: boolean;
 }
 

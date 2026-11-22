@@ -176,6 +176,25 @@ test("the prompt being answered cannot be emptied: the edit is refused and says 
 	assert.ok(planCanvasEdit(md, { oldText: "fix the heading", newText: "fix the title" }, region).ok);
 });
 
+test("the prompt being answered takes no answer: an edit that adds lines under its text is refused, and says where the answer goes", () => {
+	const md = `${DOC}<!-- pi -->\n\n`;
+	const region = { from: DOC.length, to: md.length };
+	const answer = "fix the heading\n\n1. Fernanda\n2. Leaf Erikson";
+	const plan = planCanvasEdit(md, { oldText: "fix the heading", newText: answer }, region);
+	assert.equal(plan.ok, false);
+	assert.match(!plan.ok ? plan.error : "", /prompt you are answering.*your reply/);
+	// Quoted with the line the app added to it, it is the same edit.
+	const now = "[now: Saturday 2026-11-14 15:10, Europe/Stockholm (UTC+01:00)]";
+	assert.equal(planCanvasEdit(md, { oldText: `fix the heading\n${now}`, newText: `${answer}\n${now}` }, region).ok, false);
+	// A fix inside its own lines is still an edit like any other: a word put in, its end completed.
+	assert.ok(planCanvasEdit(md, { oldText: "fix the heading", newText: "fix the first heading" }, region).ok);
+	assert.ok(planCanvasEdit(md, { oldText: "fix the heading", newText: "fix the heading, please." }, region).ok);
+	// Lines added under any other block are the insert the tool offers.
+	assert.ok(planCanvasEdit(md, { oldText: "Ship on Friday.", newText: "Ship on Friday.\n\nTell the team on Thursday." }, region).ok);
+	// With no turn running, no prompt is being answered.
+	assert.ok(planCanvasEdit(DOC, { oldText: "fix the heading", newText: answer }).ok);
+});
+
 test("the page's trailing prompt is where the user types next: emptied, it keeps its marker", () => {
 	const plan = planCanvasEdit(DOC, { oldText: "fix the heading", newText: "" });
 	assert.ok(plan.ok);

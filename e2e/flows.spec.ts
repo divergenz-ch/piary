@@ -2402,6 +2402,26 @@ test("a canvas edit may not empty the prompt it is answering: nothing changes, a
 	expect(await docText(page)).toContain("remove this question");
 });
 
+test("a canvas edit may not write the answer into the prompt it is answering: nothing changes, and the tool is told where the answer goes", async ({ page }) => {
+	// A sent prompt, edited and sent again, with its old answer under it.
+	const asked = "Give me five names for a houseplant.";
+	const names = "1. Fernanda\n2. Leaf Erikson";
+	const doc = "<!-- you -->\n\nGive me three names for a houseplant.\n\n<!-- pi -->\n\n1. Spike\n\n<!-- you -->\n\n";
+	await openApp(page, answerWith([editAsked(asked, `${asked}\n\n${names}`), ...hold(6), final(names), settled()], 150), doc);
+	await page.locator(".cm-line", { hasText: "Give me three names" }).click();
+	await page.keyboard.press("Home");
+	for (let i = 0; i < "Give me ".length; i++) await page.keyboard.press("ArrowRight");
+	for (let i = 0; i < "three".length; i++) await page.keyboard.press("Delete");
+	await page.keyboard.type("five");
+	await send(page);
+	await expect.poll(async () => (await verdictsOf(page))["e1"], { timeout: 8000 }).toMatchObject({ error: expect.stringMatching(/prompt you are answering.*your reply/) });
+	await turnOver(page);
+	// The prompt is as the user wrote it, and the answer is under it in a block of its own, in place of the old one.
+	const md = await docText(page);
+	expect(md).toMatch(/^<!-- you -->\n\nGive me five names for a houseplant\.\n\n<!-- pi -->\n\n1\. Fernanda\n2\. Leaf Erikson/);
+	expect(md).not.toContain("Spike");
+});
+
 test("a cell that runs is answered ok", async ({ page }) => {
 	await openApp(page, answerWith([...cellAnswer("1 + 1", "ok1"), verdictAsked("ok1"), ...hold(10), final("Done."), settled()], 250));
 	await write(page, "make a cell");
