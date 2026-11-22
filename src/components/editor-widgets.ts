@@ -302,6 +302,7 @@ export class RoleWidget extends WidgetType {
 			const key = this.foldKey;
 			span.classList.add("doc-role-menu");
 			span.title = "Collapse";
+			span.addEventListener("mousedown", keepCaret);
 			span.addEventListener("click", (event) => {
 				event.preventDefault();
 				span.dispatchEvent(new CustomEvent("fold-toggle", { detail: { key }, bubbles: true, composed: true }));
@@ -312,6 +313,7 @@ export class RoleWidget extends WidgetType {
 		if (this.segFrom !== undefined && this.menuFrom === undefined) {
 			span.classList.add("doc-role-menu");
 			span.dataset["at"] = String(this.segFrom);
+			span.addEventListener("mousedown", keepCaret);
 			span.append(segmentMenuDots(this.segFrom));
 		}
 		if (this.dismissFrom !== undefined) {
@@ -378,8 +380,8 @@ export function blockOpenerAt(view: EditorView, pos: number): number | null {
 }
 
 /**
- * A press on a menu's hit target places no caret. A press on the outer half of
- * its first or last glyph is, to the engine, a press beside it: left alone it
+ * A press on a head that takes clicks places no caret. A press on the outer half
+ * of its first or last glyph is, to the engine, a press beside it: left alone it
  * puts the caret there, the head's line is drawn again for that caret, and the
  * release finds another element, so no click comes.
  */

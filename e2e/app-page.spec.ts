@@ -644,6 +644,23 @@ for (const [what, selector, across] of [
 	});
 }
 
+test("a press on the left edge of an open step's label folds it", async ({ page }) => {
+	await openApp(page, [
+		"<!-- you -->\n\nEDIT prompt\n\n<!-- pi -->\n\nfirst\n\n",
+		'<!-- pi:tool edit #c1 -->\n\n```json\n{ "path": "a.ts" }\n```\n\n',
+		"<!-- pi:result #c1 -->\n\n```\nok\n```\n\n",
+		"<!-- pi:thinking -->\n\nhmm\n\n<!-- pi -->\n\nEDITED text\n\n<!-- you -->\n\n",
+	].join(""));
+	await page.locator(".doc-activity .doc-role-menu").click();
+	await page.locator(".doc-fold .doc-role-menu", { hasText: "edit" }).click();
+	const label = page.locator('.doc-role-menu[title="Collapse"]', { hasText: "edit" });
+	await label.hover();
+	const box = (await label.boundingBox())!;
+	await page.mouse.click(box.x + box.width * 0.1, box.y + box.height / 2, { delay: PRESS_HELD_MS });
+	await expect(label).toHaveCount(0);
+	await expect(page.locator(".doc-fold .doc-role-menu", { hasText: "edit" })).toHaveCount(1);
+});
+
 /** Selects the whole line holding `text` and right-clicks inside the selection. */
 async function rightClickSelection(page: import("@playwright/test").Page, text: string) {
 	const line = page.locator(".cm-line", { hasText: text });
