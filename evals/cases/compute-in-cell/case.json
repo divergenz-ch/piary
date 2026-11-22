@@ -1,0 +1,14 @@
+{
+	"title": "[AI DRAFT] A calculation the user wants to tweak becomes a cell",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": [
+		"Writes a cell with the principal, rate and years as named values",
+		"The payment is about 1 242 CHF",
+		"Prose around the cell is a sentence or two"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write"] }
+	}
+}

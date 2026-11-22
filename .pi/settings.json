@@ -1,0 +1,6 @@
+{
+  "packages": [
+    "../pi-extension",
+    "npm:@narumitw/pi-plan-mode"
+  ]
+}

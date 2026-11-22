@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Piary harness</title>
+	<link rel="stylesheet" href="/dist/styles.css" />
+	<!-- emitted by esbuild beside harness-app.js (the cell engine's stdlib drags
+	     in Observable Inputs styles) -->
+	<link rel="stylesheet" href="/demo/harness-app.css" />
+	<style>
+		/* The harness gives the document the viewport, so a spec measuring a
+		   line measures it at a realistic width. */
+		html, body { height: 100%; margin: 0; }
+		#app { height: 100%; max-width: 46rem; margin: 0 auto; padding: 1rem; box-sizing: border-box; }
+		#app document-chat { height: 100%; }
+	</style>
+	<script type="module" src="/demo/harness-app.js"></script>
+</head>
+<body>
+	<div id="app"></div>
+</body>
+</html>

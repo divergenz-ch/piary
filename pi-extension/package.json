@@ -1,0 +1,26 @@
+{
+	"name": "pi-ui-views",
+	"version": "0.1.0",
+	"private": true,
+	"description": "pi package: the `view`, `cell`, `canvas_edit` and `terminal` tools, the app's sign-in commands, and the skill for Piary's document view blocks and reactive cells",
+	"keywords": [
+		"pi-package"
+	],
+	"pi": {
+		"extensions": [
+			"./view.ts",
+			"./cell.ts",
+			"./canvas-edit.ts",
+			"./login.ts",
+			"./budget.ts",
+			"./terminal.ts"
+		],
+		"skills": [
+			"./SKILL.md"
+		]
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"typebox": "*"
+	}
+}

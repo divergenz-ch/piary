@@ -1,0 +1,40 @@
+/* Piary stylesheet entry — plain CSS, no framework.
+   Bundled + minified to dist/styles.css at build time (esbuild). */
+/* xterm's own stylesheet, imported here rather than from TerminalView.ts: the CSS
+   bundle is a separate esbuild entry, so a `.css` import in a TS module would land
+   in the JS bundle instead (demo/*-app.css) and only for pages that import that
+   module. The terminal view is part of the library's styles. */
+@import "@xterm/xterm/css/xterm.css";
+@import "./theme.css";
+@import "./utils/syntax-highlighting.css";
+@import "./utils/math.css";
+@import "./utils/table.css";
+@import "./components.css";
+@import "./document.css";
+@import "./notebook.css";
+@import "./cell-theme.css";
+
+/* Minimal reset (what Tailwind preflight used to provide) */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+button,
+input,
+textarea,
+select {
+	font: inherit;
+	color: inherit;
+}
+
+body {
+	font-size: 16px;
+	font-family: var(--font-sans);
+	background: var(--background);
+	color: var(--foreground);
+	-webkit-font-smoothing: antialiased;
+}

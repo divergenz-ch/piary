@@ -1,0 +1,14 @@
+{
+	"title": "[AI DRAFT] A change between two versions is shown as a diff view",
+	"tags": ["AI DRAFT"],
+	"job": "view",
+	"canvas": [],
+	"rubric": [
+		"Shows the change through the view tool's diff template",
+		"Names the two changes: the comma and template string, the new punctuation parameter"
+	],
+	"checks": {
+		"tools": { "must": ["view"], "mustNot": ["edit", "write"] },
+		"mentions": ["punctuation"]
+	}
+}

@@ -1,0 +1,23 @@
+// The app's page and the browser-side modules the build config cannot carry:
+// `tsconfig.build.json` has `"include": ["src"]` because it emits `dist/`, and it
+// leaves out the modules that only run inside the app (`src/bridge.ts` reaches
+// Tauri). This config checks and emits nothing; it exists so `app/`, those
+// modules and the e2e harness's page entry are typechecked at all.
+//
+// Browser scope only. The Node tree (scripts/, tests/, evals/, e2e/) is checked
+// by tsconfig.node.json, which supplies `types: ["node"]`: the two are separate
+// because `process` in a page module, or a DOM global in a Node module, is a bug
+// worth a compile error.
+{
+	"extends": "./tsconfig.build.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": false,
+		// The build's `rootDir: src` is what shapes `dist/`; nothing is emitted
+		// here, so it only gets in the way.
+		"rootDir": "."
+	},
+	"include": ["src", "demo/harness.ts", "app/*.ts"]
+}

@@ -1,0 +1,2339 @@
+/* document-chat — the iA-Writer-style writing surface. One centered column,
+   quiet chrome; agent prose is set off only by a hairline left rule. */
+
+/* The canvas's two faces, Noto Sans and Noto Serif (SIL Open Font License 1.1, the text
+   beside the files): each weight and style in two files, basic Latin and extended Latin,
+   and a browser fetches the second only for a page that holds such a letter. They are the
+   app's own files, so the canvas needs no network. */
+
+/* The machine's voice. */
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-400-normal.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-ext-400-normal.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-400-italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-ext-400-italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-600-normal.woff2") format("woff2");
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-ext-600-normal.woff2") format("woff2");
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-700-normal.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Sans";
+	src: url("./fonts/noto-sans-latin-ext-700-normal.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* The writer's voice. */
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-400-normal.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-ext-400-normal.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-400-italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-ext-400-italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-700-normal.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-ext-700-normal.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-700-italic.woff2") format("woff2");
+	font-weight: 700;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: "Noto Serif";
+	src: url("./fonts/noto-serif-latin-ext-700-italic.woff2") format("woff2");
+	font-weight: 700;
+	font-style: italic;
+	font-display: swap;
+	unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+document-chat {
+	display: block;
+	height: 100%;
+	min-height: 0;
+	/* Extra air between the block rule and the text column (on top of the
+	   base 1.125rem inset). The rule paints inside this inset. */
+	--doc-rule-outdent: 0.25rem;
+	--doc-rule-width: 2px;
+	/* Hierarchy by rhythm: loose between blocks, tight inside one, tighter
+	   still between consecutive folded machine runs. Tune here. */
+	--doc-block-gap: 2.5rem;
+	--doc-seg-gap: 0.5rem;
+	--doc-run-gap: 0.125rem;
+	/* The measure: how wide the text column is, and with it everything that has
+	   to line up against it — the status bar, an alert, an extension's question.
+	   Those were four separate `42rem` literals, so widening the document meant
+	   finding all four and the page went crooked if you missed one.
+
+	   Prose alone would want less; this surface also carries artifacts, tables
+	   and code panes, which read badly when squeezed. Widen or narrow HERE. */
+	--doc-measure: 52rem;
+}
+
+document-chat .doc-editor,
+document-chat .cm-editor {
+	height: 100%;
+}
+
+document-chat .cm-editor,
+/* CodeMirror's base theme outlines a focused editor (`.cm-editor.cm-focused`,
+   dotted), which outranks `document-chat .cm-editor` alone. A canvas that
+   starts at the window's edge drew it off screen; beside the conversation list
+   it is a dotted line down the page. */
+document-chat .cm-editor.cm-focused {
+	background: var(--background);
+	outline: none;
+}
+
+document-chat .cm-scroller {
+	font-family: "Noto Serif", var(--font-serif, Georgia, serif);
+	font-size: 1.0625rem;
+	line-height: 1.75;
+	overflow-y: auto;
+	justify-content: center; /* the scroller is a flex row; this centers the column */
+}
+
+/* Out-specify CM's injected base theme (flex-grow: 2, monospace on .cm-content). */
+document-chat .cm-editor .cm-content {
+	font-family: "Noto Serif", var(--font-serif, Georgia, serif);
+	width: min(var(--doc-measure), 100%);
+	flex: none;
+	padding: 4rem 1.5rem 40vh; /* generous tail: the caret lives near the bottom */
+	caret-color: var(--accent-foreground);
+}
+
+/* .cm-editor in the selector out-specifies CM's injected base theme
+   (`.ϼx .cm-line`, two classes) — without it CM's 6px padding wins. */
+document-chat .cm-editor .cm-line {
+	position: relative; /* anchors the ::before rule overlay */
+	/* Constant left inset for every line, every role — a line gaining or
+	   losing the rule never moves its box, so typing can't jitter. */
+	padding: 0 0 0 calc(1.125rem + var(--doc-rule-outdent));
+}
+
+/* iA-Writer caret: a fat accent bar.
+
+   `.cm-cursor` and `.cm-selectionBackground` are elements CodeMirror creates
+   only when the `drawSelection()` extension is loaded — see the extension list
+   in DocumentChat. Drop that extension and these two rules go back to matching
+   nothing, the browser paints caret and selection natively, and a drag runs a
+   blue band across artifacts and folds (which are not text). Both rules are
+   kept honest by that extension, not by themselves. */
+document-chat .cm-cursor {
+	border-left-color: var(--accent-foreground);
+	border-left-width: 3px;
+	margin-left: -1px; /* keep the thicker bar visually centered on the gap */
+}
+
+/* The drawn band inside the flow, and the native one inside block widgets —
+   an artifact's code pane, a table cell — which sit outside `.cm-line` and so
+   are not covered by CodeMirror's native-selection suppression. */
+document-chat .cm-selectionBackground,
+document-chat .cm-content ::selection {
+	background: color-mix(in oklch, var(--accent-foreground) 18%, transparent) !important;
+}
+
+document-chat .cm-placeholder {
+	color: var(--muted-foreground);
+	opacity: 0.7;
+}
+
+/* Agent prose: machine voice set in Noto Sans. */
+document-chat .doc-line-pi {
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 1.0625rem; /* the machine voice stays put while the writer's grows */
+}
+
+/* A markdown cell: page material, in the writer's voice like a prompt — and,
+   like every other cell, it names itself. The body inherits the writer's serif;
+   the label is left to .doc-role, which is why they are separate classes. */
+document-chat .doc-line-note {
+	font-family: inherit;
+}
+
+document-chat .doc-role.doc-role-note {
+	color: var(--muted-foreground);
+}
+
+/* Thinking: receded, italic ink. */
+document-chat .doc-line-thinking {
+	color: var(--muted-foreground);
+	font-family: "Noto Sans", var(--font-sans);
+	font-style: italic;
+	font-size: 0.9375rem;
+}
+
+/* iA-Writer focus: while writing, everything but the caret's paragraph
+   recedes — including a reply streaming in above. Full ink returns on blur.
+
+   No transition. The dim set changes on every caret move, so a per-line fade
+   restarted a 200ms opacity animation on each keystroke — measured at ~8ms of
+   added presentation delay per character on a 153KB document, and worst-case
+   hitches of 63ms on a small one. The dim now snaps. If the fade is wanted
+   back, drive it from the .doc-focus host class (which toggles rarely), never
+   from .doc-dim (which toggles per keystroke). */
+
+/* Dim every BLOCK in the column, not only the text lines. A table, an
+   artifact, a view, a fold and a snippet chip are block widgets — siblings of
+   .cm-line inside .cm-content — so a `.cm-line` selector left them at full ink
+   while the prose around them receded.
+
+   Anchored at `.doc-editor > .cm-focused` on purpose: an artifact's nested code
+   editor is a descendant of .cm-content, never a child of .doc-editor, so this
+   cannot reach into a code pane. */
+
+document-chat.doc-focus .doc-editor > .cm-focused > .cm-scroller > .cm-content > * {
+	opacity: 0.25;
+}
+
+/* The caret's paragraph keeps full ink; the insert gap is a zero-height hover
+   affordance, not document content, and is unusable once dimmed. */
+document-chat.doc-focus .doc-editor > .cm-focused > .cm-scroller > .cm-content > .doc-bright,
+document-chat.doc-focus .doc-editor > .cm-focused > .cm-scroller > .cm-content > .doc-cell-gap {
+	opacity: 1;
+}
+
+/* …and the row carrying the near block's handle. Focus mode recedes the page
+   while you TYPE; the moment the pointer enters a block you are pointing, not
+   writing, and a control at a quarter strength is not a control.
+
+   This has to be here, on the row, rather than a `.doc-cell-handle` exemption
+   next to the gap's above: a handle is an INLINE widget inside its .cm-line
+   (and an artifact's is inside its .doc-cell), and `opacity` clamps descendants
+   — a child can never be less transparent than the parent that dimmed it. So
+   the dim gets lifted off the row, or it does not get lifted.
+
+   Only that row: the rest of the page stays receded, text and chrome together,
+   which is the point of focus mode. */
+document-chat.doc-focus .doc-editor > .cm-focused > .cm-scroller > .cm-content > .doc-near-block {
+	opacity: 1;
+}
+
+/* Tool calls and results: machine text, set small and mono. */
+document-chat .doc-line-tool {
+	color: var(--muted-foreground);
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+	line-height: 1.55;
+}
+
+/* Role labels standing in for the marker comments. */
+document-chat .doc-role {
+	display: inline-block;
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	font-style: normal;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+	user-select: none;
+}
+
+/* The blank line a marker's body is separated by: kept in the text (the file
+   stays hand-editable), spent almost no height. Not zero — a caret that lands
+   here must still be visible. */
+document-chat .cm-line.doc-line-blank {
+	font-size: 0;
+	line-height: 0.375rem;
+}
+
+/* A marker line carries only its role label: label leading, not body leading. */
+document-chat .cm-line.doc-line-marker {
+	line-height: 1.2;
+}
+
+/* Block chrome (step 13): the block as a perceivable object. A calm hairline
+   opens every block; the head is the opening marker line's label, grown into
+   a visible handle. All of it is decoration — a hand-edited file renders
+   less decorated, never invalid (ground rule 10).
+   All vertical gaps in the editor are PADDING, never margin: CodeMirror's
+   height map ignores margins on lines and block widgets, so a margin makes
+   posAtCoords land clicks a line away from the pointer. */
+document-chat .cm-line.doc-block-first {
+	padding-top: var(--doc-block-gap);
+}
+
+/* The rule itself: one continuous hairline down a block's whole extent —
+   lines and the block widgets (folds, views) that sit between them. Painted
+   into the inset every line already reserves, so nothing reflows. */
+document-chat .cm-line.doc-block::before,
+document-chat .doc-fold::before,
+document-chat .doc-md-table::before,
+document-chat .doc-cell::before,
+document-chat .doc-view::before,
+document-chat .doc-run-badge::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	/* The inter-segment gap is padding inside each box, so a full-box rule
+	   crosses it; on a block's first line it starts below the block gap. */
+	top: 0;
+	bottom: 0;
+	width: var(--doc-rule-width);
+	background: var(--border);
+}
+document-chat .cm-line.doc-block-first::before {
+	top: var(--doc-block-gap);
+}
+document-chat .doc-fold,
+document-chat .doc-md-table,
+document-chat .doc-cell,
+document-chat .doc-view,
+document-chat .doc-run-badge {
+	position: relative; /* anchors the rule overlay */
+}
+
+/* An artifact's rule carries its status — the one dot's worth of information
+   the per-cell rail used to, without a dot. */
+document-chat .doc-cell:has(.artifact[data-status="pending"])::before {
+	background: var(--warning);
+}
+document-chat .doc-cell:has(.artifact[data-status="rejected"])::before {
+	background: var(--destructive);
+}
+
+/* The first block needs no top gap — the 4rem content padding supplies it. */
+document-chat .cm-content > .cm-line.doc-block-first:first-child {
+	padding-top: 0;
+}
+document-chat .cm-content > .cm-line.doc-block-first:first-child::before {
+	top: 0;
+}
+
+/* The next block's top gap owns the space between blocks, so gaps never sum. */
+document-chat .cm-line.doc-block-last {
+	margin-bottom: 0;
+}
+
+/* Segments inside a block sit tight; a block's opening line takes the loose
+   gap instead. */
+document-chat .cm-line.doc-seg-first {
+	padding-top: var(--doc-seg-gap);
+}
+document-chat .cm-line.doc-seg-first.doc-block-first {
+	padding-top: var(--doc-block-gap);
+}
+
+/* A block head is a hit target: clicking opens the block menu. */
+document-chat .doc-role-menu {
+	cursor: pointer;
+	padding: 0.0625rem 0.375rem;
+	margin-left: -0.375rem;
+	border-radius: calc(var(--radius) - 2px);
+}
+document-chat .doc-role-menu:hover {
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+
+/* The head's explicit menu affordance; quiet until the head is hovered. */
+document-chat .doc-role-dots {
+	margin-left: 0.375rem;
+	opacity: 0.45;
+}
+document-chat .doc-role-menu:hover .doc-role-dots {
+	opacity: 1;
+}
+
+/* A segment's own ⋯ is a button inside the head, not a cue on it: the head may
+   already do something else (a folded step expands), so the dots need a hit
+   target of their own. Padding rather than a box — the page stays prose. */
+document-chat .doc-seg-dots {
+	cursor: pointer;
+	padding: 0 0.25rem;
+	margin-right: -0.25rem;
+	border-radius: calc(var(--radius) - 2px);
+}
+/* A step being written is not a step to do surgery on. The host refuses the
+   menu anyway; this is so the page does not offer it. */
+document-chat.doc-streaming .doc-role-live .doc-seg-dots {
+	display: none;
+}
+
+document-chat .doc-seg-dots:hover {
+	background: var(--accent);
+	color: var(--accent-foreground);
+	opacity: 1;
+}
+
+/* An artifact's own head. Every other block hangs its label on the marker line
+   the format already gives it; a frame's marker line is replaced BY the frame,
+   so the head is built into the widget and needs the line the marker would have
+   occupied. `white-space` because `.cm-content` sets `break-spaces` and widget
+   DOM inherits it — the same opt-out `pi-artifact` makes. */
+document-chat .doc-block-head {
+	display: block;
+	width: fit-content;
+	margin-bottom: 0.125rem;
+	white-space: normal;
+}
+
+/* A folded prompt is continuation inside its block, not a head (step 14):
+   smaller than the opener's label, but tinted so the writer sees they are
+   adding to this block, not opening a new one. */
+document-chat .doc-role.doc-role-fold {
+	font-size: 0.625rem;
+	color: var(--accent-foreground);
+	opacity: 0.85;
+}
+
+/* An empty reply slot (answer-this-block): say what it is on its line. */
+document-chat .cm-line.doc-line-reply-ghost::after {
+	content: "reply to this block — " var(--doc-key-send, "⌘⏎") " sends";
+	color: var(--muted-foreground);
+	opacity: 0.55;
+	pointer-events: none;
+}
+
+/* Mode badge chip on a head: the block declared (or will run in) this mode. */
+document-chat .doc-mode-badge {
+	margin-left: 0.5rem;
+	padding: 0.0625rem 0.375rem;
+	border-radius: 9999px;
+	background: var(--accent);
+	color: var(--accent-foreground);
+	font-size: 0.625rem;
+	letter-spacing: 0.08em;
+}
+
+/* Creation ghost on the pending tail: teaches the gestures until typing
+   starts. Mid-stream it swaps to the mid-stream gestures — otherwise the
+   writing spot is a bare hairline and reads as "wait your turn". */
+/* The hint sits BELOW the caret's line without occupying it. CodeMirror renders
+   an empty line as a `<br>`, so inline ::after content lands on a second visual
+   row and the line box doubles — which made the block rule a line taller while
+   the slot was empty than it was once you typed. Out of flow, the resting
+   geometry matches the typing geometry exactly. */
+document-chat .cm-line.doc-line-ghost::after {
+	content: var(--doc-key-send, "⌘⏎") " new block · " var(--doc-key-follow, "⇧⌘⏎") " follow up · / for blocks";
+	position: absolute;
+	top: 100%;
+	left: calc(1.125rem + var(--doc-rule-outdent));
+	white-space: nowrap;
+	color: var(--muted-foreground);
+	opacity: 0.55;
+	pointer-events: none;
+}
+document-chat.doc-streaming .cm-line.doc-line-ghost::after {
+	content: "type while the agent writes — " var(--doc-key-send, "⌘⏎") " interrupts · " var(--doc-key-follow, "⇧⌘⏎") " queues";
+}
+
+/* The draft being written: the ghost is gone, so the send chord stays under
+   the last line — the one thing a first-time writer has to know. Same
+   out-of-flow geometry as the ghost, so the line doesn't grow under the
+   caret. */
+document-chat .cm-line.doc-line-draft::after {
+	content: var(--doc-key-send, "⌘⏎") " send · " var(--doc-key-follow, "⇧⌘⏎") " send as follow-up";
+	position: absolute;
+	top: 100%;
+	left: calc(1.125rem + var(--doc-rule-outdent));
+	white-space: nowrap;
+	color: var(--muted-foreground);
+	opacity: 0.55;
+	pointer-events: none;
+}
+document-chat.doc-streaming .cm-line.doc-line-draft::after {
+	content: var(--doc-key-send, "⌘⏎") " interrupts · " var(--doc-key-follow, "⇧⌘⏎") " queues";
+}
+
+/* The hints' key glyphs. Noto Serif as shipped has none of ⌥⌘⇧⏎, and `ui-serif`, next in
+   the canvas's stack, lacks ⇧ — so WebKit drew ⇧ alone from Hiragino, a hairline
+   arrow with a wide advance that read as "| ⌘⏎". Lucida Grande, on every Mac,
+   draws all four in one weight; the words stay Noto Serif. */
+document-chat .cm-line.doc-line-ghost::after,
+document-chat .cm-line.doc-line-draft::after {
+	font-family: "Noto Serif", "Lucida Grande", var(--font-serif, Georgia, serif);
+}
+
+/* pi:view widgets: a rendered template standing in for marker + payload
+   fence. Same hairline left rule as the rest of the machine's voice; the ⟨⟩
+   affordance flips to the honest fence and back. */
+document-chat .doc-view {
+	/* Same opt-out as pi-cell (src/styles/notebook.css): `.cm-content`'s
+	   `white-space: break-spaces` inherits into every widget, turning template
+	   whitespace into blank lines. */
+	white-space: normal;
+	padding: calc(0.25rem + var(--doc-seg-gap)) 0 0.25rem calc(1.125rem + var(--doc-rule-outdent));
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	color: var(--foreground);
+}
+
+/* The terminal panel (src/components/TerminalView.ts): a real xterm grid showing a
+   command's output while it runs. The grid is 24 rows from the start (so the tty a
+   command finds is that tall) and the HOST is clipped to the rows reached so far, in
+   TerminalView's `clip` — which is why the height is set inline there and not here. */
+document-chat .doc-terminal {
+	border: 1px solid var(--border);
+	border-radius: 0.25rem;
+	/* xterm paints its own opaque background (see xtermTheme), so the frame must
+	   not paint a second one behind it. */
+	overflow: hidden;
+}
+
+/* Which kind of panel this is: an agent's `output`, or a `terminal` the user can
+   type into. The two are otherwise identical, and the difference decides whether a
+   keystroke goes anywhere (src/components/TerminalView.ts). */
+document-chat .doc-terminal-label {
+	padding: 0.25rem 0.5rem 0;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+/* Read-only: no cursor is drawn and no key is forwarded, so the frame says as much
+   rather than looking like a terminal that is ignoring you. */
+document-chat .doc-terminal-readonly .doc-terminal-label::after {
+	content: " · read-only";
+	text-transform: none;
+	letter-spacing: 0;
+	opacity: 0.7;
+}
+
+document-chat .doc-terminal-host {
+	/* Clipped by the reveal while the run is live; `overflow: hidden` is what makes
+	   that clip show fewer rows rather than scroll them. */
+	overflow: hidden;
+	padding: 0.375rem 0.5rem;
+}
+
+/* Settled: the command ended. Quieter, because it is now a record rather than
+   something to watch. */
+document-chat .doc-terminal-settled {
+	border-color: color-mix(in oklab, var(--border) 60%, transparent);
+}
+
+/* The grid takes the panel's width. xterm measures its host to pick columns, so a
+   host with no width yields no fit at all (TerminalView `refit` bails on it). */
+document-chat .doc-terminal .xterm {
+	height: 100%;
+}
+
+/* xterm.css still gives `.xterm-viewport` `overflow-y: scroll`, but xterm 6 scrolls
+   through its own scrollbar element, so the native one has nothing to scroll and
+   only draws an empty track wherever macOS shows classic scrollbars. */
+document-chat .doc-terminal .xterm-viewport {
+	overflow-y: hidden;
+}
+
+document-chat .doc-view-header {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	margin-bottom: 0.25rem;
+}
+
+document-chat .doc-view-toggle {
+	border: none;
+	padding: 0 0.25rem;
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+	opacity: 0.6;
+	cursor: pointer;
+	user-select: none;
+}
+document-chat .doc-view-toggle:hover {
+	opacity: 1;
+	color: var(--accent-foreground);
+}
+
+/* The way back from a view's or an artifact's raw text. A button, not a glyph:
+   on a page of fences it is the one thing that says a result exists. */
+document-chat .doc-view-toggle.doc-view-back {
+	margin-left: 0.5rem;
+	padding: 0.0625rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	font-family: var(--font-sans);
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--foreground);
+	opacity: 1;
+}
+document-chat .doc-view-toggle.doc-view-back:hover {
+	background: var(--accent);
+}
+
+/* Where a live view was, with nothing behind it now. */
+document-chat .doc-view-gone-note {
+	font-family: var(--font-sans);
+	font-size: 0.8125rem;
+	color: var(--muted-foreground);
+}
+
+/* A folded segment body (tool call/result, thinking): label-only line with
+   the same hairline rule; click expands. */
+document-chat .doc-fold {
+	padding: calc(0.125rem + var(--doc-seg-gap)) 0 0.125rem calc(1.125rem + var(--doc-rule-outdent));
+}
+
+/* A run of folded machine work reads as one quiet strip, not N events. */
+document-chat .doc-fold + .doc-fold {
+	padding-top: calc(0.125rem + var(--doc-run-gap));
+}
+
+/* The activity strip: N machine steps behind one line — the count, then what
+   the last step is doing, in prose (code never reaches the snippet). One line,
+   always: a growing thought must not grow the document. */
+document-chat .doc-fold.doc-activity,
+document-chat .doc-fold:has(.doc-fold-now) {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+}
+
+/* The expanded run's header: the way back, quiet but present. */
+document-chat .doc-fold.doc-activity-open {
+	padding-top: calc(0.125rem + var(--doc-seg-gap));
+}
+document-chat .doc-activity-open .doc-fold-now {
+	font-style: normal;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	font-size: 0.625rem;
+	cursor: pointer;
+}
+
+/* A folded error still says what broke — in the destructive tint, one line. */
+document-chat .doc-fold-error .doc-role,
+document-chat .doc-fold-error .doc-fold-now {
+	color: var(--destructive);
+	opacity: 1;
+}
+document-chat .doc-fold-now {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: "Noto Sans", var(--font-sans);
+	font-style: italic;
+	font-size: 0.8125rem;
+	color: var(--muted-foreground);
+	opacity: 0.75;
+}
+
+/* A collapsed whole block: its name stands in for everything; click expands. */
+/* A collapsed block stands alone: its rule must not reach into the block gap. */
+document-chat .doc-fold.doc-block-collapsed::before {
+	top: var(--doc-block-gap);
+}
+document-chat .doc-fold.doc-block-collapsed {
+	padding-top: calc(var(--doc-block-gap) + 0.375rem);
+	padding-bottom: 0.375rem;
+}
+document-chat .doc-fold.doc-block-collapsed .doc-role {
+	font-weight: 600;
+}
+
+/* Cap view bodies (diff/table/matches/…) — a 500-row table must scroll,
+   not fill the document. Header stays visible. */
+document-chat .doc-view > :not(.doc-view-header) {
+	max-height: 24rem;
+	overflow-y: auto;
+}
+
+/* a2ui template: a surface the agent composed is the answer itself, laid out
+   by its own components, so it is neither capped nor set in the machine's
+   mono voice. */
+document-chat .doc-view > .doc-view-a2ui {
+	display: block;
+	max-height: none;
+	overflow: visible;
+	font-family: var(--font-sans);
+}
+document-chat .doc-view-a2ui-error {
+	color: var(--destructive);
+}
+document-chat .doc-view-a2ui-error ul {
+	margin: 0.25rem 0 0;
+	padding-left: 1.25rem;
+}
+document-chat .doc-view-a2ui-quiet {
+	color: var(--muted-foreground);
+}
+
+/* a2ui theme: Piary's tokens under A2UI's variables, set on the view's root,
+   so a surface draws in the canvas's palette and type and flips with `.dark`.
+   The basic catalog's own sheet fills its defaults with `light-dark()` under
+   `color-scheme: light dark` on `:root`, which follows the OS: the view states
+   its scheme, every variable that defaulted to `light-dark()` is mapped, and the
+   page gets back the scheme it had before that sheet was adopted. */
+:root {
+	color-scheme: normal;
+}
+document-chat .piary-a2ui {
+	color-scheme: light;
+	font-size: 0.9375rem;
+	line-height: 1.5;
+	color: var(--foreground);
+	--a2ui-color-background: var(--background);
+	--a2ui-color-on-background: var(--foreground);
+	--a2ui-color-surface: var(--card);
+	--a2ui-color-on-surface: var(--card-foreground);
+	--a2ui-color-primary: var(--primary);
+	--a2ui-color-primary-light: color-mix(in oklab, var(--primary) 70%, var(--background));
+	--a2ui-color-primary-dark: color-mix(in oklab, var(--primary) 85%, var(--foreground));
+	--a2ui-color-primary-hover: color-mix(in oklab, var(--primary) 88%, var(--background));
+	--a2ui-color-on-primary: var(--primary-foreground);
+	--a2ui-color-secondary: var(--secondary);
+	--a2ui-color-secondary-light: color-mix(in oklab, var(--secondary) 70%, var(--background));
+	--a2ui-color-secondary-dark: color-mix(in oklab, var(--secondary) 90%, var(--foreground));
+	--a2ui-color-secondary-hover: var(--accent);
+	--a2ui-color-on-secondary: var(--secondary-foreground);
+	--a2ui-color-border: var(--border);
+	--a2ui-border-width: 1px;
+	--a2ui-border: 1px solid var(--border);
+	--a2ui-border-radius: var(--radius);
+	--a2ui-color-input: var(--background);
+	--a2ui-color-on-input: var(--foreground);
+	--a2ui-font-family-title: var(--font-sans);
+	--a2ui-font-family-monospace: var(--font-mono);
+	--a2ui-font-size: 0.9375rem;
+	--a2ui-line-height-headings: 1.25;
+	--a2ui-row-gap: 0.75rem;
+	--a2ui-column-gap: 0.75rem;
+	--a2ui-text-caption-color: var(--muted-foreground);
+	--a2ui-text-a-color: var(--accent-foreground);
+	--a2ui-card-background: var(--card);
+	--a2ui-card-border: 1px solid var(--border);
+	--a2ui-card-border-radius: var(--radius);
+	--a2ui-card-box-shadow: none;
+	--a2ui-card-padding: 1rem;
+	--a2ui-card-margin: 0;
+	--a2ui-button-margin: 0;
+	--a2ui-button-padding: 0.4375rem 0.875rem;
+	--a2ui-button-border-radius: calc(var(--radius) - 2px);
+	--a2ui-button-box-shadow: none;
+	--a2ui-button-font-weight: 500;
+	--a2ui-slider-margin: 0;
+	--a2ui-slider-thumb-color: var(--chart-3);
+	--a2ui-slider-track-color: var(--muted);
+	--a2ui-label-font-weight: 500;
+	--a2ui-tabs-border: 1px solid var(--border);
+	--a2ui-tabs-header-background: transparent;
+	--a2ui-tabs-header-background-active: var(--muted);
+	--a2ui-tabs-header-color: var(--muted-foreground);
+	--a2ui-tabs-header-color-active: var(--foreground);
+	--a2ui-textfield-color-border-focus: var(--ring);
+	--a2ui-textfield-border: 1px solid var(--input);
+	--a2ui-datetimeinput-border: 1px solid var(--input);
+	--a2ui-choicepicker-chip-background: var(--secondary);
+	--a2ui-choicepicker-chip-background-selected: var(--primary);
+	--a2ui-choicepicker-label-color: var(--foreground);
+	--a2ui-divider-border: 1px solid var(--border);
+	--a2ui-modal-background: var(--popover);
+	--a2ui-modal-box-shadow: var(--shadow-lg);
+	--a2ui-audioplayer-background: var(--muted);
+	--a2ui-audioplayer-description-color: var(--muted-foreground);
+	--a2ui-textfield-color-error: var(--destructive);
+	--a2ui-slider-color-error: var(--destructive);
+	--a2ui-checkbox-color-error: var(--destructive);
+	--a2ui-choicepicker-color-error: var(--destructive);
+	--a2ui-datetimeinput-color-error: var(--destructive);
+}
+.dark document-chat .piary-a2ui,
+document-chat.dark .piary-a2ui {
+	color-scheme: dark;
+}
+/* The basic Slider sets its label and value apart with nothing between them,
+   so in a Row of sliders they run together. */
+document-chat .piary-a2ui .a2ui-slider-header {
+	gap: 0.75rem;
+	font-weight: 500;
+}
+document-chat .piary-a2ui .a2ui-slider-value {
+	font-variant-numeric: tabular-nums;
+	color: var(--muted-foreground);
+}
+
+/* Piary's components (src/components/views/a2ui-components.ts, a2ui-chart.ts).
+   A tile shares a Row with its neighbours evenly; a chart takes the width it
+   is given. */
+document-chat .piary-a2ui :is(piary-a2ui-stat, piary-a2ui-chart, piary-a2ui-table, piary-a2ui-compare, piary-a2ui-callout) {
+	display: block;
+	min-width: 0;
+}
+document-chat .piary-a2ui piary-a2ui-stat {
+	flex: 1 1 0;
+}
+document-chat .piary-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--card);
+}
+document-chat .piary-stat-label {
+	font-size: 0.8125rem;
+	color: var(--muted-foreground);
+}
+document-chat .piary-stat-value {
+	font-size: 1.75rem;
+	font-weight: 600;
+	line-height: 1.15;
+	letter-spacing: -0.01em;
+	font-variant-numeric: tabular-nums;
+	color: var(--card-foreground);
+}
+document-chat .piary-stat-delta {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+document-chat .piary-stat-note {
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+document-chat .piary-a2ui [data-tone="success"] {
+	--tone: var(--success);
+}
+document-chat .piary-a2ui [data-tone="destructive"] {
+	--tone: var(--destructive);
+}
+document-chat .piary-a2ui [data-tone="warning"] {
+	--tone: var(--warning);
+}
+document-chat .piary-a2ui [data-tone="info"] {
+	--tone: var(--info);
+}
+document-chat .piary-a2ui [data-tone="muted"] {
+	--tone: var(--muted-foreground);
+}
+document-chat .piary-stat-delta[data-tone] {
+	color: var(--tone);
+}
+
+/* Tables keep the global table rule (src/styles/utils/table.css); here they
+   are set in the sans with digits that line up. */
+document-chat .piary-table {
+	margin-top: 0;
+	font-size: 0.875rem;
+	font-variant-numeric: tabular-nums;
+}
+document-chat .piary-table [data-align="end"] {
+	text-align: right;
+}
+document-chat .piary-table-caption,
+document-chat .piary-chart-caption {
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+document-chat .piary-compare th[scope="row"] {
+	font-weight: 500;
+	border-bottom-width: var(--table-rule-width);
+}
+document-chat .piary-compare thead th {
+	vertical-align: bottom;
+}
+/* The matrix is set in the document's own weight, with no colour of its own:
+   the pick takes the accent, a value failing its must is struck through in the
+   muted tone, and a row's best is bold. */
+document-chat .piary-compare [data-pick] {
+	background: color-mix(in oklab, var(--accent-foreground) 6%, transparent);
+}
+document-chat .piary-compare-badge {
+	display: inline-block;
+	margin-left: 0.375rem;
+	padding: 0 0.4375rem;
+	border-radius: 999px;
+	font-size: 0.6875rem;
+	font-weight: 500;
+	line-height: 1.25rem;
+	vertical-align: 0.0625rem;
+	background: color-mix(in oklab, var(--accent-foreground) 12%, transparent);
+	color: var(--accent-foreground);
+}
+document-chat .piary-compare th[data-out] .piary-compare-name {
+	text-decoration: line-through;
+	color: var(--muted-foreground);
+}
+document-chat .piary-compare-fails {
+	display: block;
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--muted-foreground);
+}
+document-chat .piary-compare td[data-fails] {
+	text-decoration: line-through;
+	color: var(--muted-foreground);
+}
+document-chat .piary-compare td[data-best] {
+	font-weight: 600;
+}
+document-chat .piary-compare td[data-best]::after {
+	content: " · best";
+	font-size: 0.75em;
+	font-weight: 400;
+	color: var(--muted-foreground);
+}
+
+document-chat .piary-callout {
+	padding: 0.625rem 0.875rem;
+	border-left: 3px solid var(--tone);
+	border-radius: calc(var(--radius) - 4px);
+	background: color-mix(in oklab, var(--tone) 8%, transparent);
+}
+document-chat .piary-callout-title {
+	font-weight: 600;
+}
+
+document-chat .piary-chart {
+	margin: 0;
+}
+document-chat .piary-chart-title {
+	margin-bottom: 0.25rem;
+	font-weight: 600;
+}
+document-chat .piary-chart-plot {
+	width: 100%;
+	color: var(--foreground);
+}
+document-chat .piary-chart-plot svg {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+document-chat .piary-chart-failed {
+	font-size: 0.8125rem;
+	color: var(--destructive);
+}
+
+/* diff template: unified line diff of the edit tool's oldText/newText. */
+document-chat .doc-view-diff {
+	overflow-x: auto;
+}
+document-chat .doc-diff-file {
+	color: var(--muted-foreground);
+	margin-bottom: 0.125rem;
+}
+document-chat .doc-diff-line {
+	display: flex;
+}
+document-chat .doc-diff-gutter {
+	flex: none;
+	width: 1.25rem;
+	user-select: none;
+	color: var(--muted-foreground);
+}
+document-chat .doc-diff-text {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+document-chat .doc-diff-line.ins {
+	background: color-mix(in oklab, var(--success) 12%, transparent);
+}
+document-chat .doc-diff-line.ins .doc-diff-gutter {
+	color: var(--success);
+}
+document-chat .doc-diff-line.del {
+	background: color-mix(in oklab, var(--destructive) 9%, transparent);
+}
+document-chat .doc-diff-line.del .doc-diff-gutter {
+	color: var(--destructive);
+}
+
+/* file-tree template: native <details> nesting, first level open. */
+document-chat .doc-view-tree .doc-tree-dir {
+	padding-left: 0;
+}
+document-chat .doc-view-tree .doc-tree-dir > .doc-tree-dir,
+document-chat .doc-view-tree .doc-tree-dir > .doc-tree-file {
+	margin-left: 1.125rem;
+}
+document-chat .doc-view-tree summary {
+	cursor: pointer;
+	user-select: none;
+}
+document-chat .doc-view-tree summary:hover {
+	color: var(--accent-foreground);
+}
+document-chat .doc-tree-count {
+	margin-left: 0.375rem;
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+}
+
+/* table template: base look comes from utils/table.css; only local bits here.
+   A table is figures and words, read like a cell's table: in the sans, not the
+   machine's mono, and its text wraps to the column; only figures stay on one line. */
+document-chat .doc-view-table {
+	display: block; /* the table itself scrolls when still wider than the column */
+	font-family: var(--font-sans);
+	font-size: 0.875rem;
+	font-variant-numeric: tabular-nums;
+}
+document-chat .doc-view-table .num {
+	text-align: right;
+	white-space: nowrap;
+}
+
+/* cards template: search-shaped results. */
+document-chat .doc-card {
+	margin-bottom: 0.625rem;
+}
+document-chat .doc-card-title {
+	font-weight: 550;
+}
+document-chat a.doc-card-title {
+	color: var(--accent-foreground);
+	text-decoration: none;
+}
+document-chat a.doc-card-title:hover {
+	text-decoration: underline;
+}
+document-chat .doc-card-meta {
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+}
+document-chat .doc-card-snippet {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* matches template: grep-shaped output grouped by file. */
+document-chat .doc-match-file {
+	font-weight: 550;
+	color: var(--muted-foreground);
+}
+document-chat .doc-match-file + .doc-match-file,
+document-chat .doc-match-line + .doc-match-file {
+	margin-top: 0.375rem;
+}
+document-chat .doc-match-line {
+	display: flex;
+}
+document-chat .doc-match-gutter {
+	flex: none;
+	width: 2.5rem;
+	padding-right: 0.625rem;
+	text-align: right;
+	color: var(--muted-foreground);
+	user-select: none;
+}
+document-chat .doc-match-text {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+document-chat .doc-match-text mark {
+	background: color-mix(in oklab, var(--warning) 30%, transparent);
+	color: inherit;
+	border-radius: 2px;
+}
+
+/* properties template: key → value table for one small object. */
+document-chat .doc-prop-key {
+	color: var(--muted-foreground);
+	white-space: nowrap;
+}
+
+/* Streaming: a soft pulse on the label of the step being written RIGHT NOW —
+   `.doc-role-live`, which the decoration builder puts on exactly one label.
+   Pulsing every machine label instead (what this rule used to do) made a whole
+   turn's worth of finished steps breathe in unison: the animation then says
+   "a run is going" — which the bar already says — instead of "here, this step".
+   The pending you-label below the stream stays still — that spot is yours. */
+document-chat.doc-streaming .doc-role-live {
+	animation: doc-pulse 1.2s ease-in-out infinite;
+}
+
+/* The pending prompt keeps its YOU label while the reply streams, and keeps
+   it still (the pulse above is the machine's) — the writing spot has to look
+   like every other block opener, or a bare hairline reads as "wait". */
+
+@keyframes doc-pulse {
+	50% {
+		opacity: 0.35;
+	}
+}
+
+/* The bar floats over the document as an overlay chip, like the alerts —
+   the document scrolls under it instead of losing a full-width strip.
+   Which means clicks must pass through it: text scrolled under the pill is
+   still text, and a caret has to be placeable there. Only the controls
+   themselves take the pointer (same trick as .doc-overlays below). */
+.doc-bar {
+	pointer-events: none;
+	position: fixed;
+	top: 0.625rem;
+	left: 50%;
+	translate: -50% 0;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: nowrap;
+	white-space: nowrap;
+	gap: 0.75rem;
+	font-variant-numeric: tabular-nums;
+	width: fit-content;
+	/* one line, always: the pill may grow past the text column (--doc-measure);
+	   when the viewport is tighter than the content, the hint ellipsizes away
+	   first */
+	max-width: calc(100% - 2rem);
+	padding: 0.375rem 1rem;
+	background: var(--background);
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 10%, transparent);
+	font-size: 0.8125rem;
+	color: var(--muted-foreground);
+}
+
+.doc-bar .doc-bar-title {
+	font-weight: 600;
+	color: var(--foreground);
+}
+
+.doc-bar .doc-bar-hint {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: 0.8;
+}
+
+/* Model / effort pickers: quiet text until hovered, like the rest of the bar. */
+.doc-bar .doc-bar-select {
+	appearance: none;
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	background: none;
+	padding: 0.0625rem 0.5rem;
+	field-sizing: content; /* size to the picked value… */
+	max-width: 8rem; /* …but capped: long model ids ellipsize instead of stretching the bar */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex-shrink: 0;
+	font: inherit;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+.doc-bar .doc-bar-select:hover {
+	color: var(--foreground);
+}
+.doc-bar .doc-bar-stats {
+	flex-shrink: 0;
+}
+
+/* Live mode chip (step 13): the session runs in this mode right now — read
+   from the transcript's state entries, with finalize/exit close at hand. */
+.doc-bar .doc-mode-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.0625rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	color: var(--accent-foreground);
+}
+.doc-bar .doc-mode-chip button {
+	border: none;
+	background: none;
+	padding: 0;
+	font: inherit;
+	font-size: 0.6875rem;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+.doc-bar .doc-mode-chip button:hover {
+	color: var(--accent-foreground);
+}
+
+/* Context meter: the fill is how full the window sits; ticks mark 50/70/85% —
+   full sharpness · complex reasoning dulls · meaningfully degraded. */
+.doc-bar .doc-meter {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex-shrink: 0;
+}
+.doc-bar .doc-meter-track {
+	position: relative;
+	width: 9rem;
+	height: 0.5rem;
+	border-radius: 999px;
+	background: var(--muted);
+	overflow: hidden;
+}
+.doc-bar .doc-meter-fill {
+	position: absolute;
+	inset: 0 auto 0 0;
+	background: var(--foreground);
+	transition: width 0.3s;
+}
+.doc-bar .doc-meter-fill.warn {
+	background: var(--warning);
+}
+.doc-bar .doc-meter-fill.over {
+	background: var(--destructive);
+}
+.doc-bar .doc-meter-tick {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: var(--muted-foreground);
+	opacity: 0.5;
+}
+
+/* Alerts float below the bar as overlay chips — the document scrolls under them. */
+.doc-overlays {
+	position: fixed;
+	top: 3.5rem;
+	left: 50%;
+	translate: -50% 0;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	width: min(var(--doc-measure), calc(100% - 2rem));
+	pointer-events: none;
+}
+.doc-bar button,
+.doc-bar select,
+.doc-bar .doc-meter,
+.doc-bar .doc-mode-chip {
+	pointer-events: auto;
+}
+
+.doc-alert {
+	pointer-events: auto;
+	max-width: var(--doc-measure);
+	padding: 0.625rem 1rem;
+	background: var(--background);
+	box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 10%, transparent);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	font-size: 0.8125rem;
+	line-height: 1.25rem;
+}
+.doc-alert.offline {
+	border-color: color-mix(in oklab, var(--destructive) 35%, var(--border));
+	background: color-mix(in oklab, var(--destructive) 8%, var(--background));
+	color: var(--destructive);
+}
+.doc-alert.recovered {
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+.doc-alert.diverged {
+	border-color: color-mix(in oklab, var(--destructive) 35%, var(--border));
+	background: color-mix(in oklab, var(--destructive) 8%, var(--background));
+	color: var(--destructive);
+}
+/* An extension's notify (plan mode speaks through this). */
+.doc-alert.notice {
+	background: var(--muted);
+	color: var(--foreground);
+}
+.doc-alert.notice.warning,
+.doc-alert.notice.error {
+	border-color: color-mix(in oklab, var(--destructive) 35%, var(--border));
+	background: color-mix(in oklab, var(--destructive) 8%, var(--background));
+	color: var(--destructive);
+}
+.doc-alert.mismatch {
+	border-color: color-mix(in oklab, var(--destructive) 35%, var(--border));
+	background: color-mix(in oklab, var(--destructive) 8%, var(--background));
+	color: var(--destructive);
+}
+.doc-alert-action {
+	margin-left: 0.5rem;
+	padding: 0.125rem 0.5rem;
+	border: 1px solid currentColor;
+	border-radius: var(--radius);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 0.75rem;
+	cursor: pointer;
+}
+
+/* The two `/` surfaces — the creation menu and the docs card — are one style,
+   taken from the menu's original metrics: CodeMirror's own 1px/3px rows at
+   line-height 1.2, phrase 0.625rem after the token. The card is that row plus
+   the lines it had no space for; nothing else differs. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete {
+	border: 1px solid var(--border);
+	/* Not var(--radius) (10px): that is the popover radius of a different design
+	   system. In-document chrome rounds by 2–4px. */
+	border-radius: 4px;
+	background: var(--popover);
+	color: var(--popover-foreground);
+	box-shadow: 0 4px 16px oklch(0 0 0 / 0.12);
+	font-family: var(--font-sans);
+	font-size: 0.8125rem;
+}
+/* !important, deliberately: CodeMirror's base theme sets `font-family:
+   monospace` and `padding: 1px 3px` on the list, and buildTheme prefixes those
+   rules with a class it generates at runtime (`.ϼ1 .cm-tooltip.cm-tooltip-
+   autocomplete > ul`, view/dist/index.js:6791). We cannot name that class, so
+   no selector here can reliably outrank it — without this the menu renders as
+   code next to a prose card. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete > ul {
+	font-family: var(--font-sans) !important;
+	/* The base theme lets the list grow to 700px, and a long description would
+	   take it all: the card beside the list then has nowhere to go but over
+	   it. A row cuts its phrase with an ellipsis instead. */
+	max-width: min(24rem, 80vw) !important;
+}
+document-chat .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+/* Same typography as a docs card head: the `/name` is the identity. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete .cm-completionLabel {
+	font-family: var(--font-mono);
+	font-weight: 600;
+}
+document-chat .cm-tooltip.cm-tooltip-autocomplete .cm-completionDetail {
+	margin-left: 0.625rem;
+	color: var(--muted-foreground);
+	font-style: normal;
+	font-size: 0.75rem;
+}
+/* On the accent row, the muted phrase would drop out — fade from the row's
+   own foreground instead, the same relation the card keeps to its text. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionDetail {
+	color: color-mix(in oklab, currentColor 70%, transparent);
+}
+
+/* A row is two lines: the name over what it does, an icon before both and the
+   chord after. The grid's middle column takes the width, so a long phrase is
+   cut with an ellipsis rather than widening the menu. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete > ul > li.doc-slash-row {
+	display: grid;
+	grid-template-columns: 1.125rem minmax(0, 1fr) auto;
+	column-gap: 0.5rem;
+	align-items: center;
+	padding: 0.3125rem 0.625rem;
+	line-height: 1.3;
+}
+/* !important for the reason the font above has it: the base theme caps the
+   list at 10em under a class no selector here can name, which is four of
+   these rows. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete > ul {
+	max-height: 21rem !important;
+	width: 24rem;
+}
+document-chat .doc-slash-icon {
+	grid-row: 1 / span 2;
+	display: flex;
+	color: var(--muted-foreground);
+}
+document-chat li.doc-slash-row .cm-completionLabel {
+	grid-column: 2;
+	grid-row: 1;
+}
+document-chat .cm-tooltip.cm-tooltip-autocomplete li.doc-slash-row .cm-completionDetail {
+	grid-column: 2;
+	grid-row: 2;
+	margin-left: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+document-chat .doc-slash-keys {
+	grid-column: 3;
+	grid-row: 1 / span 2;
+	font-family: var(--font-sans);
+	font-size: 0.6875rem;
+	color: var(--muted-foreground);
+	border: 1px solid var(--border);
+	border-radius: 3px;
+	padding: 0 0.3125rem;
+}
+document-chat li.doc-slash-row[aria-selected] :is(.doc-slash-icon, .doc-slash-keys) {
+	color: inherit;
+}
+/* Who offers the rows under it. The same voice as a block's role label. */
+document-chat .cm-tooltip.cm-tooltip-autocomplete completion-section {
+	padding: 0.375rem 0.625rem 0.125rem;
+	border-bottom: none;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+	opacity: 1;
+}
+
+/* Command docs: the hover card over a `/name` already written. */
+document-chat .cm-tooltip:has(> .doc-command-doc) {
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	background: var(--popover);
+	color: var(--popover-foreground);
+	box-shadow: 0 4px 16px oklch(0 0 0 / 0.12);
+	font-family: var(--font-sans);
+	font-size: 0.8125rem;
+	max-width: 28rem;
+}
+/* Card = one list row, at the list's own metrics (CodeMirror's base theme:
+   padding 1px 3px, line-height 1.2 — left to it, restated only here). */
+.doc-command-doc {
+	padding: 1px 3px;
+	line-height: 1.2;
+}
+/* Inline-level, so the description joins it on the row's single line. */
+.doc-command-doc-head {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	font-weight: 600;
+}
+.doc-command-doc-head code {
+	font-family: var(--font-mono);
+}
+.doc-command-doc-args,
+.doc-command-doc-foot {
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+/* Exactly the menu's .cm-completionDetail: inline, 0.625rem after the token. */
+.doc-command-doc-desc {
+	display: inline;
+	margin: 0 0 0 0.625rem;
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+}
+.doc-command-doc-foot {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 2px;
+}
+.doc-command-doc-badge {
+	color: var(--muted-foreground);
+}
+
+/* Block-operations popover (label click). Fixed at the label's corner. */
+/* Extension manager: the session's extension set, as an overlay under the bar. */
+.doc-ext-menu {
+	position: fixed;
+	top: 3.25rem;
+	left: 50%;
+	translate: -50% 0;
+	z-index: 30;
+	min-width: 20rem;
+	max-width: min(28rem, calc(100% - 2rem));
+	max-height: 60vh;
+	overflow-y: auto;
+	padding: 0.375rem;
+	background: var(--background);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	box-shadow: 0 8px 24px color-mix(in oklab, var(--foreground) 12%, transparent);
+	font-size: 0.8125rem;
+}
+.doc-ext-menu .doc-ext-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.25rem 0.5rem 0.375rem;
+	font-weight: 600;
+	color: var(--foreground);
+}
+.doc-ext-menu .doc-ext-head span {
+	font-weight: 400;
+	font-size: 0.75rem;
+	color: var(--accent-foreground);
+}
+.doc-ext-menu .doc-ext-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.3125rem 0.5rem;
+	border-radius: calc(var(--radius) - 2px);
+	cursor: pointer;
+}
+.doc-ext-menu .doc-ext-row:hover {
+	background: var(--accent);
+}
+.doc-ext-menu .doc-ext-row.busy {
+	opacity: 0.5;
+	cursor: progress;
+}
+.doc-ext-menu .doc-ext-row input[disabled] {
+	cursor: not-allowed;
+}
+.doc-ext-menu .doc-ext-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.doc-ext-menu .doc-ext-scope {
+	flex-shrink: 0;
+	font-size: 0.6875rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+	opacity: 0.8;
+}
+.doc-ext-menu .doc-ext-empty,
+.doc-ext-menu .doc-ext-foot {
+	padding: 0.375rem 0.5rem;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+.doc-ext-menu .doc-ext-foot {
+	border-top: 1px solid var(--border);
+	margin-top: 0.25rem;
+}
+
+.doc-menu-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 30;
+}
+.doc-block-menu {
+	position: fixed;
+	z-index: 31;
+	display: flex;
+	flex-direction: column;
+	/* A popover is anchored at a click point, so one opened near the bottom of
+	   the window ran off it. The horizontal clamp is a `min()` on the inline
+	   `left`; this is the vertical half, and it holds however many items the
+	   menu grows. */
+	max-height: min(24rem, calc(100vh - 2rem));
+	overflow-y: auto;
+	min-width: 14rem;
+	padding: 0.25rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--popover);
+	color: var(--popover-foreground);
+	box-shadow: 0 4px 16px oklch(0 0 0 / 0.12);
+	font-size: 0.8125rem;
+}
+.doc-block-menu button {
+	display: block;
+	width: 100%;
+	padding: 0.375rem 0.625rem;
+	border: none;
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.doc-block-menu button:hover:not([disabled]),
+.doc-block-menu button:focus-visible {
+	background: var(--accent);
+	color: var(--accent-foreground);
+	outline: none;
+}
+.doc-block-menu button[disabled] {
+	color: var(--muted-foreground);
+	opacity: 0.6;
+	cursor: default;
+}
+.doc-block-menu .doc-block-menu-rerun {
+	display: flex;
+	gap: 0.375rem;
+	align-items: center;
+	padding: 0.375rem 0.625rem;
+}
+.doc-block-menu .doc-block-menu-rerun select {
+	flex: 1;
+	min-width: 0;
+	border: 1px solid var(--border);
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 0.75rem;
+	padding: 0.125rem 0.25rem;
+}
+.doc-block-menu .doc-block-menu-rerun button {
+	width: auto;
+	border: 1px solid var(--border);
+	padding: 0.125rem 0.5rem;
+	font-size: 0.75rem;
+}
+
+/* The run badge, the first thing in the answer block its turn writes (a block
+   widget — it writes no document text): what the run is doing, then its max
+   time. Inset like the block's own segments and crossed by its rule, in the
+   labels' small mono. Opening the block, it takes the block's top gap from the
+   line under it, so badge and block read as one. */
+.doc-run-badge {
+	display: flex;
+	align-items: baseline;
+	gap: 0.75rem;
+	max-width: var(--doc-measure);
+	padding: 0.25rem 0 0 calc(1.125rem + var(--doc-rule-outdent));
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--muted-foreground);
+}
+.doc-run-budget {
+	opacity: 0.7;
+}
+document-chat .doc-run-badge-first {
+	padding-top: var(--doc-block-gap);
+}
+document-chat .doc-run-badge-first::before {
+	top: var(--doc-block-gap);
+}
+document-chat .doc-run-badge-first + .cm-line.doc-block-first {
+	padding-top: 0;
+}
+document-chat .doc-run-badge-first + .cm-line.doc-block-first::before {
+	top: 0;
+}
+
+/* An extension's dialog, in the buffer under the run that asked it (a block
+   widget — it writes no document text). Not a card: it is a segment of the
+   block that asked, so it takes the block's own left inset — and no rule of
+   its own: the block it belongs to already draws one. */
+.doc-ui-request {
+	max-width: var(--doc-measure);
+	margin-top: var(--doc-seg-gap);
+	padding: 0.25rem 0 0.25rem calc(1.125rem + var(--doc-rule-outdent));
+	/* No font-size: the dialog reads at the document's own size and face. */
+	line-height: 1.5;
+	text-align: left;
+}
+.doc-ui-request-title {
+	white-space: pre-wrap;
+	font-weight: 550;
+}
+.doc-ui-request-message {
+	margin-top: 0.125rem;
+	white-space: pre-wrap;
+	color: var(--muted-foreground);
+}
+.doc-ui-request-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	align-items: center;
+	margin-top: 0.25rem;
+}
+/* Text affordances, like the fold toggles — quiet until hovered. */
+.doc-ui-request-row button {
+	text-align: left;
+	padding: 0.0625rem 0.375rem;
+	margin-left: -0.375rem;
+	border: none;
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: var(--muted-foreground);
+	font: inherit;
+	cursor: pointer;
+}
+.doc-ui-request-row button:hover,
+.doc-ui-request-row button:focus-visible {
+	background: var(--accent);
+	color: var(--accent-foreground);
+	outline: none;
+}
+/* Its own line under the field (the row wraps), and the destructive voice —
+   cancel throws the answer away. */
+.doc-ui-request-cancel {
+	flex-basis: 100%;
+	margin-left: -0.375rem;
+	font-size: 0.75rem;
+	color: var(--destructive);
+}
+.doc-ui-request-row .doc-ui-request-cancel:hover,
+.doc-ui-request-row .doc-ui-request-cancel:focus-visible {
+	background: color-mix(in oklab, var(--destructive) 10%, transparent);
+	color: var(--destructive);
+}
+/* The app's one text-input idiom. */
+.doc-ui-request-input,
+.doc-ui-request-editor {
+	flex: 1;
+	min-width: 14rem;
+	padding: 0.375rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: calc(var(--radius) - 2px);
+	background: var(--background);
+	color: inherit;
+	font: inherit;
+}
+.doc-ui-request-input:focus,
+.doc-ui-request-editor:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--ring);
+}
+.doc-ui-request-editor {
+	resize: vertical;
+	line-height: 1.5;
+}
+
+/* The sign-in panel (ADR 0034): the same dialog voice, with a searchable list
+   of the ways in pi offers. The list scrolls rather than growing the page —
+   pi offers dozens of providers. */
+.doc-login-search {
+	margin-top: 0.375rem;
+	width: 100%;
+	box-sizing: border-box;
+}
+.doc-login-list {
+	display: flex;
+	flex-direction: column;
+	max-height: 16rem;
+	overflow-y: auto;
+	margin-top: 0.375rem;
+}
+.doc-login-offer {
+	display: flex;
+	gap: 0.5rem;
+	align-items: baseline;
+	padding: 0.25rem 0.375rem;
+	margin-left: -0.375rem;
+	border: none;
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.doc-login-offer:hover,
+.doc-login-offer:focus-visible {
+	background: var(--accent);
+	color: var(--accent-foreground);
+	outline: none;
+}
+.doc-login-method,
+.doc-login-status {
+	color: var(--muted-foreground);
+	font-size: 0.875em;
+}
+.doc-login-status {
+	margin-left: auto;
+}
+.doc-login-instruction {
+	margin-top: 0.25rem;
+}
+/* A device code is read and typed elsewhere: large, and selectable whole. */
+.doc-login-code {
+	margin-top: 0.25rem;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 1.25em;
+	letter-spacing: 0.1em;
+	user-select: all;
+}
+
+/* The rich card for a pending plan-mode question: header chip + progress,
+   one button per option (label over its muted description). */
+.doc-ui-question-head {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 0.375rem;
+}
+/* The header reads as a role label, the same voice as a block head. */
+.doc-ui-question-chip {
+	color: var(--accent-foreground);
+	font-size: 0.625rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.doc-ui-question-progress {
+	color: var(--muted-foreground);
+	font-size: 0.6875rem;
+}
+.doc-ui-question-options {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	margin-top: 0.375rem;
+}
+/* Each option is its own hit target — outlined so the boundaries are read,
+   not inferred from spacing. */
+.doc-ui-question-option {
+	display: flex;
+	flex-direction: column;
+	gap: 0.0625rem;
+	text-align: left;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 0.8125rem;
+	cursor: pointer;
+}
+.doc-ui-question-option:hover,
+.doc-ui-question-option:focus-visible {
+	border-color: var(--accent-foreground);
+	background: var(--accent);
+	color: var(--accent-foreground);
+	outline: none;
+}
+.doc-ui-question-label {
+	font-weight: 550;
+}
+.doc-ui-question-desc {
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+}
+.doc-ui-question-option:hover .doc-ui-question-desc,
+.doc-ui-question-option:focus-visible .doc-ui-question-desc {
+	color: inherit;
+}
+.doc-ui-question-option.other .doc-ui-question-label {
+	font-weight: inherit;
+	color: var(--muted-foreground);
+}
+
+/* subsession template: the sub-agent block's link widget — a child session
+   with its own status, document and stop control. */
+document-chat .doc-subsession-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+document-chat .doc-subsession-status {
+	font-size: 0.6875rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+document-chat .doc-subsession.running .doc-subsession-status {
+	color: var(--accent-foreground);
+	animation: pulse 1.2s ease-in-out infinite;
+}
+document-chat .doc-subsession.error .doc-subsession-status {
+	color: var(--destructive);
+}
+document-chat .doc-subsession-title {
+	min-width: 0;
+	color: var(--foreground);
+	white-space: pre-wrap;
+}
+document-chat .doc-subsession-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 0.25rem;
+}
+document-chat .doc-subsession-actions button {
+	padding: 0 0.375rem;
+	border: 1px solid var(--border);
+	border-radius: calc(var(--radius) - 2px);
+	background: transparent;
+	color: var(--muted-foreground);
+	font: inherit;
+	font-size: 0.75rem;
+	cursor: pointer;
+}
+document-chat .doc-subsession-actions button:hover {
+	color: var(--accent-foreground);
+	border-color: var(--accent-foreground);
+}
+document-chat .doc-subsession-sid {
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+	opacity: 0.7;
+}
+
+/* Live-rendered GFM table (markdown-live) — raw text returns on caret entry. */
+document-chat .doc-md-table {
+	overflow-x: auto;
+	/* Block widgets sit outside .cm-line, so they miss its left inset —
+	   repeat it here or the table hangs left of the copy. */
+	padding: 2px 0 2px calc(1.125rem + var(--doc-rule-outdent));
+}
+document-chat .doc-md-table table {
+	margin-top: 0; /* wrapper owns the gap */
+}
+
+/* Live-rendered markdown extras (markdown-live). */
+/* Hidden markdown syntax. Collapsed with CSS rather than a replace
+   decoration: a replace costs two cm-widgetBuffer <img> elements per range
+   that the browser lays out and measures on every update. Zero font-size
+   keeps the text in the layout tree, so coordsAtPos still resolves. */
+document-chat .doc-md-hide {
+	font-size: 0;
+	letter-spacing: 0;
+}
+
+/* A prose code block away from the caret: its two fence lines take no height
+   (no caret can be on one: touching the block brings them back), and the
+   code between them is the block a reader sees, named by its language. */
+document-chat .cm-line.doc-md-fence {
+	font-size: 0;
+	line-height: 0;
+	overflow: hidden;
+}
+document-chat .cm-line.doc-md-code {
+	position: relative;
+	background: color-mix(in oklch, var(--muted) 45%, transparent);
+}
+document-chat .cm-line.doc-md-code-first {
+	border-top-right-radius: 4px;
+}
+document-chat .cm-line.doc-md-code-last {
+	border-bottom-right-radius: 4px;
+}
+document-chat .cm-line.doc-md-code[data-lang]::after {
+	content: attr(data-lang);
+	position: absolute;
+	top: 0;
+	right: 0.5em;
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	color: var(--muted-foreground);
+	pointer-events: none;
+}
+
+document-chat .doc-md-bullet {
+	color: var(--muted-foreground);
+}
+document-chat .doc-md-task {
+	accent-color: var(--primary);
+	cursor: pointer;
+	margin: 0 0.35em 0 0;
+	vertical-align: middle;
+}
+document-chat .doc-md-quote {
+	border-left: 2px solid var(--border);
+	padding-left: 0.75em;
+	color: var(--muted-foreground);
+}
+/* An expanded snippet reads as a block inside your own prompt. */
+document-chat .cm-line.doc-line-note.doc-md-quote,
+document-chat .cm-line.doc-line-you.doc-md-quote {
+	background: color-mix(in oklch, var(--muted) 45%, transparent);
+}
+
+/* ---------- attachments ---------- */
+
+/* An attachment's marker reads as its mime type — "image/png" says what the
+   model will actually receive, where "file" would say nothing. Quiet, like
+   every other role label. */
+document-chat .doc-line-file {
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.85em;
+}
+
+document-chat .doc-role.doc-role-file {
+	color: var(--muted-foreground);
+}
+
+/* The whole page is the drop target: aiming at a particular spot is a demand
+   the gesture cannot meet, and the segment lands on the prompt you are in
+   regardless. */
+document-chat.doc-drop .cm-editor {
+	outline: 2px dashed var(--accent-foreground);
+	outline-offset: -6px;
+	border-radius: var(--radius);
+}
+
+document-chat .doc-md-img {
+	display: inline-block;
+	max-width: 100%;
+	max-height: 320px;
+	border-radius: 4px;
+	vertical-align: bottom;
+}
+document-chat .doc-md-hr {
+	display: block;
+	border-top: 1px solid var(--border);
+	margin: 0.6em 0;
+}
+
+/* Edit-in-place table cells. */
+document-chat .doc-md-table th[contenteditable],
+document-chat .doc-md-table td[contenteditable] {
+	cursor: text;
+	min-width: 3ch;
+}
+/* A cell's inline markdown, drawn as the prose draws it (mdHighlight). */
+document-chat .doc-md-table :is(th, td) strong {
+	font-weight: 650;
+}
+document-chat .doc-md-table :is(th, td) code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+}
+document-chat .doc-md-cell-link {
+	color: var(--accent-foreground);
+}
+document-chat .doc-md-table th:focus,
+document-chat .doc-md-table td:focus {
+	outline: 1.5px solid var(--primary);
+	outline-offset: -1.5px;
+}
+
+/* Cell chrome (notebook gestures): a handle you drag a cell by and a `+` in
+   the gap between two. Both are absolutely positioned into space the layout
+   already reserves — the left inset every line carries, and the block gap —
+   so revealing them reflows nothing and a page with the mouse away from it
+   looks exactly as it did before any of this existed. */
+/* Opacity is the show/hide switch and NOTHING else; the two visible weights are
+   colors. `--muted-foreground` is only 4.73:1 on white at full strength, so there
+   is no headroom to spend on transparency — the 0.3 this used to reveal at
+   measured 1.47:1, against the 3:1 a non-text control has to clear, and the
+   app's own 0.55 house style would still only reach 2.12:1. Mixing toward
+   `--background` buys the same quietness at a contrast you can actually pick a
+   number for, and it inverts correctly in dark mode for free. */
+document-chat .doc-cell-handle {
+	position: absolute;
+	left: calc(-1 * (1.125rem + var(--doc-rule-outdent)) - 0.5rem);
+	width: 1.25rem;
+	text-align: center;
+	/* 3.30:1 light, 4.92:1 dark. */
+	color: color-mix(in oklch, var(--muted-foreground) 80%, var(--background));
+	line-height: inherit;
+	cursor: grab;
+	opacity: 0;
+	transition:
+		opacity 120ms ease,
+		color 120ms ease;
+	user-select: none;
+}
+
+/* The icon rides the text's line box rather than restructuring the span, so the
+   handle stays centred against prose, .doc-line-pi and .doc-line-thinking alike
+   — three different line-heights, one rule. */
+document-chat .doc-cell-handle .icon {
+	vertical-align: middle;
+}
+
+/* Only the block under the pointer — `nearChrome` in DocumentChat.ts marks it.
+   The page-wide `.cm-content:hover` this replaces lit every handle in the
+   document at once, so the margin filled with identical marks and none of them
+   pointed at anything. */
+document-chat .doc-cell-handle.doc-near {
+	opacity: 1;
+}
+
+/* The one you are pointing at leads. Every other handle on the page stays quiet,
+   so the margin reads as one mark and a row of echoes, not fifteen equal ticks.
+   A handle sits on its block's MARKER line, and `:hover` propagates from an
+   absolutely-positioned descendant that overflows its box — so this covers both
+   the handle itself and the approach to it, which is the whole path the pointer
+   ever takes. Brightening from anywhere in a multi-line block would need a JS
+   mouseover→block-extent pass for no gesture that isn't already served. */
+document-chat .cm-line:hover .doc-cell-handle,
+document-chat .doc-cell:hover .doc-cell-handle,
+document-chat .doc-cell-handle:hover {
+	color: var(--foreground);
+}
+
+document-chat .doc-cell-handle:active {
+	cursor: grabbing;
+}
+
+document-chat .doc-cell-gap {
+	position: relative;
+	height: 0;
+	/* How tall the gap BELOW this row actually is — the `+`, the drop band and
+	   the drop line all measure themselves against it, and all three used to
+	   assume `--doc-block-gap` outright. That holds when what follows is a line
+	   of text, which carries `doc-block-first`'s padding. */
+	--doc-gap-height: var(--doc-block-gap);
+}
+
+/* …and does not hold when what follows is an artifact. A frame is a block
+   WIDGET, not a `.cm-line`, so no line padding applies to it: its whole top gap
+   is `.doc-cell`'s own padding, 0.75rem against the 2.5rem the `+` was centring
+   itself in. The `+` landed 10px below the seam, the handle starts at 12px, and
+   in the same 20px-wide left channel they sat on top of each other. */
+document-chat .doc-cell-gap-frame {
+	--doc-gap-height: calc(0.25rem + var(--doc-seg-gap));
+}
+
+/* …and does not hold for a cell that opens only a SEGMENT either — a follow-up
+   prompt, a note continuing the block above. Those take `doc-seg-first`'s
+   0.5rem, not `doc-block-first`'s 2.5rem, so the `+` was centring itself in
+   five times the room it had and landing squarely on that cell's own handle:
+   the two rendered as one unreadable blob. */
+document-chat .doc-cell-gap-seg {
+	--doc-gap-height: var(--doc-seg-gap);
+}
+
+document-chat .doc-cell-gap-plus {
+	position: absolute;
+	/* The widget sits immediately above a cell; the gap below it is that
+	   block's padding-top. Centre a 1.25rem button in that gap.
+	   A gap shorter than the button cannot centre it clear of anything — see
+	   the frame override below, which centres on the seam instead. */
+	top: calc(var(--doc-gap-height) / 2 - 0.625rem);
+	left: 0;
+	width: 1.25rem;
+	height: 1.25rem;
+	margin-left: calc(-1 * (1.125rem + var(--doc-rule-outdent)) - 0.5rem);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	/* Same two weights as the handle, for the same reason. */
+	color: color-mix(in oklch, var(--muted-foreground) 80%, var(--background));
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity 120ms ease,
+		color 120ms ease,
+		background 120ms ease;
+	user-select: none;
+}
+
+/* A 0.75rem gap cannot hold a 1.25rem button clear of anything, so centring in
+   it is not the answer for a frame — centre on the SEAM instead. The button then
+   spans 10px above the boundary to 10px below it, and the artifact's own handle
+   starts at 12px: they no longer share any pixel, and the `+` reads as what it
+   is, the insertion point between two blocks. */
+document-chat .doc-cell-gap-frame .doc-cell-gap-plus {
+	top: -0.625rem;
+}
+
+/* A 0.5rem gap cannot hold the button clear of anything either, and unlike a
+   frame there is no room to straddle the seam: a continuation's handle starts
+   8px below it, so anything centred there still overlaps. The `+` hangs
+   entirely ABOVE the boundary instead — which is what it means anyway, the
+   point you insert at, and it leaves the handle the whole gap to itself. */
+document-chat .doc-cell-gap-seg .doc-cell-gap-plus {
+	top: -1.25rem;
+}
+
+/* The gaps that BOUND the near block: insert before it, insert after it. */
+document-chat .doc-cell-gap.doc-near .doc-cell-gap-plus {
+	opacity: 1;
+}
+
+document-chat .doc-cell-gap-plus:hover {
+	color: var(--foreground);
+	background: var(--muted);
+}
+
+/* The drop target: a band across the whole gap, inert until a cell is actually
+   in flight. Zero-height rows are unhittable with a real pointer — the `+`
+   alone was a 20px circle to aim at. */
+/* Never hit-tested by the browser — the dragging handle holds pointer capture
+   and measures these bands itself. It exists so "which gap is the pointer
+   nearest" has a real rectangle to answer with. */
+document-chat .doc-cell-gap-zone {
+	position: absolute;
+	/* The row renders at the boundary; the gap is the following block's
+	   padding-top, so it runs downward from here — same direction as the `+`. */
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--doc-gap-height);
+	pointer-events: none;
+}
+
+/* While a cell is in flight the caret is not the point: keep the text from
+   showing an I-beam and the gaps' `+` from competing for the pointer. */
+document-chat.doc-cell-dragging .cm-content {
+	cursor: grabbing;
+}
+
+document-chat.doc-cell-dragging .doc-cell-gap-plus {
+	pointer-events: none;
+}
+
+/* The drop line a dragged cell lands on. */
+document-chat .doc-cell-gap-over::after {
+	content: "";
+	position: absolute;
+	top: calc(var(--doc-gap-height) / 2 - 1px);
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: var(--accent-foreground);
+	border-radius: 2px;
+}
+
+/* Section labels inside a cell menu — the menu groups what a cell IS (its
+   mode) apart from what to do with it. */
+document-chat + .doc-block-menu .doc-menu-label,
+.doc-block-menu .doc-menu-label {
+	padding: 0.35rem 0.6rem 0.15rem;
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+	opacity: 0.7;
+	user-select: none;
+}
+
+/* A row that takes something away. Quiet until you are on it — the menu is
+   navigated with arrow keys, so a permanently red row would be the loudest
+   thing in a list you are only passing through. */
+.doc-block-menu button.doc-menu-destructive:hover:not([disabled]),
+.doc-block-menu button.doc-menu-destructive:focus-visible {
+	background: color-mix(in oklch, var(--destructive) 12%, transparent);
+	color: var(--destructive);
+}
+
+/* What a prompt CARRIES besides your words — a quoted selection, the artifact
+   it is about, the widget readings taken at send time. Each is machine work
+   standing in for something you can expand and read, so each is a fold line
+   like every other one, not a pill of its own kind. `.doc-fold` supplies the
+   hairline, the label, the tail; only two things differ.
+
+   These rows sit directly under their own `you` label, inside one segment —
+   not between segments — so they do not take the inter-segment gap. Adjacent
+   ones then fall to `.doc-fold + .doc-fold` and read as one strip (the blank
+   line between them in the text is collapsed for exactly this). */
+document-chat .doc-fold.doc-fold-prefix {
+	padding-top: 0.125rem;
+}
+
+/* An artifact scope says what the prompt is ABOUT; the other two are context it
+   carried. That is the one distinction worth a tint, and it goes on the label
+   where the artifact's name now lives. */
+document-chat .doc-fold-artifact .doc-role {
+	color: var(--accent-foreground);
+}
+
+/* A provider row's warning, on a line of its own under the name. */
+.doc-login-offer {
+	flex-wrap: wrap;
+}
+.doc-login-note {
+	flex-basis: 100%;
+	color: var(--muted-foreground);
+	font-size: 0.8125em;
+	white-space: normal;
+}
+
+/* What the agent said without being asked (`pi:aside`): set apart from the
+   answer above it, and marked as unasked by its label. */
+document-chat .cm-line.doc-line-aside {
+	border-left: 2px dashed var(--border);
+	padding-left: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+document-chat .doc-aside-dismiss {
+	margin-left: 0.75rem;
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	background: var(--background);
+	padding: 0 0.5rem;
+	font: inherit;
+	font-size: 0.6875rem;
+	text-transform: none;
+	letter-spacing: 0;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+
+document-chat .doc-aside-dismiss:hover {
+	color: var(--foreground);
+}

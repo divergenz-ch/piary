@@ -1,0 +1,24 @@
+// The editor's entry point, and nothing else's: `pnpm build` and `pnpm typecheck`
+// name their configs with `-p`, and never read this one.
+//
+// tsserver (what an IDE runs to show TypeScript errors) has no `-p`. It finds a
+// file's project by walking up to the nearest file named exactly `tsconfig.json`,
+// so the real configs beside this one are invisible to it unless listed here. This
+// file owns no file itself (`files`/`include` empty); tsserver opens each file in
+// the first referenced project that includes it. Order matters where the scopes
+// overlap: `src/` resolves to the build config, as it is built.
+//
+// `extends` is for the tools that read the nearest `tsconfig.json` for compiler
+// options rather than a project — Vite and esbuild take `experimentalDecorators` and
+// `useDefineForClassFields` from here, and the Lit components need both.
+{
+	"extends": "./tsconfig.build.json",
+	"files": [],
+	"include": [],
+	"references": [
+		{ "path": "./tsconfig.build.json" },
+		{ "path": "./tsconfig.app.json" },
+		{ "path": "./tsconfig.node.json" },
+		{ "path": "./tsconfig.app-e2e.json" }
+	]
+}

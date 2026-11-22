@@ -1,0 +1,14 @@
+{
+	"title": "[AI DRAFT] Writing that belongs in the document is not written to a file",
+	"tags": ["AI DRAFT"],
+	"job": "explain",
+	"canvas": [],
+	"rubric": [
+		"The poem is the answer itself, four lines",
+		"No file is created for it"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write", "bash"] },
+		"maxWords": 60
+	}
+}

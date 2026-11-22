@@ -1,0 +1,124 @@
+/* The Import and Export windows (`import-window.ts`, `export-window.ts`):
+   short forms in the canvas's own type and tokens, like the Preferences
+   window. */
+body {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	padding: 1.25rem 1.5rem;
+	font-size: 0.875rem;
+	/* A form, not a document: nothing in it is text to select. */
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: default;
+}
+
+main {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+/* The group that takes the room the others leave. */
+.transfer-grow {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.transfer-group + .transfer-group {
+	margin-top: 1.25rem;
+}
+
+.transfer-group h2 {
+	margin-bottom: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+.transfer-hint {
+	margin-bottom: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+/* The conversations to choose among: the one part that grows, and scrolls. */
+.transfer-list {
+	flex: 1;
+	min-height: 4rem;
+	overflow-y: auto;
+	border-top: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
+}
+
+.transfer-row {
+	display: flex;
+	align-items: baseline;
+	gap: 0.625rem;
+	padding: 0.4375rem 0;
+}
+
+.transfer-list .transfer-row + .transfer-row {
+	border-top: 1px solid var(--border);
+}
+
+.transfer-row input {
+	/* On the label's baseline rather than its box. */
+	transform: translateY(0.125rem);
+	accent-color: var(--info);
+}
+
+.transfer-id {
+	margin-left: auto;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+.transfer-actions {
+	display: flex;
+	gap: 0.5rem;
+	margin-top: 1.25rem;
+}
+
+.transfer-actions button {
+	border: 1px solid var(--border);
+	border-radius: 0.375rem;
+	background: var(--background);
+	padding: 0.375rem 0.875rem;
+	font: inherit;
+	color: var(--foreground);
+	cursor: pointer;
+}
+
+.transfer-actions button.transfer-go {
+	border-color: var(--foreground);
+	background: var(--foreground);
+	color: var(--background);
+}
+
+.transfer-actions button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+/* What the last import or export came to, a line per conversation. Empty, it
+   is no block. */
+#outcome {
+	margin-top: 1rem;
+	max-height: 6.5rem;
+	overflow-y: auto;
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+#outcome p + p {
+	margin-top: 0.25rem;
+}
+
+#outcome .transfer-failed {
+	color: var(--destructive);
+}

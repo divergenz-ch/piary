@@ -1,0 +1,17 @@
+{
+	"title": "[AI DRAFT] Explain a function from the workspace",
+	"tags": ["AI DRAFT"],
+	"job": "explain",
+	"canvas": [],
+	"rubric": [
+		"Explains that the call is delayed until calls stop for `wait` ms",
+		"Contrasts it with throttling in a sentence or two",
+		"Stays short: a paragraph or a few lines, no headings"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write"] },
+		"files": { "unchanged": ["src/timing.js"] },
+		"maxWords": 180,
+		"mentions": ["throttl"]
+	}
+}

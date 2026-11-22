@@ -1,0 +1,31 @@
+packages:
+  - "."
+
+allowBuilds:
+  '@google/genai': false
+  '@parcel/watcher': false
+  # Edge's and Firefox's WebDriver binaries, pulled in transitively by
+  # @wdio/cli. Never run: WebdriverIO is here for the Tauri app's embedded
+  # driver (docs/TEST_ARCHITECTURE.md §6), which drives a WKWebView and neither
+  # of these browsers. Their install scripts download a driver per platform, so
+  # allowing them would cost every CI install a download nothing then uses —
+  # and pnpm treats an UNANSWERED entry as a hard install failure, which is how
+  # these arrived as placeholders.
+  edgedriver: false
+  esbuild: true
+  geckodriver: false
+  node-pty: set this to true or false
+  protobufjs: false
+
+# A global minimumReleaseAge cooldown holds back fresh releases; the pi packages
+# are first-party and tracked deliberately, so each bump re-pins these exact
+# versions. Stale entries are harmless but should move with the version.
+minimumReleaseAgeExclude:
+  - '@earendil-works/chord@1.1.0'
+  - '@earendil-works/pi-agent-core@1.1.0'
+  - '@earendil-works/pi-ai@1.1.0'
+  - '@earendil-works/pi-codemode@1.1.0'
+  - '@earendil-works/pi-coding-agent@1.1.0'
+  - '@earendil-works/pi-mcp@1.1.0'
+  - '@earendil-works/pi-telemetry@1.1.0'
+  - '@earendil-works/pi-tui@1.1.0'

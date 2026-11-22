@@ -1,0 +1,2544 @@
+{
+	"meta": {
+		"date": "2026-11-08T00:24:56.099Z",
+		"pi": "1.0.4",
+		"prompt": "pi-extension/system-prompt.md",
+		"models": "openai-codex/gpt-5.6-luna, anthropic/claude-sonnet-5-5",
+		"cases": "18"
+	},
+	"outcomes": [
+		{
+			"slug": "add-a-test",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Write a new file in the workspace without touching the source",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "leaves src/slug.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves package.json",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 2,
+						"reason": "Inspect the repository, add a focused node:test file, and verify it runs."
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "pwd && find . -maxdepth 3 -type f | sort",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "src/slug.js",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "find . -maxdepth 3 -type f \\( -name '*test*' -o -name 'package.json' \\) -print",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "package.json",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "write",
+					"args": {
+						"path": "test/slug.test.js",
+						"content": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { slugify } from \"../src/slug.js\";\n\ntest(\"slugify converts spaces to hyphens\", () => {\n\tassert.equal(slugify(\"hello world\"), \"hello-world\");\n});\n\ntest(\"slugify converts capital letters to lowercase\", () => {\n\tassert.equal(slugify(\"Hello World\"), \"hello-world\");\n});\n"
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node --test test/slug.test.js",
+						"timeout": 10
+					}
+				}
+			],
+			"prose": "I’ll inspect the project structure and existing test conventions, then add only the new `slugify` test file and run the relevant tests.\n\nAdded `test/slug.test.js` using `node:test`, covering:\n\n- Spaces converted to hyphens\n- Capital letters converted to lowercase\n\nAll tests pass.",
+			"ms": 13583
+		},
+		{
+			"slug": "add-a-test",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Write a new file in the workspace without touching the source",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "leaves src/slug.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves package.json",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat src/slug.js; ls; cat package.json; ls test* 2>/dev/null",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "write",
+					"args": {
+						"path": "src/slug.test.js",
+						"content": "import { test } from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { slugify } from \"./slug.js\";\n\ntest(\"replaces spaces with hyphens\", () => {\n\tassert.equal(slugify(\"hello world\"), \"hello-world\");\n});\n\ntest(\"collapses multiple spaces into one hyphen\", () => {\n\tassert.equal(slugify(\"hello   big  world\"), \"hello-big-world\");\n});\n\ntest(\"trims leading and trailing spaces\", () => {\n\tassert.equal(slugify(\"  hello world  \"), \"hello-world\");\n});\n\ntest(\"lowercases capital letters\", () => {\n\tassert.equal(slugify(\"Hello World\"), \"hello-world\");\n\tassert.equal(slugify(\"ALL CAPS\"), \"all-caps\");\n});\n"
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node --test src/ 2>&1 | tail -12",
+						"timeout": 30
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node --test src/slug.test.js 2>&1 | tail -10",
+						"timeout": 30
+					}
+				}
+			],
+			"prose": "That failure is probably from how I called the runner (a directory argument), so I'll run the file directly.\n\nI added `src/slug.test.js` with four `node:test` tests, and all four pass. I left `src/slug.js` unchanged.\n\nThe tests check that `slugify`:\n- replaces spaces with hyphens\n- collapses runs of spaces into a single hyphen\n- trims leading and trailing spaces\n- lowercases capital letters, including all-caps input\n\nRun it with `node --test src/slug.test.js`. Passing the `src/` directory instead (`node --test src/`) failed for me with a bare \"test failed\" on `src`. I didn't look into why.",
+			"ms": 10387
+		},
+		{
+			"slug": "answer-in-place",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "explain",
+			"title": "[AI DRAFT] Writing that belongs in the document is not written to a file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "25 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Autumn spills gold on the city street,  \nWind hums softly where footsteps meet.  \nRed leaves whirl past windows bright,  \nAnd dusk folds downtown into night.",
+			"ms": 2958
+		},
+		{
+			"slug": "answer-in-place",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] Writing that belongs in the document is not written to a file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "35 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Amber leaves skate down the avenue's gray spine,\nWhile steam climbs from grates in the evening's chill.\nStreetlamps blink on, a soft and early shine,\nAnd the city wraps its coat and hums on still.",
+			"ms": 3375
+		},
+		{
+			"slug": "anticipate-controls",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "cell",
+			"title": "[AI DRAFT] A drawing nobody asked to tune still comes with its controls",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "0 words"
+				},
+				{
+					"check": "a cell holds \"view(Inputs.\"",
+					"pass": false,
+					"detail": "in no cell call's source"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 1,
+						"reason": "Create a compact reactive SVG drawing of an Archimedean spiral and verify it renders."
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 240
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const spiralPoints = Array.from({length: 900}, (_, i) => { const t = i / 899 * Math.PI * 8; const r = 4.2 * t; return [150 + r * Math.cos(t), 150 + r * Math.sin(t)]; });",
+						"mode": "js",
+						"group": "archimedean-spiral"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "htl.html`<svg viewBox=\"0 0 300 300\" width=\"420\" height=\"420\" style=\"max-width:100%;background:#0f172a;border-radius:16px\"><polyline points=\"${spiralPoints.map(p => p.join(',')).join(' ')}\" fill=\"none\" stroke=\"#67e8f9\" stroke-width=\"2.2\" stroke-linecap=\"round\"/><circle cx=\"150\" cy=\"150\" r=\"3\" fill=\"#fbbf24\"/></svg>`",
+						"mode": "js",
+						"group": "archimedean-spiral"
+					}
+				}
+			],
+			"prose": "",
+			"ms": 9541
+		},
+		{
+			"slug": "anticipate-controls",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A drawing nobody asked to tune still comes with its controls",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "45 words"
+				},
+				{
+					"check": "a cell holds \"view(Inputs.\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": "1",
+						"limit": "200"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const turns = view(Inputs.range([1, 12], {value: 5, step: 0.5, label: \"Turns\"}))",
+						"group": "spiral"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const gap = view(Inputs.range([2, 20], {value: 8, step: 1, label: \"Spacing a (r = a·θ/2π)\"}))",
+						"group": "spiral"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "(() => {\n  const n = Math.round(turns * 200);\n  const pts = d3.range(n + 1).map(i => {\n    const t = i / n * turns * 2 * Math.PI;\n    const r = gap * t / (2 * Math.PI);\n    return [r * Math.cos(t), r * Math.sin(t)];\n  });\n  const R = 12 * 20;\n  return Plot.plot({\n    width: 500, height: 500, aspectRatio: 1,\n    x: {axis: null, domain: [-R, R]}, y: {axis: null, domain: [-R, R]},\n    marks: [Plot.line(pts, {stroke: \"steelblue\", strokeWidth: 2})]\n  });\n})()",
+						"group": "spiral"
+					}
+				}
+			],
+			"prose": "Controls for turns and spacing fit naturally.\n\nI drew an Archimedean spiral, r = a·θ/2π. It has two sliders: one for the number of turns and one for the spacing between arms. I haven't looked at the rendered plot, but all three cells reported `ok`.",
+			"ms": 9888
+		},
+		{
+			"slug": "change-keeps-controls",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "cell",
+			"title": "[AI DRAFT] Changing a drawing keeps the controls the user may already have moved",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #dr4wSp",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"id": "dr4wSp",
+						"source": "(() => {\n  const pts = d3.range(0, turns * 2 * Math.PI, 0.05).map((t) => [spacing * t * Math.cos(t), spacing * t * Math.sin(t)]);\n  return Plot.line(pts, {stroke: \"red\", strokeWidth: 3}).plot({aspectRatio: 1, axis: null});\n})()",
+						"mode": "js",
+						"group": "spiral"
+					}
+				}
+			],
+			"prose": "Done — the spiral is now red and thicker.",
+			"ms": 4545
+		},
+		{
+			"slug": "change-keeps-controls",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Changing a drawing keeps the controls the user may already have moved",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #dr4wSp",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"id": "dr4wSp",
+						"group": "spiral",
+						"mode": "js",
+						"source": "(() => {\n  const pts = d3.range(0, turns * 2 * Math.PI, 0.05).map((t) => [spacing * t * Math.cos(t), spacing * t * Math.sin(t)]);\n  return Plot.line(pts, {stroke: \"red\", strokeWidth: 4}).plot({aspectRatio: 1, axis: null});\n})()"
+					}
+				}
+			],
+			"prose": "The spiral is now red, with the line width raised to 4. I only redefined the drawing cell, so the Turns and Spacing sliders are unchanged. I haven't looked at the rendered plot.",
+			"ms": 5478
+		},
+		{
+			"slug": "compute-in-cell",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "cell",
+			"title": "[AI DRAFT] A calculation the user wants to tweak becomes a cell",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": false,
+					"detail": "called only nothing"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [],
+			"prose": "For a standard **amortizing mortgage**:\n\n\\[\nM=P\\frac{r(1+r)^n}{(1+r)^n-1}\n\\]\n\nWhere:\n\n- \\(P=300{,}000\\) CHF\n- Annual rate \\(=1.8\\%\\)\n- Monthly rate \\(r=0.018/12=0.0015\\)\n- Number of payments \\(n=25\\times12=300\\)\n\n\\[\nM=300{,}000\\cdot\n\\frac{0.0015(1.0015)^{300}}\n{(1.0015)^{300}-1}\n\\approx \\boxed{1{,}242.31\\text{ CHF/month}}\n\\]\n\nTotal paid: approximately **372,693 CHF**  \nTotal interest: approximately **72,693 CHF**\n\nTo change the numbers, replace \\(P\\), annual rate, and years in the formula.",
+			"ms": 5131
+		},
+		{
+			"slug": "compute-in-cell",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A calculation the user wants to tweak becomes a cell",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": "1",
+						"limit": "200"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const principal = view(Inputs.number([0, 5e7], {label: \"Principal (CHF)\", value: 300000, step: 1000}))",
+						"group": "mortgage"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const rate = view(Inputs.number([0, 30], {label: \"Annual rate (%)\", value: 1.8, step: 0.05}))",
+						"group": "mortgage"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const years = view(Inputs.number([1, 50], {label: \"Years\", value: 25, step: 1}))",
+						"group": "mortgage"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const payment = (() => {\n  const r = rate / 100 / 12, n = years * 12;\n  return r === 0 ? principal / n : principal * r / (1 - Math.pow(1 + r, -n));\n})()",
+						"group": "mortgage"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "htl.html`<div style=\"padding:12px;border-radius:12px;background:#eef\">\n<b>Monthly payment: CHF ${payment.toLocaleString(\"de-CH\",{minimumFractionDigits:2,maximumFractionDigits:2})}</b><br>\nTotal paid: CHF ${(payment*years*12).toLocaleString(\"de-CH\",{maximumFractionDigits:0})} · Interest: CHF ${(payment*years*12-principal).toLocaleString(\"de-CH\",{maximumFractionDigits:0})}<br>\n<small>P·r / (1 − (1+r)^−n), r = rate/12, n = years·12</small></div>`",
+						"group": "mortgage"
+					}
+				}
+			],
+			"prose": "The calculation is in the cells above, with inputs for principal, rate and years. It uses the standard annuity formula: payment = P·r / (1 − (1+r)^−n), where r = rate/12 and n = years·12.\n\nI haven't read the computed value back, so I can't give you the figure from the cell. Roughly, it should come to about CHF 1,220 a month for 300 000 CHF at 1.8% over 25 years. Change any of the three inputs and the payment, total paid and interest update.",
+			"ms": 11430
+		},
+		{
+			"slug": "context-both-sides",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A mid-page prompt needs the text above and below it",
+			"tags": [
+				"AI DRAFT",
+				"known gap"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "11 words"
+				},
+				{
+					"check": "mentions \"borealis\"",
+					"pass": false,
+					"detail": "not found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "I can’t determine this because the options are not included below.",
+			"ms": 1998
+		},
+		{
+			"slug": "context-both-sides",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A mid-page prompt needs the text above and below it",
+			"tags": [
+				"AI DRAFT",
+				"known gap"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "52 words"
+				},
+				{
+					"check": "mentions \"borealis\"",
+					"pass": false,
+					"detail": "not found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "I can't pick one yet, because your message has no options below the question. Please paste the list with each laptop's price (including tax) and memory. I'll then choose the one that costs 1 800 CHF or less and has at least 32 GB, and I'll give the reason in one sentence.",
+			"ms": 2787
+		},
+		{
+			"slug": "csv-to-table",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "view",
+			"title": "[AI DRAFT] Tabular data is shown as a table view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": false,
+					"detail": "called only budget, read"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves data/sales.csv",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 0.5,
+						"reason": "Read the CSV and render its contents as a table."
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "data/sales.csv",
+						"offset": 1,
+						"limit": 2000
+					}
+				}
+			],
+			"prose": "| region | quarter | revenue |\n|---|---|---:|\n| North | Q1 | 120000 |\n| North | Q2 | 135000 |\n| South | Q1 | 98000 |\n| South | Q2 | 101500 |",
+			"ms": 5130
+		},
+		{
+			"slug": "csv-to-table",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "view",
+			"title": "[AI DRAFT] Tabular data is shown as a table view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves data/sales.csv",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "data/sales.csv",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "table",
+						"data": {
+							"columns": [
+								"region",
+								"quarter",
+								"revenue"
+							],
+							"rows": [
+								[
+									"North",
+									"Q1",
+									120000
+								],
+								[
+									"North",
+									"Q2",
+									135000
+								],
+								[
+									"South",
+									"Q1",
+									98000
+								],
+								[
+									"South",
+									"Q2",
+									101500
+								]
+							]
+						}
+					}
+				}
+			],
+			"prose": "`data/sales.csv` has 4 rows of revenue by region and quarter (shown in the table above).",
+			"ms": 5528
+		},
+		{
+			"slug": "document-voice",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "explain",
+			"title": "[AI DRAFT] The answer keeps the document's language and voice",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 90 words",
+					"pass": true,
+					"detail": "23 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "- Umzugshelfer und Transporter bestätigen.\n- Kartons packen, beschriften und zerbrechliche Dinge sichern.\n- Strom, Internet und Adressänderungen für die neue Wohnung organisieren.",
+			"ms": 2572
+		},
+		{
+			"slug": "document-voice",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] The answer keeps the document's language and voice",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 90 words",
+					"pass": false,
+					"detail": "140 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "**In der Woche vor dem Umzug (ab 22. Februar):**\n\n1. **Adressänderungen und Verträge erledigen:** Ummeldung beim Einwohnermeldeamt vorbereiten, Nachsendeauftrag bei der Post einrichten und Strom, Internet und Versicherungen auf die neue Adresse umstellen. Beim Internet lohnt sich ein früher Termin, weil die Freischaltung oft dauert.\n2. **Packen und Kisten beschriften:** Alles, was ihr nicht täglich braucht, jetzt einpacken, zum Beispiel Bücher, Deko und Saisonkleidung. Beschriftet die Kisten nach Zimmer. Für die ersten Tage packt ihr eine Kiste mit dem Nötigsten, also Bettzeug, Hygieneartikel, Ladekabel und Werkzeug.\n3. **Logistik klären und Wohnung vorbereiten:** Bestätigt den Termin mit Helfern oder Umzugsfirma. Reserviert die Halteverbotszone und den Aufzug, falls es einen gibt. Taut den Kühlschrank ab, bereitet die Übergabe der alten Wohnung vor und macht Fotos vom Zustand. Vergesst dabei den Balkon nicht, denn Pflanzen und Möbel dort brauchen eigene Verpackung oder Transportplanung.",
+			"ms": 7246
+		},
+		{
+			"slug": "edited-history",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "explain",
+			"title": "[AI DRAFT] The user's correction to an earlier answer is the truth",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 120 words",
+					"pass": true,
+					"detail": "15 words"
+				},
+				{
+					"check": "mentions \"thursday\"",
+					"pass": true,
+					"detail": "found"
+				},
+				{
+					"check": "mentions \"wednesday\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "The design review is **Thursday**, run by **Ana**. Prepare the materials and agenda on **Wednesday**.",
+			"ms": 1893
+		},
+		{
+			"slug": "edited-history",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] The user's correction to an earlier answer is the truth",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 120 words",
+					"pass": true,
+					"detail": "66 words"
+				},
+				{
+					"check": "mentions \"thursday\"",
+					"pass": true,
+					"detail": "found"
+				},
+				{
+					"check": "mentions \"wednesday\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "The design review is on **Thursday at 14:00**, run by Ana. Since today is Sunday 8 Nov, that's **12 Nov**, and the day before is Wednesday 11 Nov.\n\nI don't have a prep list. Nothing in this conversation says what the review needs, so I won't make one up. If you share the agenda or Ana's request, I can turn it into a checklist for Wednesday.",
+			"ms": 5144
+		},
+		{
+			"slug": "explain-function",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "explain",
+			"title": "[AI DRAFT] Explain a function from the workspace",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves src/timing.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 180 words",
+					"pass": true,
+					"detail": "75 words"
+				},
+				{
+					"check": "mentions \"throttl\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 1,
+						"reason": "Inspect src/timing.js and briefly compare debounce with throttling."
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "src/timing.js",
+						"offset": 1,
+						"limit": 200
+					}
+				}
+			],
+			"prose": "`debounce(fn, wait)` delays calling `fn` until no new call has occurred for `wait` milliseconds. Each call resets the timer, so rapid calls result in only one invocation—with the latest arguments—after activity stops.\n\nUse it for actions that should happen **after input settles**, such as:\n\n- Search requests while typing\n- Saving after edits pause\n- Handling window resize completion\n\nUse **throttling** when you need regular updates during continuous activity, such as scroll or mouse-move handling.",
+			"ms": 5502
+		},
+		{
+			"slug": "explain-function",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] Explain a function from the workspace",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves src/timing.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 180 words",
+					"pass": false,
+					"detail": "207 words"
+				},
+				{
+					"check": "mentions \"throttl\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat src/timing.js",
+						"timeout": 10
+					}
+				}
+			],
+			"prose": "**What it does:** `debounce(fn, wait)` in `src/timing.js` returns a wrapped version of `fn`. Each call to the wrapper cancels the pending timer and starts a new `wait` ms timer. `fn` runs only after `wait` ms pass with no further calls. It runs once, with the arguments from the last call.\n\n**What it doesn't do:**\n- It has no leading-edge option, so `fn` never fires at the start of a burst.\n- It has no `cancel` or `flush` method.\n- It drops the return value of `fn`.\n- It doesn't preserve `this`, because it uses an arrow function.\n\n**Debounce vs. throttle:**\n- **Debounce** waits for activity to stop, then fires once. Use it when only the final value matters:\n  - search-as-you-type requests\n  - autosave after editing pauses\n  - validating a field after typing stops\n  - recomputing layout after a window resize ends\n- **Throttle** fires at most once per interval while activity continues. Use it when you need regular updates during a continuous stream:\n  - scroll position tracking\n  - drag or mousemove handlers\n  - progress reporting\n  - rate-limiting API calls\n\nA continuous event stream never lets a debounced function fire until it stops. If you need feedback while the user is still scrolling or dragging, use a throttle.",
+			"ms": 7228
+		},
+		{
+			"slug": "extend-artifact",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "cell",
+			"title": "[AI DRAFT] Extending an artifact keeps its block and markers intact",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #s4v1n6",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 240
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const monthly = view(Inputs.range([100, 2000], {value: 500, step: 10, label: \"Monthly amount\"}))",
+						"mode": "js",
+						"id": "s4v1n6",
+						"group": "savings"
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "html`<p>After 10 years: <strong>${(monthly * 12 * 10).toLocaleString()}</strong></p>`",
+						"mode": "js",
+						"id": "r3su1t",
+						"group": "savings"
+					}
+				}
+			],
+			"prose": "Done — the monthly amount is now a slider from 100 to 2,000.",
+			"ms": 6359
+		},
+		{
+			"slug": "extend-artifact",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Extending an artifact keeps its block and markers intact",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #s4v1n6",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "s4v1n6",
+						"group": "savings",
+						"mode": "js",
+						"source": "const monthly = view(Inputs.range([100, 2000], {value: 500, step: 50, label: \"Monthly amount\"}))"
+					}
+				}
+			],
+			"prose": "The monthly amount is now a slider from 100 to 2000. It starts at 500 and moves in steps of 50. The \"After 10 years\" result reads the slider's value, so it updates as you drag. I haven't looked at the rendered slider to confirm it works.",
+			"ms": 6243
+		},
+		{
+			"slug": "fix-and-run",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "fix-and-run",
+			"title": "[AI DRAFT] Fix a failing script and report its real output",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls bash",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "changes report.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"65.00\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 2,
+						"reason": "Inspect the script, identify the runtime error, patch it, and rerun it to report the output."
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "report.js",
+						"offset": 1,
+						"limit": 400
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node report.js",
+						"timeout": 30
+					}
+				},
+				{
+					"name": "edit",
+					"args": {
+						"path": "report.js",
+						"edits": [
+							{
+								"oldText": "order.ammount",
+								"newText": "order.amount"
+							},
+							{
+								"oldText": "throw new Error(\"unreachable\" + undefinedVariable);\n",
+								"newText": ""
+							}
+						]
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node report.js",
+						"timeout": 30
+					}
+				}
+			],
+			"prose": "Fixed `report.js`. It now prints:\n\n```text\nTotal: 65.00\nLargest: 40\n```",
+			"ms": 8882
+		},
+		{
+			"slug": "fix-and-run",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-and-run",
+			"title": "[AI DRAFT] Fix a failing script and report its real output",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls bash",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "changes report.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"65.00\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat report.js; node report.js 2>&1 | head -20; ls",
+						"timeout": 20
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i 's/order.ammount/order.amount/; /unreachable/d' report.js; node report.js",
+						"timeout": 20
+					}
+				},
+				{
+					"name": "edit",
+					"args": {
+						"path": "report.js",
+						"edits": [
+							{
+								"oldText": "order.ammount",
+								"newText": "order.amount"
+							},
+							{
+								"oldText": "throw new Error(\"unreachable\" + undefinedVariable);\n",
+								"newText": ""
+							}
+						]
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node report.js",
+						"timeout": 20
+					}
+				}
+			],
+			"prose": "Two bugs: the `ammount` typo (which gives NaN) and the final deliberate throw. I'll fix the typo and remove the throw.\n\nSed didn't work here, so I'll use Edit.\n\n`node report.js` now runs without crashing. It prints:\n\n```\nTotal: 65.00\nLargest: 40\n```\n\nI made two changes in `report.js`:\n- **Typo:** `order.ammount` is now `order.amount`. The typo made the total `NaN`.\n- **Crash:** I deleted the last line, `throw new Error(\"unreachable\" + undefinedVariable);`. It referenced a variable that doesn't exist, so it threw a `ReferenceError`. If you wanted that line to stay, tell me and I'll put it back in a form that doesn't crash.",
+			"ms": 8515
+		},
+		{
+			"slug": "fix-broken-cell",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "cell",
+			"title": "[AI DRAFT] A broken cell is fixed by redefining it, not by adding a new one",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #a1b2c3",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "total = prices.reduce((sum, price) => sum + price, 0)",
+						"mode": "js",
+						"id": "a1b2c3"
+					}
+				}
+			],
+			"prose": "Fixed the total cell. The total is **19.70**.",
+			"ms": 4587
+		},
+		{
+			"slug": "fix-broken-cell",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A broken cell is fixed by redefining it, not by adding a new one",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #a1b2c3",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"id": "a1b2c3",
+						"mode": "js",
+						"source": "total = prices.reduce((sum, price) => sum + price, 0)"
+					}
+				}
+			],
+			"prose": "The total cell has a typo: `prces` should be `prices`. I'll redefine the cell.\n\nI fixed the total cell by changing the misspelled `prces` to `prices`. It ran without errors. I didn't check the value it shows, but 3.50 + 4.20 + 12 should come to 19.70.",
+			"ms": 4860
+		},
+		{
+			"slug": "fix-conversation-pie",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "fix-conversation",
+			"title": "[AI DRAFT] Fix my conversation: use the cell tool, never the file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #9f3e2a",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves docs/pie-diagram.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 240
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "Plot.plot({\n  width: 500,\n  height: 400,\n  color: { legend: true },\n  marks: [\n    Plot.arc(\n      [{ task: \"meetings\", hours: 30 }, { task: \"coding\", hours: 50 }, { task: \"review\", hours: 20 }],\n      { x: 0, y: 0, r: 150, fill: \"task\", fillOpacity: 0.9, stroke: \"white\", strokeWidth: 2, ariaLabel: \"task\", ariaDescription: \"hours\", value: \"hours\" }\n    )\n  ]\n})",
+						"mode": "js",
+						"id": "9f3e2a"
+					}
+				}
+			],
+			"prose": "Fixed the pie chart: corrected the data field from `hour` to `hours` and added rendering options.",
+			"ms": 7333
+		},
+		{
+			"slug": "fix-conversation-pie",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-conversation",
+			"title": "[AI DRAFT] Fix my conversation: use the cell tool, never the file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #9f3e2a",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves docs/pie-diagram.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "9f3e2a",
+						"mode": "js",
+						"source": "(() => {\n  const data = [{ task: \"meetings\", value: 30 }, { task: \"coding\", value: 50 }, { task: \"review\", value: 20 }];\n  const color = d3.scaleOrdinal().domain(data.map(d => d.task)).range(d3.schemeTableau10);\n  const r = 120, arc = d3.arc().innerRadius(0).outerRadius(r);\n  const label = d3.arc().innerRadius(r * 0.65).outerRadius(r * 0.65);\n  const arcs = d3.pie().sort(null).value(d => d.value)(data);\n  const svg = d3.create(\"svg\").attr(\"viewBox\", [-r - 10, -r - 10, 2 * r + 20, 2 * r + 20]).attr(\"width\", 320);\n  svg.selectAll(\"path\").data(arcs).join(\"path\")\n    .attr(\"d\", arc).attr(\"fill\", d => color(d.data.task)).attr(\"stroke\", \"white\");\n  svg.selectAll(\"text\").data(arcs).join(\"text\")\n    .attr(\"transform\", d => `translate(${label.centroid(d)})`)\n    .attr(\"text-anchor\", \"middle\").attr(\"fill\", \"white\").attr(\"font-size\", 12)\n    .text(d => `${d.data.task} ${d.data.value}%`);\n  return svg.node();\n})()"
+					}
+				}
+			],
+			"prose": "I'll read the skill file for the cell semantics first, then fix the cell.\n\nI rewrote cell `#9f3e2a`, and the tool reported that it ran. I haven't looked at the rendered chart.\n\nThe old cell had two bugs. It set `value: \"hour\"`, but the field is `hours`. It also used `Plot.arc`, which draws arcs from angles you give it and doesn't compute pie slices. The new cell builds the pie with `d3.pie` and `d3.arc`.\n\nIt shows meetings 30%, coding 50% and review 20%, each labelled on its slice.",
+			"ms": 11210
+		},
+		{
+			"slug": "mid-document-caret",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A prompt in the middle of the page is answered there",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 50 words",
+					"pass": true,
+					"detail": "13 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Take a morning stroll through Alfama’s winding streets and visit São Jorge Castle.",
+			"ms": 3600
+		},
+		{
+			"slug": "mid-document-caret",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A prompt in the middle of the page is answered there",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 50 words",
+					"pass": true,
+					"detail": "37 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Browse the Feira da Ladra flea market at Campo de Santa Clara, which runs on Tuesdays and Saturdays. It's a short walk from Alfama, and you can stop at Miradouro das Portas do Sol on the way.",
+			"ms": 4323
+		},
+		{
+			"slug": "rename-symbol",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Edit a workspace file and nothing else",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "changes lib/strings.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "changes lib/title.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves README.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 80 words",
+					"pass": true,
+					"detail": "34 words"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "budget",
+					"args": {
+						"minutes": 1,
+						"reason": "Inspect the symbol and caller, apply one small edit, and verify references."
+					}
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "lib/strings.js",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "rg -n \"capitalise|capitalize\" .",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "edit",
+					"args": {
+						"path": "lib/strings.js",
+						"edits": [
+							{
+								"oldText": "export function capitalise(word)",
+								"newText": "export function capitalize(word)"
+							}
+						]
+					}
+				},
+				{
+					"name": "edit",
+					"args": {
+						"path": "lib/title.js",
+						"edits": [
+							{
+								"oldText": "import { capitalise } from \"./strings.js\";",
+								"newText": "import { capitalize } from \"./strings.js\";"
+							},
+							{
+								"oldText": "words.map(capitalise)",
+								"newText": "words.map(capitalize)"
+							}
+						]
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "rg -n \"capitalise|capitalize\" lib && git diff -- lib/strings.js lib/title.js",
+						"timeout": 10
+					}
+				}
+			],
+			"prose": "I’ll inspect `lib/strings.js` and its references, then make the minimal rename and verify no old references remain.\n\nRenamed `capitalise` to `capitalize` in `lib/strings.js` and updated its caller in `lib/title.js`. Verified no old references remain.",
+			"ms": 11372
+		},
+		{
+			"slug": "rename-symbol",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Edit a workspace file and nothing else",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "changes lib/strings.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "changes lib/title.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves README.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 80 words",
+					"pass": true,
+					"detail": "45 words"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "grep -rn \"capitalise\" . --exclude-dir=node_modules --exclude-dir=.git",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i 's/capitalise/capitalize/g' lib/title.js lib/strings.js && grep -rn \"capitali\" lib",
+						"timeout": 10
+					}
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i '' 's/capitalise/capitalize/g' lib/title.js lib/strings.js && grep -rn \"capitali\" lib",
+						"timeout": 10
+					}
+				}
+			],
+			"prose": "BSD sed; use -i ''.\n\nI renamed `capitalise` to `capitalize` in `lib/strings.js`. I also updated its one caller, `lib/title.js`, in both the import and the `words.map(...)` call. A grep of `lib` now shows only the new spelling. I didn't run the code or any tests.",
+			"ms": 6242
+		},
+		{
+			"slug": "short-fact",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "explain",
+			"title": "[AI DRAFT] A one-line question gets a one-line answer",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "30 words"
+				},
+				{
+					"check": "mentions \"teapot\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "HTTP status **418** means **“I’m a teapot.”** It’s an April Fools’ joke status code from RFC 2324, indicating the server refuses to brew coffee because it is permanently a teapot.",
+			"ms": 2447
+		},
+		{
+			"slug": "short-fact",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] A one-line question gets a one-line answer",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "57 words"
+				},
+				{
+					"check": "mentions \"teapot\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "HTTP 418 means \"I'm a teapot.\" RFC 2324 defined it as an April Fools' joke, part of the Hyper Text Coffee Pot Control Protocol (HTCPCP). A teapot returns it when asked to brew coffee. Some servers also use it as a joke response or to turn away unwanted requests, but it has no real function in HTTP.",
+			"ms": 2332
+		},
+		{
+			"slug": "two-versions-diff",
+			"model": "openai-codex/gpt-5.6-luna",
+			"job": "view",
+			"title": "[AI DRAFT] A change between two versions is shown as a diff view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": false,
+					"detail": "called only nothing"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"punctuation\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "- Added an optional `punctuation` parameter, defaulting to `\"!\"`.\n- Changed string concatenation to a template literal.\n- Added a comma after `\"Hello\"`.\n- Appends the punctuation after the name.\n\nExample: `greet(\"Sam\")` now returns `\"Hello, Sam!\"` instead of `\"Hello Sam\"`.",
+			"ms": 2742
+		},
+		{
+			"slug": "two-versions-diff",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "view",
+			"title": "[AI DRAFT] A change between two versions is shown as a diff view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"punctuation\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					}
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "diff",
+						"data": {
+							"oldText": "function greet(name) {\n  return \"Hello \" + name;\n}\n",
+							"newText": "function greet(name, punctuation = \"!\") {\n  return `Hello, ${name}${punctuation}`;\n}\n"
+						}
+					}
+				}
+			],
+			"prose": "I'll read the view-templates skill first so I get the diff payload right.\n\nThree things changed:\n\n1. **New parameter.** `greet` now takes `punctuation`, which defaults to `\"!\"`. Existing calls like `greet(\"Ana\")` still work.\n2. **Template literal.** The string is built with a template literal instead of `+` concatenation.\n3. **Output text.** The new version adds a comma after \"Hello\" and appends the punctuation.\n\nThe output changes for the same input:\n- Before: `greet(\"Ana\")` returns `\"Hello Ana\"`.\n- After: `greet(\"Ana\")` returns `\"Hello, Ana!\"`.\n\nAny code or tests that compare against the old exact string will need updating.",
+			"ms": 6891
+		}
+	]
+}

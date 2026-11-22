@@ -1,0 +1,113 @@
+#!/bin/sh
+# A stand-in for `pi --mode rpc`, for src-tauri/src/session.rs's tests.
+#
+# Real on both sides of the wire — a real process, real pipes, real
+# newline-delimited JSON — so what the tests exercise is the framing and the
+# correlation rather than a mock's idea of them.
+#
+# It has to TOLERATE the flags the session layer always passes (`--mode rpc`,
+# `--session-id <id>`), because a fake that rejected them would only prove that
+# `sh` dislikes `--mode`. So it ignores every flag it knows and reads its own
+# behaviour from `--fake <mode> [who]`, which the caller appends.
+#
+# An argument rather than an environment variable, deliberately: cargo runs
+# tests as threads in ONE process, so a `set_var` in one test is visible to
+# every other and two tests expecting different modes get whichever won the
+# race.
+
+# Every argument as started, kept before the loop below consumes them, for the
+# `argv` mode: a JSON array, each argument escaped, so a path with a space is one
+# element and a quote cannot break the reply.
+argv=""
+for arg in "$@"; do
+	esc=$(printf '%s' "$arg" | sed 's/\\/\\\\/g; s/"/\\"/g')
+	argv="$argv${argv:+,}\"$esc\""
+done
+mode=echo
+who=anon
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--fake)
+		mode="$2"
+		who="${3:-anon}"
+		break
+		;;
+	*) shift ;;
+	esac
+done
+
+case "$mode" in
+echo)
+	# Answers every request by echoing back its id and type.
+	while IFS= read -r line; do
+		id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+		kind=$(printf '%s' "$line" | sed -n 's/.*"type":"\([^"]*\)".*/\1/p')
+		[ -n "$id" ] || continue
+		printf '{"id":"%s","type":"response","command":"%s","success":true,"data":{"echo":"%s"}}\n' \
+			"$id" "$kind" "$kind"
+	done
+	;;
+argv)
+	# Answers every request with the arguments it was started with, so a test can
+	# see the flags the session layer and its callers passed — and with the
+	# two variables the session layer sets, `PIARY_VERDICTS` and `PIARY_DRAW`.
+	while IFS= read -r line; do
+		id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+		[ -n "$id" ] || continue
+		printf '{"id":"%s","type":"response","command":"argv","success":true,"data":{"argv":[%s],"verdicts":"%s","draw":"%s"}}\n' "$id" "$argv" "${PIARY_VERDICTS:-}" "${PIARY_DRAW:-}"
+	done
+	;;
+slow)
+	# Same, after a pause — so two requests can be in flight at once and be
+	# answered out of order.
+	while IFS= read -r line; do
+		id=$(printf '%s' "$line" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+		kind=$(printf '%s' "$line" | sed -n 's/.*"type":"\([^"]*\)".*/\1/p')
+		[ -n "$id" ] || continue
+		( sleep 0.3; printf '{"id":"%s","type":"response","command":"%s","success":true,"data":{"echo":"%s"}}\n' \
+			"$id" "$kind" "$kind" ) &
+	done
+	wait
+	;;
+event)
+	# Emits one event — a `type` of its own and no `id` — then waits, so the
+	# test can tell an event from a reply.
+	printf '{"type":"agent_message_delta","text":"hello","who":"%s"}\n' "$who"
+	while IFS= read -r line; do :; done
+	;;
+silent)
+	# Reads and never answers, which is what pi does for the one command it
+	# resolves internally.
+	while IFS= read -r line; do :; done
+	;;
+linger)
+	# Stays up until its stdin closes or it is killed.
+	while IFS= read -r line; do :; done
+	;;
+tools)
+	# Starts a long-running child, as pi does when it runs a tool, and says
+	# which. Then lingers: closing stdin ends this shell and NOT the child, which
+	# is reparented and runs on — the orphan a group kill exists to end. Its
+	# output goes nowhere, so a test that fails to end it does not hang on a
+	# pipe the orphan still holds.
+	sleep 600 >/dev/null 2>&1 &
+	printf '{"type":"tool","pid":%d}\n' "$!"
+	while IFS= read -r line; do :; done
+	;;
+garbled)
+	# Writes a line that is not UTF-8 and one that is not JSON, then a real
+	# event — so a test can see whether one bad line ended the relay.
+	printf '\377\376\n'
+	printf 'not json\n'
+	printf '{"type":"agent_message_delta","text":"after"}\n'
+	while IFS= read -r line; do :; done
+	;;
+quit)
+	# Exits on its own at once, with a code a test can recognise.
+	exit 7
+	;;
+deaf)
+	# Ignores its stdin closing, so only the kill ends it — a pi wedged mid-turn.
+	exec sleep 600
+	;;
+esac

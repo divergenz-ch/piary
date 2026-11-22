@@ -1,0 +1,26 @@
+{
+	"title": "[AI DRAFT] Renamed invoices follow the folder's own pattern, and the total owed checks out",
+	"tags": ["AI DRAFT"],
+	"job": "edit-file",
+	"canvas": [],
+	"rubric": [
+		"Renames every scan to \"DATE Supplier.txt\" exactly as the September file is named: one word for the supplier, so Kettle, not Kettle Packaging",
+		"Leaves the September invoice as it is",
+		"States that EUR 1,108.65 is still owed for October, the Ostara invoice of 7 October being paid, and the total agrees with the invoices listed",
+		"Shows the renamed invoices as a table, not as a list of commands or their output"
+	],
+	"checks": {
+		"tools": { "mustNot": ["terminal"] },
+		"files": {
+			"exist": [
+				"2026-10-03 Fernhill.txt",
+				"2026-10-07 Ostara.txt",
+				"2026-10-11 Kettle.txt",
+				"2026-10-17 Fernhill.txt",
+				"2026-10-21 Ostara.txt"
+			],
+			"unchanged": ["2026-09-28 Fernhill.txt"]
+		},
+		"mentions": ["108.65"]
+	}
+}

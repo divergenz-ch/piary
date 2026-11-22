@@ -1,0 +1,100 @@
+/* Focus mode (`app/focus.ts`): each side control slides toward its edge of the
+   window, leaving an 8px sliver on screen, and comes back while the pointer is
+   near that edge (`.near-*`), over the control, or while focus is inside it.
+   The bottom edge is the model chip's. */
+.conversations,
+.conversations-toggle,
+chat-index,
+.model-chip {
+	transition:
+		transform 0.25s ease,
+		opacity 0.25s ease;
+}
+
+/* The list leaves the flex row and lies over the text, so the conversation
+   takes the whole width and does not reflow as the list comes and goes. */
+body.focus .conversations {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 30;
+	box-shadow: 0 0 2rem rgb(0 0 0 / 0.18);
+	transform: translateX(calc(-100% + 8px));
+	opacity: 0;
+}
+
+body.focus:not(.conversations-narrow) .conversations {
+	width: 15rem;
+}
+
+body.focus .conversations-toggle {
+	transform: translateX(calc(-100% - 0.75rem + 8px));
+	opacity: 0;
+}
+
+body.focus chat-index {
+	transform: translateX(calc(100% + 1rem - 8px));
+	opacity: 0;
+}
+
+body.focus .model-chip {
+	transform: translateY(calc(100% + 0.75rem - 8px));
+	opacity: 0;
+}
+
+/* Slid aside, the rail's box is all that is left on screen, and it takes no
+   pointer (`app/rail.css`). In focus mode it does: slid away it is the sliver
+   to hover, and revealed it is what the pointer came for. */
+body.focus chat-index {
+	pointer-events: auto;
+}
+
+/* Transparent bridges over the gap between a control and its edge, so the
+   hover holds while the control moves back in; without them the reveal
+   flickers. Behind the control, so they never take its clicks. */
+chat-index::before,
+.model-chip::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+}
+
+body.focus chat-index::before,
+body.focus .model-chip::before {
+	pointer-events: auto;
+}
+
+chat-index::before {
+	top: 0;
+	left: 100%;
+	bottom: 0;
+	width: 1rem;
+}
+
+.model-chip::before {
+	top: 100%;
+	left: 0;
+	right: 0;
+	height: 0.75rem;
+}
+
+/* The list and its button come back together: either one hovered or focused
+   reveals both, so the button can still show or hide the list. */
+body.focus.near-left .conversations,
+body.focus.near-left .conversations-toggle,
+body.focus .conversations:hover,
+body.focus .conversations:focus-within,
+body.focus:has(.conversations:hover, .conversations:focus-within) .conversations-toggle,
+body.focus .conversations-toggle:hover,
+body.focus .conversations-toggle:focus-visible,
+body.focus:has(.conversations-toggle:hover, .conversations-toggle:focus-visible) .conversations,
+body.focus.near-right chat-index,
+body.focus chat-index:hover,
+body.focus chat-index:focus-within,
+body.focus.near-bottom .model-chip,
+body.focus .model-chip:hover,
+body.focus .model-chip:focus-within {
+	transform: none;
+	opacity: 1;
+}

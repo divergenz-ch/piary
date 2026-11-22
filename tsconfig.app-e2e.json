@@ -1,0 +1,23 @@
+// The real-app test layer (wdio.conf.ts, e2e-app/), checked on its own.
+//
+// Separate from tsconfig.node.json because that config's `types: ["node"]` is
+// deliberately tight (ADR 0012) — it is what makes a DOM global in a bridge
+// module a compile error. WDIO's globals and mocha's `describe`/`it` are
+// ambient packages, so loading them there would hand every Node-side module a
+// `browser` and an `expect` it has no business seeing.
+//
+// Checked and emits nothing; `pnpm typecheck` runs it so a spec cannot rot
+// unnoticed, which is the gap ADR 0012 exists to close.
+{
+	"extends": "./tsconfig.build.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": false,
+		"rootDir": ".",
+		"types": ["node", "mocha", "@wdio/globals/types", "expect-webdriverio"]
+	},
+	"include": ["wdio.conf.ts", "e2e-app/**/*.ts"],
+	"exclude": []
+}

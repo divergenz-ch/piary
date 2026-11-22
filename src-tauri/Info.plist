@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Mandatory, not polite: TCC kills a process that touches the camera or
+       the microphone with no usage description rather than denying it, which
+       presents as a crash with no permission dialog (ADR 0015). The capture
+       sidecar inherits these through the app, being the responsible process. -->
+  <key>NSCameraUsageDescription</key>
+  <string>Piary records video from your camera when you ask it to capture, and reads how your face moves while you type when you turn that on. The picture stays on this Mac.</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Piary records audio from your microphone when you ask it to capture.</string>
+</dict>
+</plist>

@@ -1,0 +1,90 @@
+/* The command palette (app/palette.ts): a panel over the window's upper
+   third, the width of a line of prose, drawn in the popover's tokens. */
+.palette-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 40;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	padding-top: 18vh;
+	background: oklch(0 0 0 / 0.12);
+}
+.palette {
+	width: min(34rem, calc(100vw - 2rem));
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--popover);
+	color: var(--popover-foreground);
+	box-shadow: 0 12px 40px oklch(0 0 0 / 0.2);
+	font-family: var(--font-sans);
+	font-size: 0.875rem;
+	overflow: hidden;
+}
+.palette-field {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0.75rem 0.875rem;
+	border: none;
+	border-bottom: 1px solid var(--border);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	outline: none;
+}
+.palette-list {
+	list-style: none;
+	margin: 0;
+	padding: 0.25rem;
+	max-height: min(22rem, 50vh);
+	overflow-y: auto;
+}
+.palette-row {
+	display: grid;
+	grid-template-columns: 1.125rem auto minmax(0, 1fr) auto;
+	align-items: center;
+	column-gap: 0.625rem;
+	padding: 0.375rem 0.625rem;
+	border-radius: 4px;
+	cursor: default;
+}
+.palette-row[aria-selected],
+.palette-row:hover {
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+.palette-name {
+	font-family: var(--font-mono);
+	font-weight: 600;
+	white-space: nowrap;
+}
+.palette-said {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.8125rem;
+	color: var(--muted-foreground);
+}
+.palette-icon {
+	display: flex;
+	color: var(--muted-foreground);
+}
+.palette-keys {
+	font-family: var(--font-sans);
+	font-size: 0.6875rem;
+	color: var(--muted-foreground);
+	border: 1px solid var(--border);
+	border-radius: 3px;
+	padding: 0 0.3125rem;
+}
+.palette-row[aria-selected] :is(.palette-icon, .palette-keys) {
+	color: inherit;
+}
+.palette-row[aria-selected] .palette-said {
+	color: color-mix(in oklab, currentColor 70%, transparent);
+}
+.palette-none {
+	padding: 0.5rem 0.625rem;
+	color: var(--muted-foreground);
+}

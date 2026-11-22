@@ -1,0 +1,16 @@
+{
+	"title": "[AI DRAFT] A command the user asks to watch runs in a terminal panel",
+	"tags": ["AI DRAFT"],
+	"job": "fix-and-run",
+	"canvas": [],
+	"rubric": [
+		"Runs run-tests.sh through the terminal tool, so its output streams into a panel the user watches",
+		"Does not run it a second time through bash, and does not paste its output into prose",
+		"Says in a sentence at most how the run went"
+	],
+	"checks": {
+		"tools": { "must": ["terminal"], "mustNot": ["edit", "write"] },
+		"files": { "unchanged": ["run-tests.sh"] },
+		"maxWords": 40
+	}
+}

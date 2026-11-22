@@ -1,0 +1,18 @@
+{
+	"title": "[AI DRAFT] A computed table replaces the hand-typed one above it",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": ["fix-conversation"],
+	"rubric": [
+		"Computes the weighted scores in cells that read vendors.csv with FileAttachment, with the three weights as sliders defaulting to 40, 30 and 30",
+		"The scores are listed by the cell that computes them: Carrow 7.5, Mistral Works 7.1, Tidewell 7.6 at the default weights",
+		"Removes the earlier hand-typed table through canvas_edit, or corrects it: it says 7.4 for Carrow, and two different answers must not stay on one page",
+		"Does not retype the scores in prose"
+	],
+	"checks": {
+		"tools": { "must": ["cell", "canvas_edit"], "mustNot": ["edit", "write"] },
+		"cellMentions": ["FileAttachment", "vendors.csv"],
+		"files": { "unchanged": ["vendors.csv"] },
+		"conversationUntouched": true
+	}
+}

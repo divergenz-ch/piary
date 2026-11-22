@@ -1,0 +1,17 @@
+{
+	"title": "[AI DRAFT] A drawing nobody asked to tune still comes with its controls",
+	"tags": ["AI DRAFT", "needs pi"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": [
+		"Draws the spiral in a cell",
+		"Puts the spiral's natural parameters (turns, spacing, colour or stroke) on view(Inputs.*) controls, unasked",
+		"The controls' defaults draw a sensible spiral on first paint",
+		"Prose around the artifact is a sentence or two, not a tour of the controls"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write"] },
+		"cellMentions": ["view(Inputs."],
+		"maxWords": 60
+	}
+}

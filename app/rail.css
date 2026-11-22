@@ -1,0 +1,17 @@
+/* The block rail, down the right edge: a bare overlay with no surface of its
+   own. It sits below where the status line's chip
+   can appear at the top of the window. */
+chat-index {
+	position: fixed;
+	right: 1rem;
+	top: 3rem;
+	z-index: 10;
+	max-height: calc(100vh - 4rem);
+	/* The box parks over the text column on narrow windows. Only the ticks take
+	   the pointer; everywhere else the click belongs to the document. */
+	pointer-events: none;
+}
+
+chat-index .chat-index-rail {
+	pointer-events: auto;
+}

@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] A broken cell is fixed by redefining it, not by adding a new one",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": ["cell-redefine"],
+	"rubric": [
+		"Redefines cell #a1b2c3 with the typo fixed (prices)",
+		"Does not add a second total cell",
+		"Says what was wrong in a sentence"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write"] },
+		"cellRedefines": "a1b2c3"
+	}
+}

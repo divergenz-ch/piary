@@ -1,0 +1,1 @@
+Using batches.csv and spec.md: compute which furoic acid batches this quarter fail HPLC purity or Karl Fischer moisture limits. Plot both against the spec limits, flag failing lots, list failing lot IDs in a table. No paragraphs. Show the code.

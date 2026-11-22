@@ -1,0 +1,52 @@
+/* The conversation list's column, down the left of the window, with a line
+   between it and the conversation. On a wide window it takes its width and the
+   conversation the rest; on a narrow one it opens over the text, on a surface
+   of its own. Hidden, it takes no room at all. */
+.conversations {
+	display: none;
+	flex: 0 0 15rem;
+	box-sizing: border-box;
+	height: 100%;
+	overflow-y: auto;
+	/* Below the show/hide button, which stays where it is either way. */
+	padding: 3rem 0.75rem 1rem;
+	border-right: 1px solid var(--border);
+	background: var(--sidebar);
+}
+
+body.conversations-shown .conversations {
+	display: block;
+}
+
+body.conversations-narrow .conversations {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 30;
+	width: min(18rem, 85vw);
+	box-shadow: 0 0 2rem rgb(0 0 0 / 0.18);
+}
+
+.conversations-toggle {
+	position: fixed;
+	top: 0.625rem;
+	left: 0.75rem;
+	z-index: 31;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.875rem;
+	height: 1.875rem;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+
+.conversations-toggle:hover {
+	background: var(--muted);
+	color: var(--foreground);
+}

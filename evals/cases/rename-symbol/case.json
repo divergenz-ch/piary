@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] Edit a workspace file and nothing else",
+	"tags": ["AI DRAFT"],
+	"job": "edit-file",
+	"canvas": [],
+	"rubric": [
+		"Renames the function and its import and use in title.js",
+		"Touches no other file",
+		"Reports what it changed in a line or two"
+	],
+	"checks": {
+		"files": { "changed": ["lib/strings.js", "lib/title.js"], "unchanged": ["README.md"] },
+		"maxWords": 80
+	}
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Piary",
+  "version": "0.1.0",
+  "identifier": "ch.divergenz.piary",
+  "build": {
+    "frontendDist": "../app/dist",
+    "devUrl": "http://localhost:5190",
+    "beforeDevCommand": "pnpm app:dev",
+    "beforeBuildCommand": "pnpm app:build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Piary",
+        "width": 1100,
+        "height": 760,
+        "minWidth": 480,
+        "minHeight": 360,
+        "dragDropEnabled": false
+      }
+    ],
+    "macOSPrivateApi": false,
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/icon.png"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "13.0",
+      "entitlements": "Entitlements.plist"
+    },
+    "externalBin": [
+      "../sidecar/bin/piary-capture"
+    ],
+    "resources": {
+      "../pi-extension/": "pi-extension/"
+    }
+  }
+}

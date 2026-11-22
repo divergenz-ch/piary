@@ -1,0 +1,32 @@
+// The Node tree: the scripts, the suite and the evals. Separate
+// from tsconfig.app.json because only this half gets `types: ["node"]` — so
+// `process` in a browser module, or a DOM global in a Node module, is a compile
+// error rather than a surprise.
+//
+// `exclude` is empty and stays empty: everything this config includes is
+// annotated. An exclude would not buy much anyway — a file something imports is
+// checked whether or not it is listed, so only a leaf could ever be excluded.
+//
+// pi-extension/ is not listed: view.ts and cell.ts are pi extension modules,
+// typechecked against pi's own packages inside the image rather than here. Its
+// pure helpers are still checked, through the tests that import them.
+//
+// The browser layer belongs here too — `playwright.config.ts` and `e2e/**` are
+// Node programs (they read `process.env`, spawn a server, touch the filesystem)
+// even though what they drive is a page. Unlisted, a spec's type errors would
+// surface only when the browser ran it, which is the slowest possible place to
+// learn about a typo. The DOM types the specs use inside `evaluate` callbacks come
+// from `@playwright/test`'s own lib, not from this config's `types`.
+{
+	"extends": "./tsconfig.build.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": false,
+		"rootDir": ".",
+		"types": ["node"]
+	},
+	"include": ["scripts/**/*.ts", "tests/**/*.ts", "evals/**/*.ts", "playwright.config.ts", "playwright.app.config.ts", "e2e/**/*.ts"],
+	"exclude": []
+}

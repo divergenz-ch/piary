@@ -1,0 +1,192 @@
+/* ---------- what a cell draws ---------- */
+
+/* A cell's output is UI, not prose: it leaves the canvas's serif for the app's
+   sans, and the libraries a cell reaches for — htl markup, Observable Inputs,
+   Plot — read the same tokens, so an answer looks like Piary without the agent
+   writing a colour or a font. Rules on bare elements sit inside `:where()` so a
+   class or an inline style the cell sets still wins. */
+.cell-output {
+	font-family: var(--font-sans);
+	line-height: 1.5;
+	color: var(--foreground);
+	/* the vars Observable Inputs and notebook-kit's inputs.css consume */
+	--sans-serif: var(--font-sans);
+	--monospace: var(--font-mono);
+	--theme-background: var(--background);
+	--theme-foreground-faintest: var(--border);
+	--theme-foreground-fainter: var(--border);
+	/* Plot's tip and halo fill */
+	--plot-background: var(--background);
+	accent-color: var(--accent-foreground);
+}
+
+:where(.cell-output) :is(h1, h2, h3, h4, h5, h6) {
+	font-family: var(--font-sans);
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--foreground);
+	margin: 0.75rem 0 0.375rem;
+}
+:where(.cell-output) :is(h1, h2, h3, h4, h5, h6):first-child {
+	margin-top: 0;
+}
+:where(.cell-output) h1 {
+	font-size: 1.25rem;
+}
+:where(.cell-output) h2 {
+	font-size: 1.0625rem;
+}
+:where(.cell-output) h3 {
+	font-size: 0.9375rem;
+}
+:where(.cell-output) :is(h4, h5, h6) {
+	font-size: 0.875rem;
+}
+:where(.cell-output) p + p {
+	margin-top: 0.5rem;
+}
+:where(.cell-output) :is(small, figcaption) {
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+:where(.cell-output) :is(code, kbd, pre) {
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+}
+:where(.cell-output) :not(pre) > code {
+	padding: 0.0625rem 0.25rem;
+	border-radius: 4px;
+	background: var(--muted);
+}
+:where(.cell-output) a {
+	color: var(--accent-foreground);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+/* Tables keep the global rule (utils/table.css): rules, no fills. A figure
+   reads down its columns, so digits take equal widths. */
+:where(.cell-output) table {
+	font-variant-numeric: tabular-nums;
+}
+:where(.cell-output) th {
+	font-weight: 600;
+}
+
+/* ---------- controls: Inputs.* and plain markup alike ---------- */
+
+:where(.cell-output) form[class^="inputs-"] {
+	font: 0.8125rem / 1.4 var(--font-sans);
+	--label-width: 9rem;
+	--input-width: 16rem;
+}
+:where(.cell-output) form[class^="inputs-"] > label {
+	color: var(--foreground);
+}
+
+:where(.cell-output) :is(input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"]), select, textarea) {
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--input);
+	border-radius: 4px;
+	background: var(--background);
+	color: var(--foreground);
+	font: inherit;
+	font-variant-numeric: tabular-nums;
+}
+:where(.cell-output) :is(input, select, textarea, button):focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 1px;
+}
+:where(.cell-output) button {
+	padding: 0.25rem 0.625rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	background: var(--background);
+	color: var(--foreground);
+	font: inherit;
+	cursor: pointer;
+}
+:where(.cell-output) button:hover:not(:disabled) {
+	background: var(--muted);
+}
+:where(.cell-output) button:disabled {
+	color: var(--muted-foreground);
+	cursor: default;
+}
+
+/* A slider is a thin rule and a dot, the way the rest of the document draws
+   lines: WebKit's own is a glossy capsule from a different system. */
+:where(.cell-output) input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 1rem;
+	background: transparent;
+	cursor: pointer;
+}
+:where(.cell-output) input[type="range"]::-webkit-slider-runnable-track {
+	height: 0.25rem;
+	border-radius: 9999px;
+	background: var(--border);
+}
+:where(.cell-output) input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 0.875rem;
+	height: 0.875rem;
+	margin-top: -0.3125rem;
+	border-radius: 9999px;
+	background: var(--accent-foreground);
+	border: 2px solid var(--background);
+	box-shadow: 0 0 0 1px var(--accent-foreground);
+}
+
+/* Inputs.table: a sticky header on the page's ground, the global rules' weight. */
+:where(.cell-output) [class^="inputs-"] table thead th {
+	background: var(--background);
+}
+:where(.cell-output) [class^="inputs-"] table :is(td, th) {
+	border-bottom-color: var(--border);
+}
+
+/* ---------- Plot ---------- */
+
+/* Plot sets `font-family` as an SVG attribute and its own styles inside
+   `:where()`, so any rule here outranks both. A mark with no colour written is
+   `currentColor`: a single series draws in the chart colour, the first of the
+   palette several series take (src/utils/chart-palette.ts), where the
+   foreground would fill a bar near-black. What is read rather than measured
+   stays the text colour, and the axes and grid recede to the muted tone. */
+:where(.cell-output) svg[class^="plot-"] {
+	font-family: var(--font-sans);
+	color: var(--chart-3);
+}
+:where(.cell-output) svg[class^="plot-"][class$="-ramp"],
+:where(.cell-output) svg[class^="plot-"] :is(g[aria-label="text"], g[aria-label^="rule"], g[aria-label="tip"], g[aria-label^="crosshair"]) {
+	color: var(--foreground);
+}
+:where(.cell-output) svg[class^="plot-"] :is(g[aria-label*="-axis"], g[aria-label$="-grid"], [aria-label="frame"]) {
+	color: var(--muted-foreground);
+}
+/* A chart that named no width is made as wide as its column
+   (src/notebook/engine.ts), and stays so when the column has changed since.
+   A continuous legend is a second svg in the same figure, and keeps its size. */
+:where(.cell-output) :is(svg[data-plot-fill], figure[data-plot-fill] > svg)[class^="plot-"]:not([class$="-ramp"]) {
+	width: 100%;
+	height: auto;
+}
+:where(.cell-output) figure[class^="plot-"] > h2 {
+	margin: 0 0 0.125rem;
+	font-size: 0.9375rem;
+	font-weight: 600;
+}
+:where(.cell-output) figure[class^="plot-"] > h3 {
+	margin: 0 0 0.5rem;
+	font-size: 0.8125rem;
+	font-weight: 400;
+	color: var(--muted-foreground);
+}
+:where(.cell-output) div[class^="plot-"][class$="-swatches"] {
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}

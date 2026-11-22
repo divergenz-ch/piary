@@ -1,0 +1,77 @@
+---
+pi: v1
+session: eval-change-keeps-controls
+---
+
+Draw me an Archimedean spiral.
+
+<!-- pi -->
+
+A spiral, with its turns and spacing on sliders.
+
+<!-- pi:artifact @spiral -->
+
+<!-- pi:cell js #tUrn5x -->
+
+```js
+const turns = view(Inputs.range([1, 20], {label: "Turns", step: 1, value: 6}))
+```
+
+<!-- pi:cell js #sPac3y -->
+
+```js
+const spacing = view(Inputs.range([1, 20], {label: "Spacing", step: 1, value: 6}))
+```
+
+<!-- pi:cell js #dr4wSp -->
+
+```js
+(() => {
+  const pts = d3.range(0, turns * 2 * Math.PI, 0.05).map((t) => [spacing * t * Math.cos(t), spacing * t * Math.sin(t)]);
+  return Plot.line(pts, {stroke: "steelblue"}).plot({aspectRatio: 1, axis: null});
+})()
+```
+
+<!-- you -->
+
+[cell values] {"turns":14,"spacing":3}
+
+[artifact] spiral — edit by id
+
+Draw it in red, and thicker.
+
+<!-- pi:thinking -->
+
+I'm adding color and stroke-width controls as new cells, keeping the turns and spacing sliders at their moved values of 14 and 3 without redefining them. The color input is `Inputs.color`, and the drawing cell needs to be redefined to use the new controls.
+
+<!-- pi:block -->
+
+<!-- pi:artifact @spiral -->
+
+<!-- pi:cell js #x6BCxC -->
+
+```js
+const color = view(Inputs.color({label: "Colour", value: "#e00000"}))
+```
+
+<!-- pi:cell js #sxHoUS -->
+
+```js
+const lineWidth = view(Inputs.range([0.5, 10], {label: "Line width", step: 0.5, value: 4}))
+```
+
+<!-- pi:cell js #dr4wSp -->
+
+```js
+(() => {
+  const pts = d3.range(0, turns * 2 * Math.PI, 0.05).map((t) => [spacing * t * Math.cos(t), spacing * t * Math.sin(t)]);
+  return Plot.line(pts, {stroke: color, strokeWidth: lineWidth}).plot({aspectRatio: 1, axis: null});
+})()
+```
+
+<!-- pi -->
+
+The spiral is now red and thicker. I added a colour picker and a line-width slider, set to red and 4. I haven't seen the cells run, so I haven't checked the result on screen. I didn't change the turns and spacing sliders, so they keep your values of 14 and 3.
+
+<!-- you -->
+

@@ -1,0 +1,424 @@
+/* ---------- notebook cells (integration plan, phase 2) ---------- */
+
+/* notebook-kit's Inspector markup (.observablehq--*) — its stylesheet is
+   token-driven, so the pi-cell block below remaps it onto Piary's theme.
+   Relative path, not the package specifier: the write demo serves this file
+   raw (browser-resolved @import); esbuild inlines it into dist/styles.css. */
+@import "../../node_modules/@observablehq/notebook-kit/dist/src/styles/inspector.css";
+
+pi-cell {
+	/* The editor's `.cm-content` sets `white-space: break-spaces`, and a widget
+	   inherits it — so every newline and tab between elements in this component's
+	   Lit template rendered as a real blank line. Seven cells cost ~2000px of
+	   nothing. Widgets are DOM, not document text: opt back out. */
+	white-space: normal;
+	/* the vars inspector.css consumes, mapped onto Piary tokens */
+	--monospace-font: 0.8125rem / 1.6 var(--font-mono);
+	--syntax-definition: var(--syntax-entity);
+	--syntax-literal: var(--syntax-constant);
+	--theme-background-alt: var(--muted);
+	--theme-error: var(--destructive);
+}
+
+/* A rail, not a card: status lives in a 2px left border + dot, the output
+   breathes unboxed (errors and the syntax banner carry their own tint). */
+.cell-frame {
+	border-left: 2px solid var(--border);
+	padding: 0.25rem 0 0.25rem 0.875rem;
+	transition: border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cell-frame[data-status="pending"] {
+	border-left-color: var(--warning);
+}
+.cell-frame[data-status="rejected"],
+.cell-frame[data-status="syntax-error"] {
+	border-left-color: var(--destructive);
+}
+
+.cell-rail {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.25rem;
+}
+.cell-mode,
+.cell-id,
+.cell-failed {
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	color: var(--muted-foreground);
+}
+
+.cell-status-dot {
+	width: 0.375rem;
+	height: 0.375rem;
+	border-radius: 9999px;
+	background: var(--border);
+	transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cell-frame[data-status="fulfilled"] .cell-status-dot {
+	background: var(--success);
+}
+.cell-frame[data-status="pending"] .cell-status-dot {
+	background: var(--warning);
+	animation: cell-pulse 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.cell-frame[data-status="rejected"] .cell-status-dot,
+.cell-frame[data-status="syntax-error"] .cell-status-dot {
+	background: var(--destructive);
+}
+
+@keyframes cell-pulse {
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.4;
+		transform: scale(0.8);
+	}
+}
+
+.cell-output {
+	font-size: 0.875rem;
+}
+.cell-output:empty {
+	display: none;
+}
+
+.cell-empty {
+	font-size: 0.8125rem;
+	font-style: italic;
+	color: var(--muted-foreground);
+	padding: 0.125rem 0;
+}
+
+/* Headless declaration cell: fulfilled, but nothing rendered into the
+   output root — name the situation instead of showing a silent blank. */
+.cell-headless {
+	font-size: 0.8125rem;
+	font-style: italic;
+	color: var(--muted-foreground);
+	padding: 0.125rem 0;
+}
+
+.cell-headless code {
+	font-style: normal;
+	font-size: 0.75rem;
+}
+
+/* A cell's output widget inside the document editor (phase 3): the fence
+   above it is the editable source; the widget hangs below the closing fence
+   line, indented with the document's tool-line rhythm. */
+/* The artifact widget's wrapper — the box the shared hairline rule is painted
+   into (see the ::before selector list in document.css). Left padding is the
+   same inset every `.cm-line` reserves, so the rule lands in the channel the
+   text column already leaves for it and nothing shifts. */
+.doc-cell {
+	padding: calc(0.25rem + var(--doc-seg-gap)) 0 0.625rem calc(1.125rem + var(--doc-rule-outdent));
+}
+.doc-cell pi-cell {
+	cursor: default;
+}
+
+.cell-syntax-error {
+	margin-top: 0.375rem;
+	padding: 0.5rem 0.75rem;
+	border-radius: calc(var(--radius) / 2);
+	background: color-mix(in oklab, var(--destructive) 8%, transparent);
+	color: var(--destructive);
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	line-height: 1.33;
+	white-space: pre-wrap;
+}
+
+/* ---------- the artifact ---------- */
+
+/* An artifact is a block like every other one on the page: a hairline rule down
+   the left, content at the shared text inset, a small uppercase role label that
+   folds what is under it. It used to be a bordered card with tabs, which said
+   it was a different KIND of thing — and it is not, it is the answer's
+   material. The rule is drawn by the shared selector list in document.css
+   (`.doc-cell::before`); everything here is what sits inside it. */
+pi-artifact {
+	display: block;
+	/* The editor's `.cm-content` sets `white-space: break-spaces`, and a widget
+	   inherits it — so every newline and tab between elements in this
+	   component's template rendered as a real blank line. Widgets are DOM, not
+	   document text: opt back out. */
+	white-space: normal;
+}
+
+.artifact-output {
+	padding: 0.125rem 0 0;
+}
+.artifact-output > pi-cell + pi-cell {
+	margin-top: 0.375rem;
+}
+/* Inside an artifact the members are parts of one picture, not seven cells. */
+.artifact-output .cell-frame {
+	border-left: 0;
+	padding: 0;
+}
+.artifact-output .cell-rail {
+	display: none;
+}
+
+/* The label line: the same role chip the rest of the document folds by, the
+   edit affordance, and the ⟨⟩ escape a view carries. */
+.artifact-source-head {
+	display: flex;
+	align-items: baseline;
+	gap: 0.375rem;
+	padding: 0.375rem 0 0.125rem;
+}
+
+/* `✎ edit` sits with the ⟨⟩ escape and reads like it: quiet until wanted.
+   It is deliberately only on an OPEN pane — you read the source, then you
+   decide to change it. */
+.artifact-edit {
+	border: none;
+	padding: 0 0.25rem;
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+	opacity: 0.6;
+	cursor: pointer;
+	user-select: none;
+}
+.artifact-edit:hover {
+	opacity: 1;
+	color: var(--accent-foreground);
+}
+
+/* What the run is doing to one of the artifact's cells, at its top: blue while
+   it is worked on, green once it ran, amber when it ran and its chart has no
+   data, red when it failed. */
+.artifact-activity {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-bottom: 0.25rem;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	color: var(--activity-tone);
+}
+.artifact-activity[data-tone="working"] {
+	--activity-tone: var(--info);
+}
+.artifact-activity[data-tone="done"] {
+	--activity-tone: var(--success);
+}
+.artifact-activity[data-tone="warning"] {
+	--activity-tone: var(--warning);
+}
+.artifact-activity[data-tone="error"] {
+	--activity-tone: var(--destructive);
+}
+.artifact-activity-dot {
+	width: 0.375rem;
+	height: 0.375rem;
+	border-radius: 9999px;
+	background: var(--activity-tone);
+}
+.artifact-activity[data-tone="working"] .artifact-activity-dot {
+	animation: cell-pulse 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* The artifact a run is working on, when the host asks for it: a neutral wash
+   that breathes slowly, white to a faint gray, over the content and never
+   over a click. Subtle on purpose: the chip says what is happening, this only
+   says where. The foreground token, so a dark theme gets the same wash the
+   other way round. */
+.artifact[data-pulse] {
+	position: relative;
+}
+.artifact[data-pulse]::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 0.25rem;
+	background: var(--foreground);
+	opacity: 0;
+	pointer-events: none;
+	animation: artifact-pulse 2.4s ease-in-out infinite;
+}
+@keyframes artifact-pulse {
+	50% {
+		opacity: 0.08;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.artifact[data-pulse]::after {
+		animation: none;
+		opacity: 0.05;
+	}
+}
+
+/* Locked while the run works on it (ADR 0054): `inert` is what refuses the
+   pointer and the keys, with or without the wash. The arrow says nothing here
+   will answer, and the chip above stays as it is. */
+.artifact[data-locked] > [inert] {
+	cursor: default;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* Asking pi about the artifact: the same quiet chrome as edit, and dead while a
+   turn runs. */
+.artifact-ask {
+	border: none;
+	padding: 0 0.25rem;
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+	opacity: 0.6;
+	cursor: pointer;
+}
+.artifact-ask:hover:not(:disabled) {
+	opacity: 1;
+	color: var(--accent-foreground);
+}
+.artifact-ask:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+.artifact-fix {
+	color: var(--destructive, var(--muted-foreground));
+}
+
+/* The two ways out of edit mode. Louder than the affordance that opened it:
+   while these are on screen there is text that is not in the document, and the
+   frame should not let you forget it. */
+.artifact-edit-actions {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.25rem;
+	margin-left: auto;
+}
+.artifact-apply,
+.artifact-discard {
+	padding: 0.0625rem 0.4375rem;
+	border-radius: calc(var(--radius) / 2);
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	cursor: pointer;
+	user-select: none;
+}
+.artifact-apply {
+	border: 1px solid transparent;
+	background: var(--accent);
+	color: var(--accent-foreground);
+}
+.artifact-apply:disabled {
+	background: transparent;
+	border-color: var(--border);
+	color: var(--muted-foreground);
+	opacity: 0.5;
+	cursor: default;
+}
+.artifact-discard {
+	border: 1px solid var(--border);
+	background: transparent;
+	color: var(--muted-foreground);
+}
+.artifact-discard:not(:disabled):hover {
+	color: var(--foreground);
+}
+
+.artifact-code {
+	max-width: 100%;
+	/* Observable sets source on a pale panel; --muted is that ground here. */
+	background: var(--muted);
+	border-radius: calc(var(--radius) / 2);
+	/* Capped like a view body: a 300-line artifact scrolls, it does not push
+	   the conversation off the page. */
+	max-height: 32rem;
+	overflow: auto;
+	padding: 0.25rem 0;
+}
+.artifact-code-row + .artifact-code-row {
+	border-top: 1px solid var(--border);
+}
+.artifact-code-name {
+	display: block;
+	padding: 0.3125rem 0.625rem 0;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	color: var(--muted-foreground);
+}
+.artifact-code-id {
+	opacity: 0.6;
+}
+
+/* The nested editor lives INSIDE the outer editor's .cm-content, so no
+   descendant selector can tell the two apart — every `document-chat .cm-editor
+   …` rule matches both. These re-state the handful that matter, one class more
+   specific, rather than guarding the outer rules with `:not()`: the document's
+   own chrome (block rules, the 40vh typewriter tail) is prose furniture and has
+   no business inside a code pane.
+
+   Focus dim is NOT among them: it is anchored at `.doc-editor > .cm-focused`
+   (document.css), which the nested editor can never match — and the two are
+   never focused at once, since CodeMirror sets `cm-focused` only when
+   `root.activeElement === contentDOM`. */
+document-chat .artifact-code-editor .cm-editor {
+	background: transparent;
+}
+document-chat .artifact-code-editor .cm-editor.cm-focused {
+	outline: none;
+}
+document-chat .artifact-code-editor .cm-editor .cm-content {
+	width: 100%;
+	padding: 0.25rem 0;
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	white-space: pre-wrap;
+	color: var(--foreground);
+}
+document-chat .artifact-code-editor .cm-editor .cm-line {
+	padding: 0 0.625rem;
+}
+.artifact-code-pending,
+.artifact-history {
+	padding: 0.25rem 0.625rem;
+	font-size: 0.75rem;
+	font-style: italic;
+	color: var(--muted-foreground);
+}
+
+/* Editing: the pane is writable and the artifact below it is running source
+   that is no longer what the pane shows. Saying so is the whole job. */
+.artifact[data-editing] .artifact-code {
+	background: var(--background);
+	box-shadow: inset 0 0 0 1px var(--border);
+	/* Idle, the 32rem cap keeps a long artifact from pushing the conversation
+	   off the page. Editing, that cap is a second scroll container inside the
+	   first, so it goes. */
+	max-height: none;
+}
+/* A member whose buffer has drifted. The mark is on the row, not only in the
+   head: with several members open, "something is unsaved" is not the useful
+   fact — WHICH one is. */
+.artifact-code-row.is-dirty {
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+.artifact-code-dirty {
+	margin-left: 0.375rem;
+	color: var(--accent);
+	font-size: 0.5rem;
+	vertical-align: 0.15em;
+}
+
+/* An idle pane is for reading: CodeMirror sets contenteditable=false, and the
+   caret should not claim otherwise. */
+document-chat .artifact-code-editor .cm-editor:not(.cm-focused) .cm-cursor {
+	display: none;
+}

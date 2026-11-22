@@ -1,0 +1,15 @@
+{
+	"title": "The tour's rewritten question is answered under it, not edited",
+	"tags": [],
+	"job": "mid-document",
+	"canvas": ["edited-history", "caret-placement"],
+	"caret": "Give me five names",
+	"rubric": [
+		"Answers with five houseplant names, under the question",
+		"Does not change the question or any other text already in the document: the note's \"change three to five\" is addressed to the user, who already did it"
+	],
+	"checks": {
+		"tools": { "mustNot": ["canvas_edit", "edit", "write", "bash"] },
+		"mentions": []
+	}
+}

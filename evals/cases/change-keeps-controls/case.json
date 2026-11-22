@@ -1,0 +1,17 @@
+{
+	"title": "[AI DRAFT] Changing a drawing keeps the controls the user may already have moved",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": ["cell-redefine", "markers-intact"],
+	"rubric": [
+		"Redefines the drawing cell #dr4wSp, with the same group",
+		"Leaves #tUrn5x and #sPac3y alone, or redefines them keeping the names `turns` and `spacing` and the values the [cell values] line says the user set (14 and 3)",
+		"Puts the newly varied properties (colour, stroke width) on controls of their own rather than hard-coding them",
+		"Does not write a second spiral"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write"] },
+		"cellRedefines": "dr4wSp",
+		"cellMentions": ["view(Inputs."]
+	}
+}

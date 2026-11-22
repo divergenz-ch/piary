@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] Extending an artifact keeps its block and markers intact",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": ["markers-intact", "cell-redefine"],
+	"rubric": [
+		"Redefines #s4v1n6 as an Inputs.range slider from 100 to 2000",
+		"Leaves the result cell working, reading the slider's value",
+		"Does not write a separate new calculator"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write"] },
+		"cellRedefines": "s4v1n6"
+	}
+}

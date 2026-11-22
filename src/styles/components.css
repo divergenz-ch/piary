@@ -1,0 +1,403 @@
+/* Piary component styles — plain CSS on the tokens in theme.css.
+   Components render in light DOM; rules are scoped by custom-element tag
+   where possible, shared classes otherwise. */
+
+/* ---------- shared ---------- */
+
+.hidden {
+	display: none !important;
+}
+
+.icon {
+	display: inline-block;
+	flex-shrink: 0;
+}
+.icon-xs {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+.icon-sm {
+	width: 1rem;
+	height: 1rem;
+}
+.icon-md {
+	width: 1.25rem;
+	height: 1.25rem;
+}
+.icon-lg {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+.icon-xl {
+	width: 2rem;
+	height: 2rem;
+}
+
+@keyframes pulse {
+	50% {
+		opacity: 0.5;
+	}
+}
+
+/* ---------- session-list ---------- */
+
+session-list nav {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+session-list .new-session {
+	padding: 0.375rem 0.75rem;
+	border: 1px solid transparent;
+	border-radius: 1.25rem;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	cursor: pointer;
+}
+
+/* Each row is its own chip surface — the list itself stays transparent. */
+session-list .session-row {
+	display: flex;
+	align-items: center;
+	gap: 0.125rem;
+	padding: 0.125rem 0.25rem;
+	border: 1px solid var(--border);
+	border-radius: 1.25rem;
+	background: var(--background);
+	cursor: grab;
+}
+session-list .session-row.dragging {
+	opacity: 0.4;
+}
+/* Drop indicator: a line on the edge the dragged chip will land at. */
+session-list .session-row.drop-before,
+session-list .session-row.drop-after {
+	position: relative;
+}
+session-list .session-row.drop-before::after,
+session-list .session-row.drop-after::after {
+	content: "";
+	position: absolute;
+	left: 0.25rem;
+	right: 0.25rem;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--primary);
+}
+session-list .session-row.drop-before::after {
+	top: -0.1875rem;
+}
+session-list .session-row.drop-after::after {
+	bottom: -0.1875rem;
+}
+session-list .session-row:active {
+	cursor: grabbing;
+}
+session-list .session-row:hover,
+session-list .session-row.active {
+	background: var(--accent);
+}
+session-list .session-row.active .session-item {
+	color: inherit;
+	font-weight: 500;
+}
+session-list .session-item {
+	border-radius: 1.25rem;
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	text-align: left;
+	padding: 0.25rem 0.5rem;
+	border: none;
+	border-radius: 0.25rem;
+	background: transparent;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	overflow: hidden;
+	white-space: nowrap;
+	cursor: pointer;
+	color: var(--muted-foreground);
+}
+session-list .session-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+session-list .session-status {
+	width: 0.4375rem;
+	height: 0.4375rem;
+	border-radius: 9999px;
+	background: var(--muted-foreground);
+	opacity: 0.7;
+	flex-shrink: 0;
+}
+session-list .session-status.streaming {
+	background: var(--accent-foreground);
+	animation: pulse 1.2s ease-in-out infinite;
+}
+session-list .session-status.draft {
+	background: var(--muted-foreground);
+}
+session-list .session-status.offline {
+	background: var(--destructive);
+	opacity: 1;
+}
+session-list .session-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.375rem;
+	height: 1.375rem;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	color: var(--muted-foreground);
+	cursor: pointer;
+	opacity: 0;
+	padding: 0;
+}
+session-list .session-row:hover .session-action,
+session-list .session-row:focus-within .session-action {
+	opacity: 0.65;
+}
+session-list .session-action:hover {
+	background: transparent;
+	color: var(--foreground);
+	opacity: 1;
+}
+session-list .session-action.danger:hover {
+	color: var(--destructive);
+}
+session-list .session-action.danger.confirm {
+	color: var(--destructive);
+	opacity: 1;
+	/* armed state shows "delete?" as text — let it out of the icon square */
+	width: auto;
+	padding: 0 0.25rem;
+	font-size: 0.6875rem;
+	white-space: nowrap;
+}
+session-list .session-rename {
+	flex: 1;
+	min-width: 0;
+	padding: 0.125rem 0.4375rem;
+	border: 1px solid var(--border);
+	border-radius: 0.25rem;
+	background: var(--background);
+	color: var(--foreground);
+	font: inherit;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+}
+
+.doc-save-state {
+	font-size: 0.75rem;
+	line-height: 1rem;
+	padding: 0.125rem 0.375rem;
+	border-radius: 9999px;
+	color: var(--muted-foreground);
+	background: var(--muted);
+}
+.doc-save-state.saved {
+	color: var(--success);
+}
+.doc-save-state.saving,
+.doc-save-state.unsaved {
+	color: var(--muted-foreground);
+}
+.doc-save-state.offline {
+	color: var(--destructive);
+	background: color-mix(in oklab, var(--destructive) 10%, transparent);
+}
+.doc-save-state.recovered {
+	color: var(--accent-foreground);
+	background: var(--accent);
+}
+
+/* ---------- chat-index ---------- */
+
+chat-index {
+	position: relative;
+	user-select: none;
+}
+
+chat-index .chat-index-rail {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-height: inherit;
+	box-sizing: border-box;
+	padding: 0.375rem 0.25rem;
+	overflow: hidden;
+	touch-action: none; /* the rail scrubs; don't let touch scroll the page */
+}
+
+chat-index .chat-index-item {
+	position: relative;
+	width: 1.5rem;
+	height: 1.25rem; /* hit area; the visible dot is the ::after */
+	min-height: 0;
+	flex: 0 1 1.25rem; /* compress long timelines so the full rail stays visible */
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+}
+chat-index .chat-index-item::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	translate: -50% -50%;
+	width: 8px;
+	height: 8px;
+	border-radius: 9999px;
+	background: var(--muted-foreground);
+	opacity: 0.4;
+	transition:
+		scale 0.15s,
+		opacity 0.15s;
+}
+
+/* User turns are structural ticks; color, not shape, indicates position. */
+chat-index .chat-index-item.kind-user::after {
+	width: 16px;
+	height: 4px;
+	border-radius: 2px;
+}
+
+/* Tool calls: small mono squares. Subagents: accent, slightly larger. */
+chat-index .chat-index-item.kind-tool::after {
+	border-radius: 2px;
+	width: 7px;
+	height: 7px;
+}
+chat-index .chat-index-item.kind-agent::after {
+	border-radius: 2px;
+	width: 9px;
+	height: 9px;
+	background: var(--accent-foreground);
+	opacity: 0.8;
+}
+
+/* Block members: smaller, nudged right under their head tick. */
+/* ⌥-drag reorder: the grabbed block's dots brighten; the drop slot is a bar. */
+chat-index .chat-index-item.reordering::after {
+	opacity: 1;
+	background: var(--foreground);
+}
+chat-index .chat-index-drop {
+	position: absolute;
+	left: 0.125rem;
+	right: 0.125rem;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--foreground);
+	pointer-events: none;
+}
+
+chat-index .chat-index-item.member {
+	height: 1rem;
+	flex-basis: 1rem;
+}
+chat-index .chat-index-item.member::after {
+	left: 70%;
+	width: 6px;
+	height: 6px;
+}
+chat-index .chat-index-item.member.kind-agent::after {
+	width: 8px;
+	height: 8px;
+}
+
+/* Branch points: a small fork glyph riding the head tick's left end (step 7). */
+chat-index .chat-index-item.forked::before {
+	content: "⑂";
+	position: absolute;
+	top: 50%;
+	left: 0;
+	translate: 0 -65%;
+	font-size: 0.625rem;
+	line-height: 1;
+	color: var(--muted-foreground);
+}
+
+/* Mode blocks (step 12): the head bar keeps its shape and takes the mode's
+   ink — plan reads as a hollow bar, a sub-agent block as accent. */
+chat-index .chat-index-item.badge-plan::after {
+	background: transparent;
+	box-shadow: inset 0 0 0 1px var(--foreground);
+	opacity: 0.7;
+}
+chat-index .chat-index-item.badge-agent::after {
+	background: var(--accent-foreground);
+	opacity: 0.8;
+}
+
+/* "You are here" (step 13): the caret block's cluster brightens — opacity
+   only, so every shape and badge keeps its ink. Scroll's `current` dark tick
+   stays the reading position; the caret is an overlay (rules below win). */
+chat-index .chat-index-item.current-block::after {
+	opacity: 0.85;
+}
+
+chat-index .chat-index-item.running::after {
+	background: var(--accent-foreground);
+	opacity: 1;
+	animation: pulse 1.2s ease-in-out infinite;
+}
+chat-index .chat-index-item.error::after {
+	background: var(--destructive);
+	opacity: 1;
+}
+
+chat-index .chat-index-item.active::after {
+	opacity: 1;
+	scale: 1.5;
+}
+
+/* Position changes only the point's color; its semantic shape stays intact. */
+chat-index .chat-index-item.current {
+	z-index: 1;
+}
+chat-index .chat-index-item.current::after {
+	background: var(--foreground);
+	opacity: 1;
+}
+chat-index .chat-index-item.active {
+	z-index: 2;
+}
+
+chat-index .chat-index-bubble {
+	position: absolute;
+	right: calc(100% + 0.5rem);
+	translate: 0 -50%;
+	max-width: 18rem;
+	padding: 0.25rem 0.625rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--card);
+	color: var(--card-foreground);
+	box-shadow: var(--shadow-md);
+	font-size: 0.75rem;
+	line-height: 1.25rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+}
+chat-index .chat-index-bubble-kind {
+	margin-right: 0.5rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+

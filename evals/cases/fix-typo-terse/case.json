@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] Fix my conversation: a terse \"fix my typos\" changes the earlier line in place",
+	"tags": ["AI DRAFT"],
+	"job": "fix-conversation",
+	"canvas": ["fix-conversation"],
+	"rubric": [
+		"Calls canvas_edit to change \"Firday\" to \"Friday\" in the user's earlier line",
+		"Does not answer by repeating the corrected line as the reply",
+		"Does not edit the conversation's file"
+	],
+	"checks": {
+		"tools": { "must": ["canvas_edit"], "mustNot": ["edit", "write"] },
+		"conversationUntouched": true
+	}
+}

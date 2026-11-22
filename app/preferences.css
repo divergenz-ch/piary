@@ -1,0 +1,55 @@
+/* The Preferences window (`app/preferences-window.ts`): a short form in the
+   canvas's own type and tokens, topics as headed groups of rows. */
+body {
+	padding: 1.25rem 1.5rem;
+	font-size: 0.875rem;
+	/* A form, not a document: nothing in it is text to select. */
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: default;
+}
+
+.prefs-group + .prefs-group {
+	margin-top: 1.5rem;
+}
+
+.prefs-group h2 {
+	margin-bottom: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+.prefs-row {
+	display: flex;
+	align-items: baseline;
+	gap: 0.625rem;
+	padding: 0.5rem 0;
+	border-top: 1px solid var(--border);
+}
+
+.prefs-row input {
+	/* On the label's baseline rather than its box. */
+	transform: translateY(0.125rem);
+	accent-color: var(--info);
+}
+
+.prefs-words {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.prefs-hint {
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+/* A change that could not be kept, at the window's foot. Empty, it is no line. */
+#status {
+	margin-top: 1rem;
+	font-size: 0.75rem;
+	color: var(--destructive);
+}

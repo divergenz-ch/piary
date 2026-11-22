@@ -1,0 +1,18 @@
+{
+	"title": "[AI DRAFT] A mid-page prompt needs the text above and below it",
+	"tags": ["AI DRAFT", "known gap"],
+	"job": "mid-document",
+	"canvas": ["context-both-sides", "caret-placement"],
+	"caret": "Which of the options listed below fits",
+	"rubric": [
+		"Known gap: pi is given only the text above the prompt, so it cannot pass until the question 'Should pi see the text below a mid-page prompt?' is settled",
+		"Picks Borealis 16: the only one with 32 GB under 1 800 CHF",
+		"Uses the budget from above and the table from below",
+		"One sentence of reasoning, as asked"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write"] },
+		"maxWords": 60,
+		"mentions": ["borealis"]
+	}
+}

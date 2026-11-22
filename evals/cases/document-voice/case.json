@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] The answer keeps the document's language and voice",
+	"tags": ["AI DRAFT"],
+	"job": "explain",
+	"canvas": [],
+	"rubric": [
+		"Answers in German, the document's language",
+		"Exactly three short points, as asked",
+		"No preamble before the list"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write", "bash"] },
+		"maxWords": 90
+	}
+}

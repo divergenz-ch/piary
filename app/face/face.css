@@ -1,0 +1,293 @@
+/* The face's pill, last in the model chip (`app/face/pill.ts`): the pills'
+   height and border, an icon and no words. How it is drawn says whether the
+   face is read and whether the camera is on. */
+.face-pill {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	background: var(--background);
+	padding: 0.125rem 0.3125rem;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+
+.face-pill:hover {
+	color: var(--foreground);
+}
+
+/* Off: the icon alone, faint. */
+.face-pill[data-state="off"] {
+	border-color: transparent;
+	opacity: 0.6;
+}
+
+/* On, with the camera off or coming: outlined in the text's own colour. */
+.face-pill[data-state="idle"],
+.face-pill[data-state="starting"],
+.face-pill[data-state="watching"] {
+	border-color: var(--foreground);
+	color: var(--foreground);
+}
+
+.face-pill[data-state="starting"] {
+	animation: face-starting 1.2s ease-in-out infinite;
+}
+
+/* The camera is on: a dot, the colour of the system's own camera light. */
+.face-pill[data-state="watching"]::after {
+	content: "";
+	position: absolute;
+	top: -0.125rem;
+	right: -0.125rem;
+	width: 0.4375rem;
+	height: 0.4375rem;
+	border: 1px solid var(--background);
+	border-radius: 9999px;
+	background: var(--success);
+}
+
+/* On, with nothing read: not agreed to yet, or nothing in view to read. */
+.face-pill[data-state="ask"],
+.face-pill[data-state="no-face"],
+.face-pill[data-state="two-faces"],
+.face-pill[data-state="turned"],
+.face-pill[data-state="no-camera"] {
+	border-style: dashed;
+	border-color: var(--muted-foreground);
+}
+
+.face-pill[data-state="refused"],
+.face-pill[data-state="failed"] {
+	border-color: var(--warning);
+	color: var(--warning);
+}
+
+@keyframes face-starting {
+	50% {
+		opacity: 0.45;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.face-pill[data-state="starting"] {
+		animation: none;
+	}
+}
+
+/* A sentence a menu says before its choices (`app/menu.ts`). */
+.doc-block-menu .doc-menu-note {
+	max-width: 15rem;
+	padding: 0.35rem 0.6rem;
+	font-size: 0.75rem;
+	line-height: 1.4;
+	white-space: normal;
+	color: var(--muted-foreground);
+	user-select: none;
+}
+
+/* What is read and what is sent, before the camera is first used
+   (`app/face/sheet.ts`): a dialog in the document, as sign-in is. */
+.doc-face-sheet p {
+	margin: 0.375rem 0 0;
+	color: var(--muted-foreground);
+}
+
+.doc-face-sheet pre {
+	margin: 0.375rem 0 0;
+	padding: 0.375rem 0.5rem;
+	border-radius: calc(var(--radius) - 2px);
+	background: var(--muted);
+	font-size: 0.8125em;
+	white-space: pre-wrap;
+}
+
+/* The message as it stands would carry something: a mark at the pill's foot. */
+.face-pill[data-lines="true"]::before {
+	content: "";
+	position: absolute;
+	bottom: -0.125rem;
+	right: -0.125rem;
+	width: 0.3125rem;
+	height: 0.3125rem;
+	border: 1px solid var(--background);
+	border-radius: 9999px;
+	background: var(--foreground);
+}
+
+/* Text a menu shows as it was written (`app/menu.ts`): a block, line for line. */
+.doc-block-menu .doc-menu-verbatim {
+	max-width: 24rem;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	white-space: pre-wrap;
+	color: var(--foreground);
+	user-select: text;
+}
+
+/* What the camera reads and what would be sent (`app/face/inspector.ts`): a
+   panel over the chip that stays while the user types. */
+.face-inspector {
+	position: fixed;
+	z-index: 29;
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	width: min(22rem, calc(100vw - 1rem));
+	max-height: calc(100vh - 6rem);
+	overflow-y: auto;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--background);
+	box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+	font-size: 0.75rem;
+	line-height: 1.4;
+	color: var(--foreground);
+}
+
+.face-inspector [hidden] {
+	display: none;
+}
+
+.face-inspector-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.face-inspector-title {
+	font-weight: 600;
+}
+
+.face-inspector-close {
+	display: inline-flex;
+	border: 0;
+	background: none;
+	padding: 0.125rem;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+
+.face-inspector-says,
+.face-inspector-hint {
+	margin: 0;
+	color: var(--muted-foreground);
+}
+
+.face-inspector-label {
+	margin-top: 0.25rem;
+	font-size: 0.6875rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+.face-level {
+	display: grid;
+	grid-template-columns: 8.5rem 1fr 4rem;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.face-level[data-read="false"] {
+	opacity: 0.45;
+}
+
+.face-level-track {
+	height: 0.3125rem;
+	border-radius: 9999px;
+	background: var(--muted);
+	overflow: hidden;
+}
+
+.face-level-fill {
+	height: 100%;
+	border-radius: 9999px;
+	background: var(--foreground);
+}
+
+.face-level-word {
+	color: var(--muted-foreground);
+}
+
+.face-recent {
+	margin: 0;
+	padding: 0;
+	max-height: 7.5rem;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.face-recent s,
+.face-recent-none {
+	color: var(--muted-foreground);
+}
+
+.face-recent-why {
+	margin-left: 0.5rem;
+	color: var(--muted-foreground);
+}
+
+.face-draft {
+	margin: 0;
+	padding: 0.375rem 0.5rem;
+	border-radius: calc(var(--radius) - 2px);
+	background: var(--muted);
+	font-size: 0.95em;
+	white-space: pre-wrap;
+}
+
+.face-draft[data-empty="true"] {
+	font-family: inherit;
+	color: var(--muted-foreground);
+}
+
+.face-tuning-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+	margin-top: 0.125rem;
+}
+
+.face-tuning-label {
+	flex: 1 0 100%;
+	color: var(--muted-foreground);
+}
+
+.face-tuning-choice,
+.face-inspector-toggle {
+	border: 1px solid var(--border);
+	border-radius: 9999px;
+	background: var(--background);
+	padding: 0.0625rem 0.5rem;
+	font: inherit;
+	color: var(--muted-foreground);
+	cursor: pointer;
+}
+
+.face-inspector-toggle {
+	align-self: flex-start;
+}
+
+.face-tuning-choice[aria-pressed="true"],
+.face-inspector-toggle[aria-pressed="true"] {
+	border-color: var(--foreground);
+	color: var(--foreground);
+}
+
+.face-inspector-toggle:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/* The camera's picture, as a mirror shows it (`app/face/mediapipe.ts`). */
+.face-picture {
+	display: block;
+	width: 100%;
+	border-radius: calc(var(--radius) - 2px);
+	transform: scaleX(-1);
+}

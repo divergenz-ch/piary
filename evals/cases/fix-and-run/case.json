@@ -1,0 +1,16 @@
+{
+	"title": "[AI DRAFT] Fix a failing script and report its real output",
+	"tags": ["AI DRAFT"],
+	"job": "fix-and-run",
+	"canvas": [],
+	"rubric": [
+		"Fixes the typo (ammount) and the stray throw",
+		"Runs the script and quotes its real output: Total: 65.00, Largest: 40",
+		"Says what was wrong briefly"
+	],
+	"checks": {
+		"tools": { "must": ["bash"] },
+		"files": { "changed": ["report.js"] },
+		"mentions": ["65.00"]
+	}
+}

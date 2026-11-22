@@ -1,0 +1,10 @@
+FERNHILL MILLS
+Invoice no. FM-2291
+Date: 2026-09-28
+Bill to: Bäckerei Lindner
+
+Type 550 wheat flour, 25 kg x 14 ... 385.00
+Delivery ... 12.00
+
+Total: EUR 397.00
+Status: PAID 2026-10-02

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Piary</title>
+		<style>
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+			}
+			/* The conversation list's column, then the conversation in the rest
+			   (app/conversations.css). */
+			body {
+				display: flex;
+			}
+			#app {
+				height: 100%;
+				flex: 1 1 auto;
+				min-width: 0;
+			}
+			/* The canvas's overlay chip (document.css), at the top of the
+			   window: this page has no bar for it to sit below. Scoped to `body`
+			   because document.css is injected after this block and would win a
+			   tie. */
+			body > .doc-overlays {
+				top: 0.625rem;
+			}
+			/* An empty line is no line. The chip collapses rather than being
+			   hidden, so `#status` stays in the accessibility tree and the next
+			   notice written into it is announced. */
+			.doc-alert:has(#status:empty) {
+				padding: 0;
+				border: 0;
+				box-shadow: none;
+			}
+			#status:empty + .doc-alert-action {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app"></div>
+		<div class="doc-overlays">
+			<div class="doc-alert notice">
+				<span id="status" role="status" aria-live="polite"></span>
+				<button id="status-dismiss" class="doc-alert-action" type="button">dismiss</button>
+			</div>
+		</div>
+		<script type="module" src="./main.ts"></script>
+	</body>
+</html>

@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] A prompt in the middle of the page is answered there",
+	"tags": ["AI DRAFT"],
+	"job": "mid-document",
+	"canvas": ["caret-placement", "markers-intact"],
+	"caret": "Suggest one thing to do on Saturday morning",
+	"rubric": [
+		"One suggestion near Alfama, in one line as asked",
+		"Does not comment on the packing list below unless relevant"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write"] },
+		"maxWords": 50
+	}
+}

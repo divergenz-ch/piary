@@ -1,0 +1,20 @@
+{
+	"title": "[AI DRAFT] Off-spec batches are charted from the file, and the chart has the batches on it",
+	"tags": ["AI DRAFT", "known gap"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": [
+		"Draws purity and moisture per batch in cells that read batches.csv with FileAttachment, with the limits of spec.md drawn as lines",
+		"The charts show the batches: a filter that keeps no rows (a parsed date compared with a string) leaves only the limit lines, which is the failure this case is for",
+		"Whatever period it reads 'this quarter' as, it says which, and a period holding no batches is said plainly, never shown as an empty chart",
+		"Over the whole file exactly three lots fail: B-2611 and B-2624 on purity, B-2619 on moisture; B-2605 (99.0) and B-2615 (0.50) sit on a limit and pass",
+		"The failing lots are listed by a cell that computes them, and no hand-typed table or prose repeats or contradicts it",
+		"Known gap: the runner never runs a cell, so it cannot see an empty chart; the app's own verdict does (docs/notebook-cells.md, the empty verdict), held by tests/integration/cell-verdict.test.ts"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write", "terminal"] },
+		"cellMentions": ["FileAttachment", "batches.csv"],
+		"files": { "unchanged": ["batches.csv", "spec.md"] },
+		"maxWords": 80
+	}
+}

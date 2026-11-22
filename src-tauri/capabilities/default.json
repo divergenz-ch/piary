@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the canvas is allowed to call beyond the app's own commands, which Tauri allows to every window because build.rs declares no AppManifest::commands. The core APIs are denied unless granted here \u2014 which is why core:event:default is listed rather than assumed. A missing grant reaches the page as a rejected promise and shows up nowhere else.",
+  "windows": [
+    "main",
+    "doc-*",
+    "preferences",
+    "import",
+    "export"
+  ],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default"
+  ]
+}

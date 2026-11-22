@@ -1,0 +1,3209 @@
+{
+	"meta": {
+		"date": "2026-11-15T12:55:51.986Z",
+		"pi": "1.0.4",
+		"prompt": "pi-extension/system-prompt.md",
+		"models": "anthropic/claude-sonnet-5-5",
+		"cases": "31"
+	},
+	"outcomes": [
+		{
+			"slug": "ab-test-skeptic",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Checking a claimed A/B lift shows the computation, from the file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls terminal",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves caravel_ab.csv",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves caravel_summary.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "a cell holds \"caravel_ab.csv\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat caravel_summary.md; head -5 caravel_ab.csv; wc -l caravel_ab.csv",
+						"timeout": 20
+					},
+					"failed": false
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 400
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat caravel_ab.csv | tail -26; python3 -c \"\nimport csv,math\nr=list(csv.DictReader(open('caravel_ab.csv')))\nfor v in['control','new_checkout']:\n  x=[i for i in r if i['variant']==v];print(v,len(x),sum(int(i['visitors']) for i in x),sum(int(i['conversions']) for i in x))\n\"",
+						"timeout": 20
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "(async () => {\n  const rows = await FileAttachment(\"caravel_ab.csv\").csv({typed: true});\n  const g = v => { const r = rows.filter(d => d.variant === v);\n    const n = d3.sum(r, d => d.visitors), c = d3.sum(r, d => d.conversions); return {n, c, p: c/n}; };\n  const a = g(\"control\"), b = g(\"new_checkout\");\n  const pp = (a.c + b.c) / (a.n + b.n);\n  const se = Math.sqrt(pp*(1-pp)*(1/a.n + 1/b.n));\n  const z = (b.p - a.p) / se;\n  const erf = x => { const t = 1/(1+0.3275911*Math.abs(x)); const y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x>=0?y:-y; };\n  const p = 2*(1 - 0.5*(1+erf(Math.abs(z)/Math.SQRT2)));\n  const sed = Math.sqrt(a.p*(1-a.p)/a.n + b.p*(1-b.p)/b.n), d = b.p - a.p;\n  const f = x => (100*x).toFixed(2) + \"%\";\n  return htl.html`<table style=\"border-collapse:collapse\">\n  <tr><th></th><th>visitors</th><th>conversions</th><th>rate</th></tr>\n  <tr><td>control</td><td>${a.n}</td><td>${a.c}</td><td>${f(a.p)}</td></tr>\n  <tr><td>new_checkout</td><td>${b.n}</td><td>${b.c}</td><td>${f(b.p)}</td></tr></table>\n  <p>Absolute diff ${f(d)}; relative lift <b>${(100*d/a.p).toFixed(1)}%</b><br>\n  Pooled p = ${f(pp)}, SE = ${f(se)}, z = ${z.toFixed(2)}, two-sided <b>p ≈ ${p.toFixed(3)}</b><br>\n  95% CI for diff: ${f(d-1.96*sed)} to ${f(d+1.96*sed)}</p>`;\n})()"
+					},
+					"failed": false
+				}
+			],
+			"prose": "The summary's claim doesn't hold up. I recomputed it from `caravel_ab.csv`, and the cell above shows the working. I also checked the totals in Python.\n\n- **Totals:** control had 700 conversions from 14,000 visitors (5.00%). new_checkout had 742 from 14,000 (5.30%).\n- **Lift:** the relative lift is about 6%, not the 12% in the summary. The absolute difference is 0.3 percentage points.\n- **Significance:** a two-proportion z-test gives z ≈ 1.14 and p ≈ 0.26, not 0.004. The 95% confidence interval for the difference is roughly −0.2 to +0.8 points, so it includes zero.\n\nThe data doesn't show a reliable lift. The new checkout may be slightly better, but this test can't tell that apart from noise. I'd hold off signing off on \"ship to 100% on Monday\" until someone explains where the 12% and p = 0.004 came from.\n\nI only had the CSV and the summary. If the summary used a different metric or a subset of the data, I can't see that from here.",
+			"ms": 19992
+		},
+		{
+			"slug": "add-a-test",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Write a new file in the workspace without touching the source",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "leaves src/slug.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves package.json",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat src/slug.js; ls; cat package.json; ls test* 2>/dev/null",
+						"timeout": 10
+					},
+					"failed": true
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "mkdir -p test && cat > test/slug.test.js <<'E'\nimport { test } from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { slugify } from \"../src/slug.js\";\n\ntest(\"replaces spaces with hyphens\", () => {\n\tassert.equal(slugify(\"hello world\"), \"hello-world\");\n});\n\ntest(\"collapses runs of whitespace into one hyphen\", () => {\n\tassert.equal(slugify(\"a   b\\t c\"), \"a-b-c\");\n});\n\ntest(\"trims leading and trailing spaces\", () => {\n\tassert.equal(slugify(\"  hello world  \"), \"hello-world\");\n});\n\ntest(\"lowercases capital letters\", () => {\n\tassert.equal(slugify(\"Hello World\"), \"hello-world\");\n\tassert.equal(slugify(\"ABC\"), \"abc\");\n});\nE\nnode --test 2>&1 | tail -8",
+						"timeout": 30
+					},
+					"failed": false
+				}
+			],
+			"prose": "I added `test/slug.test.js` with four `node:test` tests, and all four pass when run with `node --test`. I left `src/slug.js` unchanged.\n\nThe tests check that `slugify`:\n- replaces spaces with hyphens;\n- collapses runs of whitespace into a single hyphen;\n- trims leading and trailing spaces;\n- lowercases capital letters.",
+			"ms": 9735
+		},
+		{
+			"slug": "answer-in-place",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] Writing that belongs in the document is not written to a file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "28 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Amber leaves skate down the rain-dark street,\nPast steaming vents and hurried feet.\nThe streetlamps hum in the early dusk,\nAnd the city smells of coats and musk.",
+			"ms": 5390
+		},
+		{
+			"slug": "anticipate-controls",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A drawing nobody asked to tune still comes with its controls",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "41 words"
+				},
+				{
+					"check": "a cell holds \"view(Inputs.\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"group": "spiral",
+						"source": "const a = view(Inputs.range([0, 5], {label: \"start radius a\", value: 0, step: 0.1}))\nconst b = view(Inputs.range([0.1, 5], {label: \"spacing b (r = a + bθ)\", value: 1, step: 0.1}))\nconst turns = view(Inputs.range([1, 20], {label: \"turns\", value: 5, step: 1}))"
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"group": "spiral",
+						"source": "Plot.plot({\n  width: 520, height: 520, aspectRatio: 1, inset: 10,\n  x: {axis: null}, y: {axis: null},\n  marks: [Plot.line(d3.range(0, turns * 2 * Math.PI, 0.02).map(t => {\n    const r = a + b * t; return {x: r * Math.cos(t), y: r * Math.sin(t)};\n  }), {x: \"x\", y: \"y\", stroke: \"steelblue\", strokeWidth: 2})]\n})"
+					},
+					"failed": false
+				}
+			],
+			"prose": "I've drawn the spiral r = a + bθ. You can change the start radius, the spacing between arms and the number of turns with the sliders. The cells didn't report being seen running, so I haven't confirmed the drawing renders.",
+			"ms": 10276
+		},
+		{
+			"slug": "change-keeps-controls",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Changing a drawing keeps the controls the user may already have moved",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #dr4wSp",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "a cell holds \"view(Inputs.\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"source": "const color = view(Inputs.color({label: \"Colour\", value: \"#e00000\"}))",
+						"mode": "js",
+						"group": "spiral"
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "const width = view(Inputs.range([0.5, 10], {label: \"Line width\", step: 0.5, value: 4}))",
+						"mode": "js",
+						"group": "spiral"
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "(() => {\n  const pts = d3.range(0, turns * 2 * Math.PI, 0.05).map((t) => [spacing * t * Math.cos(t), spacing * t * Math.sin(t)]);\n  return Plot.line(pts, {stroke: color, strokeWidth: width}).plot({aspectRatio: 1, axis: null});\n})()",
+						"mode": "js",
+						"id": "dr4wSp",
+						"group": "spiral"
+					},
+					"failed": false
+				}
+			],
+			"prose": "The spiral is now red and thicker. I added a colour picker, set to red, and a line-width slider, set to 4. I haven't seen the cells run, so the result isn't verified. I left your turns and spacing sliders alone, so they keep 14 and 3.",
+			"ms": 10225
+		},
+		{
+			"slug": "compute-in-cell",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A calculation the user wants to tweak becomes a cell",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": false,
+					"detail": "called only read, view, bash"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 150
+					},
+					"failed": false
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"dataModel": {
+								"P": 300000,
+								"r": 1.8,
+								"y": 25
+							},
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"t",
+										"pIn",
+										"rIn",
+										"yIn",
+										"k",
+										"note"
+									]
+								},
+								{
+									"id": "t",
+									"component": "Text",
+									"text": "## Monthly mortgage payment"
+								},
+								{
+									"id": "pIn",
+									"component": "Slider",
+									"label": "Loan, CHF",
+									"min": 50000,
+									"max": 2000000,
+									"steps": 1000,
+									"value": {
+										"@path": "/P"
+									}
+								},
+								{
+									"id": "rIn",
+									"component": "Slider",
+									"label": "Interest, % a year",
+									"min": 0.1,
+									"max": 8,
+									"steps": 0.1,
+									"value": {
+										"@path": "/r"
+									}
+								},
+								{
+									"id": "yIn",
+									"component": "Slider",
+									"label": "Years",
+									"min": 5,
+									"max": 40,
+									"steps": 1,
+									"value": {
+										"@path": "/y"
+									}
+								},
+								{
+									"id": "k",
+									"component": "Row",
+									"children": [
+										"pay",
+										"tot"
+									]
+								},
+								{
+									"id": "pay",
+									"component": "Stat",
+									"label": "Monthly payment",
+									"unit": "CHF",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(P * (r/1200) / (1 - (1 + r/1200) ^ (-12*y)) * 100) / 100",
+											"vars": {
+												"P": {
+													"@path": "/P"
+												},
+												"r": {
+													"@path": "/r"
+												},
+												"y": {
+													"@path": "/y"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "tot",
+									"component": "Stat",
+									"label": "Total interest",
+									"unit": "CHF",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(P * (r/1200) / (1 - (1 + r/1200) ^ (-12*y)) * 12*y - P)",
+											"vars": {
+												"P": {
+													"@path": "/P"
+												},
+												"r": {
+													"@path": "/r"
+												},
+												"y": {
+													"@path": "/y"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "note",
+									"component": "Callout",
+									"tone": "info",
+									"title": "Formula",
+									"text": "M = P·i / (1 − (1+i)^−n), with i = rate/12 and n = years×12 (annuity, fixed rate)."
+								}
+							]
+						}
+					},
+					"failed": true
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"dataModel": {
+								"P": 300000,
+								"r": 1.8,
+								"y": 25
+							},
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"t",
+										"pIn",
+										"rIn",
+										"yIn",
+										"k",
+										"note"
+									]
+								},
+								{
+									"id": "t",
+									"component": "Text",
+									"text": "## Monthly mortgage payment"
+								},
+								{
+									"id": "pIn",
+									"component": "Slider",
+									"label": "Loan, CHF",
+									"min": 50000,
+									"max": 2000000,
+									"value": {
+										"@path": "/P"
+									}
+								},
+								{
+									"id": "rIn",
+									"component": "Slider",
+									"label": "Interest, % a year",
+									"min": 0.1,
+									"max": 8,
+									"value": {
+										"@path": "/r"
+									}
+								},
+								{
+									"id": "yIn",
+									"component": "Slider",
+									"label": "Years",
+									"min": 5,
+									"max": 40,
+									"value": {
+										"@path": "/y"
+									}
+								},
+								{
+									"id": "k",
+									"component": "Row",
+									"children": [
+										"pay",
+										"tot"
+									]
+								},
+								{
+									"id": "pay",
+									"component": "Stat",
+									"label": "Monthly payment",
+									"unit": "CHF",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(P * (r/1200) / (1 - (1 + r/1200) ^ (-12*y)) * 100) / 100",
+											"vars": {
+												"P": {
+													"@path": "/P"
+												},
+												"r": {
+													"@path": "/r"
+												},
+												"y": {
+													"@path": "/y"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "tot",
+									"component": "Stat",
+									"label": "Total interest",
+									"unit": "CHF",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(P * (r/1200) / (1 - (1 + r/1200) ^ (-12*y)) * 12*y - P)",
+											"vars": {
+												"P": {
+													"@path": "/P"
+												},
+												"r": {
+													"@path": "/r"
+												},
+												"y": {
+													"@path": "/y"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "note",
+									"component": "Callout",
+									"tone": "info",
+									"title": "Formula",
+									"text": "M = P·i / (1 − (1+i)^−n), with i = rate/12 and n = years×12 (annuity, fixed rate)."
+								}
+							]
+						}
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "python3 -c \"i=.018/12;print(300000*i/(1-(1+i)**-300))\"",
+						"timeout": 5
+					},
+					"failed": false
+				}
+			],
+			"prose": "Use a2ui with sliders instead.\n\nThe monthly payment is about **CHF 1,242.56**. I checked this by recomputing it outside the widget. The sliders above let you change the loan, rate and years.\n\nThe formula is M = P·i / (1 − (1+i)^−n). Here i is the yearly rate divided by 12 and n is the number of years times 12. It assumes a fixed-rate annuity, so the payment stays the same every month.",
+			"ms": 16586
+		},
+		{
+			"slug": "context-both-sides",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A mid-page prompt needs the text above and below it",
+			"tags": [
+				"AI DRAFT",
+				"known gap"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": true,
+					"detail": "59 words"
+				},
+				{
+					"check": "mentions \"borealis\"",
+					"pass": false,
+					"detail": "not found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "ls -la; head -50 * 2>/dev/null",
+						"timeout": 10
+					},
+					"failed": true
+				}
+			],
+			"prose": "I can't pick one yet, because no options came through. Your message ends after \"Which of the options listed below…\", and the workspace folder is empty.\n\nPlease paste the laptops with their price (CHF, tax included, if you can) and memory. I'll then name the one that costs 1 800 CHF or less and has at least 32 GB.",
+			"ms": 6690
+		},
+		{
+			"slug": "csv-to-chart",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A monthly chart reads its CSV and runs January to December",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls terminal",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves sales.csv",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": false,
+					"detail": "84 words"
+				},
+				{
+					"check": "a cell holds \"FileAttachment\"",
+					"pass": true,
+					"detail": "found"
+				},
+				{
+					"check": "a cell holds \"sales.csv\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "head -5 sales.csv; wc -l sales.csv; ls",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 200
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "cut -c1-7 sales.csv | sort | uniq -c | head -30; awk -F, 'NR>1{m=substr($1,1,7);s[m]+=$5}END{for(k in s)print k,s[k]}' sales.csv | sort",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"source": "(async () => {\n  const rows = await FileAttachment(\"sales.csv\").csv({typed: true});\n  const fmt = d3.utcFormat(\"%b\");\n  const by = d3.rollups(rows.filter(r => new Date(r.date).getUTCFullYear() === 2025),\n    v => d3.sum(v, r => r.revenue), r => new Date(r.date).getUTCMonth());\n  const data = by.sort((a,b)=>a[0]-b[0]).map(([m,v]) => ({month: fmt(new Date(Date.UTC(2025,m,1))), revenue: v}));\n  return Plot.plot({\n    width: 800, height: 420, marginLeft: 70, style: {fontSize: \"14px\", background: \"white\"},\n    title: \"Monthly revenue, 2025\",\n    x: {domain: data.map(d=>d.month), label: null},\n    y: {label: \"Revenue ($)\", grid: true, tickFormat: \"s\"},\n    marks: [Plot.lineY(data, {x: \"month\", y: \"revenue\", stroke: \"#2563eb\", strokeWidth: 2.5}),\n      Plot.dot(data, {x: \"month\", y: \"revenue\", fill: \"#2563eb\", r: 5}),\n      Plot.ruleY([0])]\n  });\n})()"
+					},
+					"failed": false
+				}
+			],
+			"prose": "I charted 2025 revenue from `sales.csv` as a line with one point per month, January to December. 2025 is the only year in the file, and it counts as last year since today is Nov 2026. I haven't seen the chart render, so check that it displays before you paste it.\n\nJuly is the peak at about $92k, and November is the low at about $29k. The y-axis uses abbreviated ticks like 20k. Use your screenshot tool to copy the chart into the deck.",
+			"ms": 14470
+		},
+		{
+			"slug": "csv-to-table",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "view",
+			"title": "[AI DRAFT] Tabular data is shown as a table view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves data/sales.csv",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "wc -l data/sales.csv; head -50 data/sales.csv",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Table",
+									"columns": [
+										{
+											"key": "region",
+											"label": "Region"
+										},
+										{
+											"key": "quarter",
+											"label": "Quarter"
+										},
+										{
+											"key": "revenue",
+											"label": "Revenue",
+											"align": "end"
+										}
+									],
+									"rows": [
+										{
+											"region": "North",
+											"quarter": "Q1",
+											"revenue": 120000
+										},
+										{
+											"region": "North",
+											"quarter": "Q2",
+											"revenue": 135000
+										},
+										{
+											"region": "South",
+											"quarter": "Q1",
+											"revenue": 98000
+										},
+										{
+											"region": "South",
+											"quarter": "Q2",
+											"revenue": 101500
+										}
+									],
+									"caption": "data/sales.csv: 4 rows"
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "`data/sales.csv` has 4 data rows and 3 columns: region, quarter and revenue. The table above shows them.",
+			"ms": 8535
+		},
+		{
+			"slug": "document-voice",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] The answer keeps the document's language and voice",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 90 words",
+					"pass": false,
+					"detail": "118 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Drei Punkte für die Woche vor dem Umzug:\n\n1. **Packen abschließen und beschriften:** Packt zuerst alles, was ihr nicht täglich braucht. Beschriftet die Kartons nach Zimmer. Packt außerdem eine „Erste-Nacht-Kiste“ mit Bettzeug, Hygieneartikeln, Ladekabeln, Werkzeug und Snacks.\n2. **Behördliches und Verträge klären:** Meldet die neue Adresse an. Das gilt für Einwohnermeldeamt, Post-Nachsendeauftrag, Bank und Versicherungen. Meldet Strom, Internet und Gas zum Stichtag um oder ab. Haltet die Zählerstände bei Auszug und Einzug fest.\n3. **Logistik und Wohnung vorbereiten:** Bestätigt Transporter oder Umzugsfirma und die Helfer. Reserviert falls nötig eine Halteverbotszone. Taut den Kühlschrank ab und putzt ihn. Vereinbart den Übergabetermin mit der Vermieterin oder dem Vermieter. Plant für die drei Zimmer und den Balkon, wohin die Möbel kommen.",
+			"ms": 7335
+		},
+		{
+			"slug": "edited-history",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] The user's correction to an earlier answer is the truth",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 120 words",
+					"pass": true,
+					"detail": "77 words"
+				},
+				{
+					"check": "mentions \"thursday\"",
+					"pass": true,
+					"detail": "found"
+				},
+				{
+					"check": "mentions \"wednesday\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "ls -R . | head -50; grep -ril \"design review\" . 2>/dev/null | head",
+						"timeout": 10
+					},
+					"failed": false
+				}
+			],
+			"prose": "The design review is on **Thursday** at 14:00, run by Ana, going by the earlier answer in this document. That was a correction: it moved from Tuesday. Counting from today (Sunday 2026-11-15), Thursday is 2026-11-19, so the day before is **Wednesday 2026-11-18**.\n\nI can't tell you what to prepare that day. The workspace is empty and nothing in this document lists prep items. If you paste the agenda or Ana's request, I'll turn it into a checklist.",
+			"ms": 7505
+		},
+		{
+			"slug": "explain-function",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] Explain a function from the workspace",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves src/timing.js",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 180 words",
+					"pass": true,
+					"detail": "176 words"
+				},
+				{
+					"check": "mentions \"throttl\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat src/timing.js",
+						"timeout": 10
+					},
+					"failed": false
+				}
+			],
+			"prose": "`debounce(fn, wait)` in `src/timing.js` returns a wrapped version of `fn`. Each call to the wrapper cancels the pending timer and starts a new `wait` ms timer. `fn` runs only after `wait` ms pass with no new calls, and it receives the arguments from the last call.\n\nIt's a trailing-edge debounce only. It has no leading-edge option, no `cancel` or `flush`, and it doesn't preserve `this` (the arrow function ignores it). It also discards the return value of `fn`.\n\n**Debounce vs. throttle**\n- **Debounce:** use it when only the final value matters, after activity stops. Examples are search-as-you-type requests, autosaving after edits stop, validating a field after typing pauses, and recalculating layout after a window resize ends.\n- **Throttle:** use it when you need regular updates while the activity continues, at most once per interval. Examples are scroll position tracking, drag or mousemove handlers, and progress or analytics pings.\n\nA debounced function never fires while events keep arriving faster than `wait`. If that matters, for example for a continuous scroll that should update live, use a throttle.",
+			"ms": 8391
+		},
+		{
+			"slug": "extend-artifact",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Extending an artifact keeps its block and markers intact",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #s4v1n6",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "grep -n -i -B2 -A8 \"viewof\\|Inputs\" <repo>/pi-extension/SKILL.md | head -60",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "s4v1n6",
+						"group": "savings",
+						"mode": "js",
+						"source": "const monthly = view(Inputs.range([100, 2000], {label: \"Monthly amount\", step: 50, value: 500}))"
+					},
+					"failed": false
+				}
+			],
+			"prose": "The monthly amount is now a slider from 100 to 2000, set to 500 and moving in steps of 50. The result cell reads it, so the 10-year total should change as you drag. I haven't seen the slider run yet.",
+			"ms": 9069
+		},
+		{
+			"slug": "fix-and-run",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-and-run",
+			"title": "[AI DRAFT] Fix a failing script and report its real output",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls bash",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "changes report.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"65.00\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "cat report.js; node report.js 2>&1 | head -20; ls",
+						"timeout": 20
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i 's/order\\.ammount/order.amount/; /unreachable/d' report.js; node report.js",
+						"timeout": 20
+					},
+					"failed": true
+				},
+				{
+					"name": "edit",
+					"args": {
+						"path": "report.js",
+						"edits": [
+							{
+								"oldText": "order.ammount",
+								"newText": "order.amount"
+							},
+							{
+								"oldText": "\nthrow new Error(\"unreachable\" + undefinedVariable);",
+								"newText": ""
+							}
+						]
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "node report.js",
+						"timeout": 20
+					},
+					"failed": false
+				}
+			],
+			"prose": "Two bugs: the `ammount` typo gives NaN, and the final throw line always crashes. I'll fix the typo and remove the throw.\n\nThe sed failed, so I'll use the edit tool.\n\n`node report.js` now runs without crashing. It prints:\n\n```\nTotal: 65.00\nLargest: 40\n```\n\nI made two changes in `report.js`:\n- **Typo:** `order.ammount` is now `order.amount`. Before, the total printed `NaN`.\n- **Crash:** I deleted the last line, `throw new Error(\"unreachable\" + undefinedVariable);`. It referenced a variable that doesn't exist, so it always crashed. Its message said \"unreachable\", so I assumed it was leftover debugging code.",
+			"ms": 11674
+		},
+		{
+			"slug": "fix-broken-cell",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] A broken cell is fixed by redefining it, not by adding a new one",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #a1b2c3",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"id": "a1b2c3",
+						"mode": "js",
+						"source": "total = prices.reduce((sum, price) => sum + price, 0)"
+					},
+					"failed": true
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "a1b2c3",
+						"mode": "js",
+						"source": "const total = prices.reduce((sum, price) => sum + price, 0);\ntotal"
+					},
+					"failed": false
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "a1b2c3",
+						"mode": "js",
+						"source": "prices.reduce((sum, price) => sum + price, 0)"
+					},
+					"failed": false
+				}
+			],
+			"prose": "Typo: `prces` should be `prices`.\n\nI fixed the total cell (#a1b2c3). It had two problems:\n\n- **Typo:** it referred to `prces` instead of `prices`.\n- **Variable name:** the `total = …` form failed with \"Assignment to external variable\". I changed the cell to a plain expression that sums `prices`, so it no longer declares `total`.\n\nThe cell should now show 19.7 (3.5 + 4.2 + 12). I haven't seen it render, so check that it displays the value.",
+			"ms": 10869
+		},
+		{
+			"slug": "fix-conversation-pie",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-conversation",
+			"title": "[AI DRAFT] Fix my conversation: use the cell tool, never the file",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls cell",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "redefines #9f3e2a",
+					"pass": true,
+					"detail": "redefined by id"
+				},
+				{
+					"check": "leaves docs/pie-diagram.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "cell",
+					"args": {
+						"id": "9f3e2a",
+						"mode": "js",
+						"source": "{\n  const data = [{ task: \"meetings\", value: 30 }, { task: \"coding\", value: 50 }, { task: \"review\", value: 20 }];\n  const w = 360, r = 150;\n  const color = d3.scaleOrdinal(data.map(d => d.task), d3.schemeTableau10);\n  const arcs = d3.pie().sort(null).value(d => d.value)(data);\n  const arc = d3.arc().innerRadius(0).outerRadius(r);\n  const label = d3.arc().innerRadius(r * 0.65).outerRadius(r * 0.65);\n  const svg = d3.create(\"svg\").attr(\"viewBox\", [-w / 2, -w / 2, w, w]).attr(\"width\", w).attr(\"height\", w);\n  svg.selectAll(\"path\").data(arcs).join(\"path\")\n    .attr(\"d\", arc).attr(\"fill\", d => color(d.data.task)).attr(\"stroke\", \"white\");\n  svg.selectAll(\"text\").data(arcs).join(\"text\")\n    .attr(\"transform\", d => `translate(${label.centroid(d)})`)\n    .attr(\"text-anchor\", \"middle\").attr(\"fill\", \"white\").attr(\"font-size\", 14)\n    .text(d => `${d.data.task} ${d.data.value}%`);\n  return svg.node();\n}"
+					},
+					"failed": true
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "9f3e2a",
+						"mode": "js",
+						"source": "pie = {\n  const data = [{ task: \"meetings\", value: 30 }, { task: \"coding\", value: 50 }, { task: \"review\", value: 20 }];\n  const w = 360, r = 150;\n  const color = d3.scaleOrdinal(data.map(d => d.task), d3.schemeTableau10);\n  const arcs = d3.pie().sort(null).value(d => d.value)(data);\n  const arc = d3.arc().innerRadius(0).outerRadius(r);\n  const label = d3.arc().innerRadius(r * 0.65).outerRadius(r * 0.65);\n  const svg = d3.create(\"svg\").attr(\"viewBox\", [-w / 2, -w / 2, w, w]).attr(\"width\", w).attr(\"height\", w);\n  svg.selectAll(\"path\").data(arcs).join(\"path\")\n    .attr(\"d\", arc).attr(\"fill\", d => color(d.data.task)).attr(\"stroke\", \"white\");\n  svg.selectAll(\"text\").data(arcs).join(\"text\")\n    .attr(\"transform\", d => `translate(${label.centroid(d)})`)\n    .attr(\"text-anchor\", \"middle\").attr(\"fill\", \"white\").attr(\"font-size\", 14)\n    .text(d => `${d.data.task} ${d.data.value}%`);\n  return svg.node();\n}"
+					},
+					"failed": true
+				},
+				{
+					"name": "cell",
+					"args": {
+						"id": "9f3e2a",
+						"mode": "js",
+						"source": "(() => {\n  const data = [{ task: \"meetings\", value: 30 }, { task: \"coding\", value: 50 }, { task: \"review\", value: 20 }];\n  const w = 360, r = 150;\n  const color = d3.scaleOrdinal(data.map(d => d.task), d3.schemeTableau10);\n  const arcs = d3.pie().sort(null).value(d => d.value)(data);\n  const arc = d3.arc().innerRadius(0).outerRadius(r);\n  const label = d3.arc().innerRadius(r * 0.65).outerRadius(r * 0.65);\n  const svg = d3.create(\"svg\").attr(\"viewBox\", [-w / 2, -w / 2, w, w]).attr(\"width\", w).attr(\"height\", w);\n  svg.selectAll(\"path\").data(arcs).join(\"path\")\n    .attr(\"d\", arc).attr(\"fill\", d => color(d.data.task)).attr(\"stroke\", \"white\");\n  svg.selectAll(\"text\").data(arcs).join(\"text\")\n    .attr(\"transform\", d => `translate(${label.centroid(d)})`)\n    .attr(\"text-anchor\", \"middle\").attr(\"fill\", \"white\").attr(\"font-size\", 14)\n    .text(d => `${d.data.task} ${d.data.value}%`);\n  return svg.node();\n})()"
+					},
+					"failed": false
+				}
+			],
+			"prose": "I rewrote the pie chart cell (#9f3e2a). The first version failed because `Plot.arc` doesn't cut a pie into slices, and it used the wrong field name (`hour` instead of `hours`). The new version uses `d3.pie` and draws each slice with a label. The cell reported that it ran, but I haven't seen the chart on the page, so I can't confirm it renders.",
+			"ms": 16103
+		},
+		{
+			"slug": "fix-earlier-prose",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-conversation",
+			"title": "[AI DRAFT] Fix my conversation: a typo in earlier prose, changed through canvas_edit",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls canvas_edit",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "canvas_edit",
+					"args": {
+						"oldText": "Firday",
+						"newText": "Friday"
+					},
+					"failed": true
+				}
+			],
+			"prose": "I couldn't apply the fix because no Piary page is open to take the edit. The typo is \"Firday\" in your plan. The corrected line is:\n\nWe ship the beta to the first ten teams on Friday, after the QA pass.",
+			"ms": 5217
+		},
+		{
+			"slug": "fix-typo-terse",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-conversation",
+			"title": "[AI DRAFT] Fix my conversation: a terse \"fix my typos\" changes the earlier line in place",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls canvas_edit",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "canvas_edit",
+					"args": {
+						"oldText": "Ship on Firday",
+						"newText": "Ship on Friday"
+					},
+					"failed": true
+				}
+			],
+			"prose": "I couldn't apply the fix because no Piary page is open. The corrected line is:\n\n\"Ship on Friday\"",
+			"ms": 5301
+		},
+		{
+			"slug": "invoice-rename",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Renamed invoices follow the folder's own pattern, and the total owed checks out",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls terminal",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves 2026-09-28 Fernhill.txt",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves 2026-10-03 Fernhill.txt in place",
+					"pass": true,
+					"detail": "exists"
+				},
+				{
+					"check": "leaves 2026-10-07 Ostara.txt in place",
+					"pass": true,
+					"detail": "exists"
+				},
+				{
+					"check": "leaves 2026-10-11 Kettle.txt in place",
+					"pass": true,
+					"detail": "exists"
+				},
+				{
+					"check": "leaves 2026-10-17 Fernhill.txt in place",
+					"pass": true,
+					"detail": "exists"
+				},
+				{
+					"check": "leaves 2026-10-21 Ostara.txt in place",
+					"pass": true,
+					"detail": "exists"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"108.65\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "find . -type f | head -100",
+						"timeout": 20
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "for f in *; do echo \"== $f\"; cat \"$f\"; done",
+						"timeout": 20
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "mv scan001.txt \"2026-10-03 Fernhill.txt\"; mv scan002.txt \"2026-10-07 Ostara.txt\"; mv scan003.txt \"2026-10-17 Fernhill.txt\"; mv scan004.txt \"2026-10-11 Kettle.txt\"; mv scan005.txt \"2026-10-21 Ostara.txt\"; ls",
+						"timeout": 20
+					},
+					"failed": false
+				}
+			],
+			"prose": "I renamed the five scans to the pattern of your existing file, `YYYY-MM-DD Vendor.txt`, using the invoice date and the vendor's first word:\n\n- scan001 → `2026-10-03 Fernhill.txt`\n- scan002 → `2026-10-07 Ostara.txt`\n- scan003 → `2026-10-17 Fernhill.txt`\n- scan004 → `2026-10-11 Kettle.txt`\n- scan005 → `2026-10-21 Ostara.txt`\n\n**You still owe EUR 1,108.65 for October.** That is the four unpaid invoices:\n\n| Invoice | Amount (EUR) |\n|---|---|\n| Fernhill FM-2317 | 412.50 |\n| Fernhill FM-2344 | 398.00 |\n| Kettle KP/26/1187 | 94.75 |\n| Ostara 10-0502 | 203.40 |\n\nThe Ostara 10-0448 invoice (186.20) is marked paid, so I left it out. The Fernhill invoice dated 2026-09-28 was paid on 2026-10-02, so it isn't part of October's balance either.\n\nThe scans don't say whether FM-2317 or the others have been paid since they were scanned. If you've paid any of them, subtract those amounts.",
+			"ms": 11090
+		},
+		{
+			"slug": "mid-document-caret",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "mid-document",
+			"title": "[AI DRAFT] A prompt in the middle of the page is answered there",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 50 words",
+					"pass": true,
+					"detail": "29 words"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Start Saturday with coffee and a walk up to the Miradouro das Portas do Sol, then wander down through Alfama's lanes to the Sé Cathedral before the crowds arrive.",
+			"ms": 4217
+		},
+		{
+			"slug": "rename-symbol",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "edit-file",
+			"title": "[AI DRAFT] Edit a workspace file and nothing else",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "changes lib/strings.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "changes lib/title.js",
+					"pass": true,
+					"detail": "changed"
+				},
+				{
+					"check": "leaves README.md",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 80 words",
+					"pass": true,
+					"detail": "42 words"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "grep -rn capitalise . --exclude-dir=node_modules --exclude-dir=.git",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i 's/capitalise/capitalize/g' lib/title.js lib/strings.js; grep -rn capitali . --exclude-dir=.git",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "sed -i '' 's/capitalise/capitalize/g' lib/title.js lib/strings.js; grep -rn capitali . --exclude-dir=.git",
+						"timeout": 10
+					},
+					"failed": false
+				}
+			],
+			"prose": "Odd BSD sed issue; retry.\n\nI renamed `capitalise` to `capitalize` in `lib/strings.js`. I also updated its one caller, `lib/title.js`, which covers both the import and the `words.map` call. A final grep shows no remaining uses of `capitalise`. I didn't run any tests.",
+			"ms": 9823
+		},
+		{
+			"slug": "short-fact",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "explain",
+			"title": "[AI DRAFT] A one-line question gets a one-line answer",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 60 words",
+					"pass": false,
+					"detail": "72 words"
+				},
+				{
+					"check": "mentions \"teapot\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [],
+			"prose": "**418 I'm a teapot** is an HTTP status code from the April Fools' joke RFC 2324 (Hyper Text Coffee Pot Control Protocol, 1998). It means the server refuses to brew coffee because it is, permanently, a teapot.\n\nIt isn't used in real protocol semantics. Some servers return it as an Easter egg, or to deflect unwanted automated requests. RFC 9110 lists it as reserved, so it won't be assigned to anything else.",
+			"ms": 5466
+		},
+		{
+			"slug": "show-command-output",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "fix-and-run",
+			"title": "[AI DRAFT] A command the user asks to watch runs in a terminal panel",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls terminal",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves run-tests.sh",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "at most 40 words",
+					"pass": true,
+					"detail": "14 words"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "ls; cat package.json 2>/dev/null | head -20; ls test* 2>/dev/null",
+						"timeout": 10
+					},
+					"failed": true
+				},
+				{
+					"name": "terminal",
+					"args": {
+						"command": "bash run-tests.sh",
+						"timeout": 120
+					},
+					"failed": false
+				}
+			],
+			"prose": "The test script (`run-tests.sh`) ran and all 3 tests passed: parses, renders and saves.",
+			"ms": 10163
+		},
+		{
+			"slug": "tour-question",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "mid-document",
+			"title": "The tour's rewritten question is answered under it, not edited",
+			"tags": [],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls canvas_edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls bash",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [],
+			"prose": "Five houseplant names:\n\n1. Fernando\n2. Leaf Erikson\n3. Basil Fawlty\n4. Photosynthia\n5. Sir Reginald Fronds",
+			"ms": 4451
+		},
+		{
+			"slug": "two-versions-diff",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "view",
+			"title": "[AI DRAFT] A change between two versions is shown as a diff view",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "calls view",
+					"pass": true,
+					"detail": "called"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				},
+				{
+					"check": "mentions \"punctuation\"",
+					"pass": true,
+					"detail": "found"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "read",
+					"args": {
+						"path": "<repo>/pi-extension/SKILL.md",
+						"offset": 1,
+						"limit": 80
+					},
+					"failed": false
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "diff",
+						"data": {
+							"file": "greet.js",
+							"oldText": "function greet(name) {\n  return \"Hello \" + name;\n}",
+							"newText": "function greet(name, punctuation = \"!\") {\n  return `Hello, ${name}${punctuation}`;\n}"
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "Three things changed:\n\n1. **New parameter:** `punctuation` is optional and defaults to `\"!\"`.\n2. **Output text:** the greeting now has a comma after \"Hello\". `greet(\"Ada\")` went from `Hello Ada` to `Hello, Ada!`.\n3. **Style:** string concatenation became a template literal.\n\nThe new default `!` and the comma change what existing callers get back. If anything depends on the old output, such as tests or string matching, it will break.",
+			"ms": 8972
+		},
+		{
+			"slug": "ui-bench-results",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: developer, benchmark takeaway",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"h",
+										"chart",
+										"stats",
+										"c1",
+										"c2"
+									]
+								},
+								{
+									"id": "h",
+									"component": "Text",
+									"text": "## simdjson-port wins at every size, and its lead grows with input"
+								},
+								{
+									"id": "chart",
+									"component": "Chart",
+									"mark": "bar",
+									"layout": "group",
+									"x": "size",
+									"y": [
+										"v1",
+										"v2",
+										"simdjson",
+										"serde"
+									],
+									"yScale": "log",
+									"unit": "ms",
+									"labels": {
+										"v1": "v1",
+										"v2": "v2",
+										"simdjson": "simdjson-port",
+										"serde": "serde-wasm"
+									},
+									"title": "Median ms (log scale)",
+									"data": [
+										{
+											"size": "1 KB",
+											"v1": 0.08,
+											"v2": 0.05,
+											"simdjson": 0.03,
+											"serde": 0.06
+										},
+										{
+											"size": "100 KB",
+											"v1": 7.9,
+											"v2": 4.1,
+											"simdjson": 1.2,
+											"serde": 3.8
+										},
+										{
+											"size": "10 MB",
+											"v1": 910,
+											"v2": 450,
+											"simdjson": 118,
+											"serde": 402
+										}
+									]
+								},
+								{
+									"id": "stats",
+									"component": "Row",
+									"children": [
+										"s1",
+										"s2",
+										"s3"
+									]
+								},
+								{
+									"id": "s1",
+									"component": "Stat",
+									"label": "simdjson-port vs v1, 1 KB",
+									"value": 2.7,
+									"unit": "x faster"
+								},
+								{
+									"id": "s2",
+									"component": "Stat",
+									"label": "simdjson-port vs v1, 100 KB",
+									"value": 6.6,
+									"unit": "x faster"
+								},
+								{
+									"id": "s3",
+									"component": "Stat",
+									"label": "simdjson-port vs v1, 10 MB",
+									"value": 7.7,
+									"unit": "x faster"
+								},
+								{
+									"id": "c1",
+									"component": "Callout",
+									"tone": "info",
+									"title": "Other points",
+									"text": "v2 is about 2x faster than v1 at every size. serde-wasm is only slightly ahead of v2 on large inputs (402 vs 450 ms at 10 MB) and slightly behind at 1 KB."
+								},
+								{
+									"id": "c2",
+									"component": "Callout",
+									"tone": "warning",
+									"title": "Caveats",
+									"text": "Medians hide variance, and memory use and bundle size are not measured. At 1 KB the gaps are tens of microseconds, so they likely don't matter. Per-byte throughput is flat above 100 KB (about 85 MB/s for simdjson-port at 10 MB), so check the inputs you actually parse."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "I'd pick simdjson-port. It's fastest at every size, and its lead over v1 grows from about 2.7x at 1 KB to about 7.7x at 10 MB.\n\n- **v2 vs v1:** v2 is about 2x faster than v1 at every size, so it's a clear improvement.\n- **serde-wasm vs v2:** serde-wasm barely beats v2 on large inputs and is slightly slower at 1 KB. It's only worth keeping if you need something else it offers.\n- **Small inputs:** at 1 KB the differences are tens of microseconds, so they probably won't matter in practice.\n\nThe table gives only medians. It doesn't cover variance, memory use or bundle size, so check those before switching.",
+			"ms": 11401
+		},
+		{
+			"slug": "ui-compound-interest",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: teacher, interactive explainer",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"dataModel": {
+								"start": 1000,
+								"rate": 7,
+								"years": 30,
+								"add": 0
+							},
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"title",
+										"intro",
+										"controls",
+										"kpis",
+										"chart",
+										"why"
+									]
+								},
+								{
+									"id": "title",
+									"component": "Text",
+									"text": "## Compound interest: watch money grow on itself"
+								},
+								{
+									"id": "intro",
+									"component": "Text",
+									"text": "Drag the sliders. Compare the **grey straight line** (simple interest: only your original money earns) with the **curve** (compound: interest earns interest too)."
+								},
+								{
+									"id": "controls",
+									"component": "Column",
+									"children": [
+										"s1",
+										"s2",
+										"s3",
+										"s4"
+									]
+								},
+								{
+									"id": "s1",
+									"component": "Slider",
+									"label": "Money you start with ($)",
+									"min": 0,
+									"max": 10000,
+									"steps": 100,
+									"value": {
+										"@path": "/start"
+									}
+								},
+								{
+									"id": "s2",
+									"component": "Slider",
+									"label": "Interest per year (%)",
+									"min": 0,
+									"max": 20,
+									"value": {
+										"@path": "/rate"
+									}
+								},
+								{
+									"id": "s3",
+									"component": "Slider",
+									"label": "Years",
+									"min": 1,
+									"max": 50,
+									"value": {
+										"@path": "/years"
+									}
+								},
+								{
+									"id": "s4",
+									"component": "Slider",
+									"label": "Extra you add each year ($)",
+									"min": 0,
+									"max": 5000,
+									"steps": 50,
+									"value": {
+										"@path": "/add"
+									}
+								},
+								{
+									"id": "kpis",
+									"component": "Row",
+									"children": [
+										"k1",
+										"k2",
+										"k3"
+									]
+								},
+								{
+									"id": "k1",
+									"component": "Stat",
+									"label": "Compound: final amount",
+									"unit": "$",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(if(r==0, s + a*y, s*(1+r/100)^y + a*((1+r/100)^y-1)/(r/100)))",
+											"vars": {
+												"s": {
+													"@path": "/start"
+												},
+												"r": {
+													"@path": "/rate"
+												},
+												"y": {
+													"@path": "/years"
+												},
+												"a": {
+													"@path": "/add"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "k2",
+									"component": "Stat",
+									"label": "Simple interest: final amount",
+									"unit": "$",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(s*(1+r/100*y) + a*y + a*r/100*y*(y-1)/2)",
+											"vars": {
+												"s": {
+													"@path": "/start"
+												},
+												"r": {
+													"@path": "/rate"
+												},
+												"y": {
+													"@path": "/years"
+												},
+												"a": {
+													"@path": "/add"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "k3",
+									"component": "Stat",
+									"label": "Bonus from compounding",
+									"unit": "$",
+									"value": {
+										"@call": "calc",
+										"args": {
+											"expr": "round(if(r==0,0,s*(1+r/100)^y + a*((1+r/100)^y-1)/(r/100)) - (s*(1+r/100*y) + a*y + a*r/100*y*(y-1)/2))",
+											"vars": {
+												"s": {
+													"@path": "/start"
+												},
+												"r": {
+													"@path": "/rate"
+												},
+												"y": {
+													"@path": "/years"
+												},
+												"a": {
+													"@path": "/add"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "chart",
+									"component": "Chart",
+									"mark": "line",
+									"x": "year",
+									"y": [
+										"compound",
+										"simple",
+										"deposited"
+									],
+									"unit": "$",
+									"xLabel": "Years",
+									"yLabel": "Balance",
+									"labels": {
+										"compound": "Compound",
+										"simple": "Simple interest",
+										"deposited": "Only what you put in"
+									},
+									"data": {
+										"@call": "series",
+										"args": {
+											"from": 0,
+											"to": {
+												"@path": "/years"
+											},
+											"index": "year",
+											"columns": {
+												"compound": "round(if(r==0, s + a*year, s*(1+r/100)^year + a*((1+r/100)^year-1)/(r/100)))",
+												"simple": "round(s*(1+r/100*year) + a*year + a*r/100*year*(year-1)/2)",
+												"deposited": "s + a*year"
+											},
+											"vars": {
+												"s": {
+													"@path": "/start"
+												},
+												"r": {
+													"@path": "/rate"
+												},
+												"a": {
+													"@path": "/add"
+												}
+											}
+										}
+									}
+								},
+								{
+									"id": "why",
+									"component": "Callout",
+									"tone": "info",
+									"title": "Try this",
+									"text": "Set years to 10, then 30, then 50 at 7%. The gap explodes late. Then keep 30 years and change the rate 4% → 10%."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "I built an interactive explorer with sliders for starting money, interest rate, years and yearly deposits. It compares compound interest, simple interest, and the money you put in yourself, with a \"Try this\" prompt at the bottom. I haven't opened it in the page, so I haven't checked how it renders.\n\nFor class, you could ask students to guess the 30-year total before they move the sliders. You could also have them find how many years it takes to double their money at 7%.",
+			"ms": 13509
+		},
+		{
+			"slug": "ui-runway",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: founder, runway scenarios",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "python3 -c \"\nfor g in (.05,.08,.12):\n  c=480;r=12;m=0\n  while c>0 and m<120:\n    c+=r-38;r*=1+g;m+=1\n  print(g,m,round(c,1),round(r,1))\"",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "bash",
+					"args": {
+						"command": "python3 -c \"\nfor g in (.05,.08,.12):\n  c=480;r=12;m=0;mn=(c,0);be=None\n  for m in range(1,100):\n    if be is None and r>=38: be=m\n    c+=r-38;r*=1+g\n    if c<mn[0]: mn=(c,m)\n  print(g,be,[round(mn[0]),mn[1]])\"",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"h",
+										"k",
+										"c",
+										"n"
+									]
+								},
+								{
+									"id": "h",
+									"component": "Text",
+									"text": "## You don't run out at 8%, but 5% is close"
+								},
+								{
+									"id": "k",
+									"component": "Row",
+									"children": [
+										"a",
+										"b",
+										"d"
+									]
+								},
+								{
+									"id": "a",
+									"component": "Stat",
+									"label": "5% growth: lowest cash (month 24)",
+									"value": 102,
+									"unit": "$k",
+									"note": "Revenue covers the $38k burn in month 25"
+								},
+								{
+									"id": "b",
+									"component": "Stat",
+									"label": "8% growth: lowest cash (month 15)",
+									"value": 236,
+									"unit": "$k",
+									"note": "Revenue covers the $38k burn in month 16"
+								},
+								{
+									"id": "d",
+									"component": "Stat",
+									"label": "12% growth: lowest cash (month 11)",
+									"value": 310,
+									"unit": "$k",
+									"note": "Revenue covers the $38k burn in month 12"
+								},
+								{
+									"id": "c",
+									"component": "Chart",
+									"mark": "line",
+									"x": "month",
+									"y": [
+										"g5",
+										"g8",
+										"g12"
+									],
+									"unit": "$k",
+									"yLabel": "Cash",
+									"xLabel": "Month",
+									"labels": {
+										"g5": "5%",
+										"g8": "8%",
+										"g12": "12%"
+									},
+									"data": {
+										"@call": "series",
+										"args": {
+											"from": 0,
+											"to": 36,
+											"index": "month",
+											"columns": {
+												"g5": "round(480 + 12*((1.05^month-1)/0.05) - 38*month)",
+												"g8": "round(480 + 12*((1.08^month-1)/0.08) - 38*month)",
+												"g12": "round(480 + 12*((1.12^month-1)/0.12) - 38*month)"
+											}
+										}
+									}
+								},
+								{
+									"id": "n",
+									"component": "Callout",
+									"tone": "warning",
+									"title": "Assumption",
+									"text": "The $38k is total monthly spend, held flat, and month 1 revenue is $12k. If $38k is already net of revenue, you run out in about 12.6 months."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "Cash never reaches zero in any of the three cases, as long as spend stays flat at $38k and growth holds. Revenue passes the $38k spend in month 16 at 8% growth, month 25 at 5% and month 12 at 12%.\n\n- **8% growth:** Cash bottoms out at about $236k in month 15, then recovers.\n- **5% growth:** This is the tight case. Cash falls to about $102k in month 24, so a small miss in growth or a small rise in costs could sink it.\n- **12% growth:** Cash bottoms out at about $310k in month 11.\n\nI read the $38k as total monthly spend, with revenue coming in on top of it. If the $38k is already net of revenue, the $480k lasts about 12.6 months.",
+			"ms": 16340
+		},
+		{
+			"slug": "ui-support-kpis",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: support lead, weekly KPIs",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"title",
+										"kpis",
+										"chart",
+										"note"
+									]
+								},
+								{
+									"id": "title",
+									"component": "Text",
+									"text": "## Support desk: week of 9–13 Nov"
+								},
+								{
+									"id": "kpis",
+									"component": "Row",
+									"children": [
+										"o",
+										"c",
+										"r",
+										"s",
+										"b"
+									]
+								},
+								{
+									"id": "o",
+									"component": "Stat",
+									"label": "Opened",
+									"value": 412,
+									"delta": "+32 (+8%)",
+									"note": "last week 380"
+								},
+								{
+									"id": "c",
+									"component": "Stat",
+									"label": "Closed",
+									"value": 398,
+									"delta": "+27 (+7%)",
+									"good": "up",
+									"note": "last week 371"
+								},
+								{
+									"id": "r",
+									"component": "Stat",
+									"label": "Median first reply",
+									"value": 2.4,
+									"unit": "h",
+									"delta": "-0.7 h",
+									"good": "down",
+									"note": "last week 3.1 h"
+								},
+								{
+									"id": "s",
+									"component": "Stat",
+									"label": "CSAT",
+									"value": 91,
+									"unit": "%",
+									"delta": "+3 pts",
+									"good": "up",
+									"note": "last week 88%"
+								},
+								{
+									"id": "b",
+									"component": "Stat",
+									"label": "Backlog",
+									"value": 57,
+									"delta": "+14 (+33%)",
+									"good": "down",
+									"note": "last week 43"
+								},
+								{
+									"id": "chart",
+									"component": "Chart",
+									"mark": "bar",
+									"x": "day",
+									"y": "opened",
+									"title": "Tickets opened per day",
+									"data": [
+										{
+											"day": "Mon",
+											"opened": 96
+										},
+										{
+											"day": "Tue",
+											"opened": 88
+										},
+										{
+											"day": "Wed",
+											"opened": 79
+										},
+										{
+											"day": "Thu",
+											"opened": 81
+										},
+										{
+											"day": "Fri",
+											"opened": 68
+										}
+									]
+								},
+								{
+									"id": "note",
+									"component": "Callout",
+									"tone": "warning",
+									"title": "Watch the backlog",
+									"text": "Replies and CSAT improved, but opened exceeded closed by 14, so backlog grew a third. Intake is easing through the week (96 → 68)."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "The dashboard above shows five KPIs with week-over-week deltas, plus a chart of tickets opened per day.\n\nBacklog is the one to watch. It rose by 14 because you opened 412 tickets and closed 398. First reply and CSAT both improved.\n\nThe data is static for now. Send me next week's numbers and I'll update it.",
+			"ms": 11609
+		},
+		{
+			"slug": "ui-survey",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: product researcher, survey summary",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "bash",
+					"args": {
+						"command": "python3 -c \"\nfor n,d in [('s',[9,21,38,88,56]),('d',[31,52,61,47,21]),('r',[6,14,40,79,73])]:\n t=sum(d);print(n,t,round(sum((i+1)*x for i,x in enumerate(d))/t,2),round((d[3]+d[4])/t*100),round((d[0]+d[1])/t*100))\"",
+						"timeout": 10
+					},
+					"failed": false
+				},
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"h",
+										"k",
+										"c",
+										"w"
+									]
+								},
+								{
+									"id": "h",
+									"component": "Text",
+									"text": "## Onboarding survey: 212 responses"
+								},
+								{
+									"id": "k",
+									"component": "Row",
+									"children": [
+										"a",
+										"b",
+										"d"
+									]
+								},
+								{
+									"id": "a",
+									"component": "Stat",
+									"label": "Setup was easy (mean, % agree)",
+									"value": 3.76,
+									"note": "68% agree · 14% disagree"
+								},
+								{
+									"id": "b",
+									"component": "Stat",
+									"label": "Docs answered my questions",
+									"value": 2.88,
+									"note": "32% agree · 39% disagree"
+								},
+								{
+									"id": "d",
+									"component": "Stat",
+									"label": "Would recommend",
+									"value": 3.94,
+									"note": "72% agree · 9% disagree"
+								},
+								{
+									"id": "c",
+									"component": "Chart",
+									"mark": "barH",
+									"layout": "stack",
+									"scheme": "diverging",
+									"x": "q",
+									"y": [
+										"Strongly disagree",
+										"Disagree",
+										"Neutral",
+										"Agree",
+										"Strongly agree"
+									],
+									"data": [
+										{
+											"q": "Setup was easy",
+											"Strongly disagree": 9,
+											"Disagree": 21,
+											"Neutral": 38,
+											"Agree": 88,
+											"Strongly agree": 56
+										},
+										{
+											"q": "Docs answered my questions",
+											"Strongly disagree": 31,
+											"Disagree": 52,
+											"Neutral": 61,
+											"Agree": 47,
+											"Strongly agree": 21
+										},
+										{
+											"q": "Would recommend",
+											"Strongly disagree": 6,
+											"Disagree": 14,
+											"Neutral": 40,
+											"Agree": 79,
+											"Strongly agree": 73
+										}
+									],
+									"yLabel": "Responses"
+								},
+								{
+									"id": "w",
+									"component": "Callout",
+									"tone": "warning",
+									"title": "Takeaway",
+									"text": "Setup and recommendation are strong. Docs are the weak spot: the only item where more people disagree than agree. Prioritise docs."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "I've charted the survey results above. The main points for your meeting:\n\n- **Recommend:** This scored best, with a mean of 3.94 and 72% agreeing.\n- **Setup:** 68% found it easy (mean 3.76), and 14% disagreed.\n- **Docs:** This is the weak spot, with a mean of 2.88. 39% disagreed and only 32% agreed, so it's the only item where more people disagreed than agreed.\n\nI'd suggest putting docs first on the improvement list.",
+			"ms": 12332
+		},
+		{
+			"slug": "ui-vendor-pick",
+			"model": "anthropic/claude-sonnet-5-5",
+			"job": "cell",
+			"title": "[AI DRAFT] Design-language persona: engineering manager, vendor comparison",
+			"tags": [
+				"AI DRAFT"
+			],
+			"checks": [
+				{
+					"check": "the result parses",
+					"pass": true,
+					"detail": "no unknown marker"
+				},
+				{
+					"check": "markers intact",
+					"pass": true,
+					"detail": "every original segment, in order"
+				},
+				{
+					"check": "answers",
+					"pass": true,
+					"detail": "an answer was written"
+				},
+				{
+					"check": "never calls edit",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "never calls write",
+					"pass": true,
+					"detail": "not called"
+				},
+				{
+					"check": "leaves the conversation file",
+					"pass": true,
+					"detail": "unchanged"
+				}
+			],
+			"toolCalls": [
+				{
+					"name": "view",
+					"args": {
+						"template": "a2ui",
+						"data": {
+							"components": [
+								{
+									"id": "root",
+									"component": "Column",
+									"children": [
+										"t",
+										"cmp",
+										"k",
+										"c"
+									]
+								},
+								{
+									"id": "t",
+									"component": "Text",
+									"text": "## Vendor pick for 14 engineers (SSO required)"
+								},
+								{
+									"id": "cmp",
+									"component": "Compare",
+									"pick": "Sentry",
+									"options": [
+										{
+											"name": "Sentry",
+											"price": 26,
+											"cost": 4368,
+											"ret": 90,
+											"sso": "Yes",
+											"host": "Yes"
+										},
+										{
+											"name": "Bugsnag",
+											"price": 29,
+											"cost": 4872,
+											"ret": 60,
+											"sso": "Yes",
+											"host": "No"
+										},
+										{
+											"name": "Rollbar",
+											"price": 21,
+											"cost": 3528,
+											"ret": 30,
+											"sso": "Enterprise only",
+											"host": "No"
+										},
+										{
+											"name": "Honeybadger",
+											"price": 19,
+											"cost": 3192,
+											"ret": 45,
+											"sso": "No",
+											"host": "No"
+										}
+									],
+									"criteria": [
+										{
+											"key": "price",
+											"label": "Per seat/month",
+											"best": "min",
+											"unit": "$"
+										},
+										{
+											"key": "cost",
+											"label": "Annual, 14 seats",
+											"best": "min",
+											"unit": "$"
+										},
+										{
+											"key": "ret",
+											"label": "Retention (days)",
+											"best": "max"
+										},
+										{
+											"key": "sso",
+											"label": "SSO",
+											"must": {
+												"oneOf": [
+													"Yes"
+												]
+											}
+										},
+										{
+											"key": "host",
+											"label": "Self-host"
+										}
+									]
+								},
+								{
+									"id": "k",
+									"component": "Stat",
+									"label": "Sentry annual (14 seats)",
+									"value": 4368,
+									"unit": "$"
+								},
+								{
+									"id": "c",
+									"component": "Callout",
+									"tone": "success",
+									"title": "Pick Sentry",
+									"text": "Honeybadger fails SSO; Rollbar's SSO needs an enterprise plan (price unknown, likely above Sentry). Sentry beats Bugsnag on price, retention and self-hosting, saving $504/year."
+								}
+							]
+						}
+					},
+					"failed": false
+				}
+			],
+			"prose": "I'd pick Sentry. It's the cheapest of the two options that include SSO, and it has the longest retention.\n\n- **Honeybadger** is out because it has no SSO.\n- **Rollbar** only offers SSO on its enterprise tier. You'd have to get a quote, and it will probably cost more than the listed $21 per seat.\n- **Bugsnag** has SSO, but it costs $504 a year more than Sentry (14 seats × $3 × 12). It also keeps data for 60 days instead of 90, and you can't self-host it.\n\nSentry comes to $4,368 a year for 14 seats. I'm assuming SSO is included at the listed price, so confirm that before you sign.",
+			"ms": 12774
+		}
+	]
+}

@@ -1,0 +1,11 @@
+OSTARA DAIRY
+Invoice 10-0502
+Date: 2026-10-21
+Customer: Bäckerei Lindner
+
+Butter 82%, 12 kg ... 141.60
+Whole milk, 40 l ... 52.40
+Cream, 3 l ... 9.40
+
+Total: EUR 203.40
+Payment due within 30 days.

@@ -1,0 +1,8 @@
+{
+	"title": "[AI DRAFT] Design-language persona: founder, runway scenarios",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": ["Answers with something visual the persona can use, not prose alone", "Looks finished and consistent with Piary without being asked to"],
+	"checks": { "tools": { "mustNot": ["edit", "write"] } }
+}

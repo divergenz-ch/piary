@@ -1,0 +1,17 @@
+{
+	"title": "[AI DRAFT] Checking a claimed A/B lift shows the computation, from the file",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": [
+		"Computes conversion per variant and the test in a cell that reads caravel_ab.csv, so the method is on the page",
+		"Shows the result visually or as a table: control about 5.0%, the new checkout about 5.3%",
+		"Says the difference is not statistically significant, contradicting the summary's 12% lift at p = 0.004",
+		"Does not retype the cell's numbers into prose, with or without ellipses, and does not paste terminal output"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write", "terminal"] },
+		"cellMentions": ["caravel_ab.csv"],
+		"files": { "unchanged": ["caravel_ab.csv", "caravel_summary.md"] }
+	}
+}

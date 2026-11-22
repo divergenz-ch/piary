@@ -1,0 +1,7 @@
+/* A relative URL works both in the browser's source-CSS chain and in esbuild. */
+@import "../../../node_modules/katex/dist/katex.min.css";
+
+/* KaTeX display margin override */
+.katex-display {
+   margin: 0;
+}

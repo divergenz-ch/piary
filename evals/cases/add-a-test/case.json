@@ -1,0 +1,14 @@
+{
+	"title": "[AI DRAFT] Write a new file in the workspace without touching the source",
+	"tags": ["AI DRAFT"],
+	"job": "edit-file",
+	"canvas": [],
+	"rubric": [
+		"Writes a test file using node:test and node:assert",
+		"Covers spaces and capital letters",
+		"Does not change src/slug.js"
+	],
+	"checks": {
+		"files": { "unchanged": ["src/slug.js", "package.json"] }
+	}
+}

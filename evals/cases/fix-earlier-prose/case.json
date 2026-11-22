@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] Fix my conversation: a typo in earlier prose, changed through canvas_edit",
+	"tags": ["AI DRAFT"],
+	"job": "fix-conversation",
+	"canvas": ["fix-conversation", "edited-history"],
+	"rubric": [
+		"Changes \"Firday\" to \"Friday\" through the canvas_edit tool, quoting the plan's sentence",
+		"Does not edit the conversation's file or any workspace file",
+		"Does not claim the typo is fixed when the tool said it was not applied"
+	],
+	"checks": {
+		"tools": { "must": ["canvas_edit"], "mustNot": ["edit", "write"] },
+		"conversationUntouched": true
+	}
+}

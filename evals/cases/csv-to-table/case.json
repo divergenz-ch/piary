@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] Tabular data is shown as a table view",
+	"tags": ["AI DRAFT", "needs pi"],
+	"job": "view",
+	"canvas": [],
+	"rubric": [
+		"Reads the file and shows it through the view tool's table template",
+		"Adds at most a sentence of observation",
+		"Does not paste the CSV as a code block instead"
+	],
+	"checks": {
+		"tools": { "must": ["view"], "mustNot": ["edit", "write"] },
+		"files": { "unchanged": ["data/sales.csv"] }
+	}
+}

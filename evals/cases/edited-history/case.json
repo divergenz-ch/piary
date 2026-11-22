@@ -1,0 +1,16 @@
+{
+	"title": "[AI DRAFT] The user's correction to an earlier answer is the truth",
+	"tags": ["AI DRAFT"],
+	"job": "explain",
+	"canvas": ["edited-history"],
+	"rubric": [
+		"Says Thursday, the day in the document as it stands",
+		"Never says Tuesday is the review day",
+		"The 'day before' is Wednesday"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write"] },
+		"maxWords": 120,
+		"mentions": ["thursday", "wednesday"]
+	}
+}

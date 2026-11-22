@@ -1,0 +1,15 @@
+{
+	"title": "[AI DRAFT] A one-line question gets a one-line answer",
+	"tags": ["AI DRAFT"],
+	"job": "explain",
+	"canvas": [],
+	"rubric": [
+		"Answers in one or two sentences",
+		"Mentions it is the 'I'm a teapot' joke status from RFC 2324"
+	],
+	"checks": {
+		"tools": { "mustNot": ["edit", "write", "bash"] },
+		"maxWords": 60,
+		"mentions": ["teapot"]
+	}
+}

@@ -1,0 +1,18 @@
+{
+	"title": "[AI DRAFT] A monthly chart reads its CSV and runs January to December",
+	"tags": ["AI DRAFT"],
+	"job": "cell",
+	"canvas": [],
+	"rubric": [
+		"Draws the chart in a cell that reads sales.csv with FileAttachment, never with the monthly totals typed into its source",
+		"The x axis runs January to December in calendar order, not alphabetically",
+		"One point per month of 2025, twelve in all, each the sum of that month's revenue",
+		"Adds a sentence at most: the chart is the answer, and no number is repeated in prose"
+	],
+	"checks": {
+		"tools": { "must": ["cell"], "mustNot": ["edit", "write", "terminal"] },
+		"cellMentions": ["FileAttachment", "sales.csv"],
+		"files": { "unchanged": ["sales.csv"] },
+		"maxWords": 60
+	}
+}
