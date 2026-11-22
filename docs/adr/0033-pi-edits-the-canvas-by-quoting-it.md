@@ -1,7 +1,8 @@
 # ADR 0033 — pi edits the canvas by quoting it, and the page applies the edit
 
 **Status:** accepted (2026-11-14). Quoted text is the block addressing, chosen over block ids and
-positions.
+positions. Amended by [ADR 0065](0065-a-canvas-edit-that-empties-a-block-removes-it.md): an edit
+that empties a block removes it.
 
 ## Context
 
@@ -64,8 +65,8 @@ the user (`app/canvas-edits.ts`), the bound and reason of ADR 0031.
   seconds. That is the price of the document being the history, paid by every edit above a prompt.
 - The eval runner has no page, so it measures whether pi reaches for `canvas_edit` rather than the
   file, not whether the edit lands; the page's half is held by `e2e/flows.spec.ts`.
-- Whole-block operations — remove a block with its marker, move one — are not offered. None of the
-  jobs needs one yet; a tool for them would address blocks, and is a new decision.
+- Moving a block is not offered. Removing one is: an edit that empties a block takes its marker
+  too ([ADR 0065](0065-a-canvas-edit-that-empties-a-block-removes-it.md)).
 
 ## Lessons
 

@@ -2377,6 +2377,31 @@ test("a canvas edit whose quote the document does not hold changes nothing, and 
 	expect(await docText(page)).toContain("# Teh plan");
 });
 
+test("a canvas edit that empties an earlier block removes it, marker included, and ⌘Z brings it back", async ({ page }) => {
+	await openApp(page, answerWith([editAsked("Friday works.", ""), ...hold(6), final("Removed it."), settled()], 150), TYPO);
+	await write(page, "remove your answer");
+	await send(page);
+	await expect.poll(async () => (await verdictsOf(page))["e1"], { timeout: 8000 }).toEqual({ ok: true });
+	await turnOver(page);
+	const md = await docText(page);
+	// No marker is left over nothing: the prompt above is followed by the next one.
+	expect(md).toMatch(/Ship on Friday\.\n\n<!-- you -->\n\nremove your answer/);
+	expect(md).toContain("Removed it.");
+	await page.locator(".cm-line", { hasText: "Ship on Friday." }).click();
+	const mod = process.platform === "darwin" ? "Meta" : "Control";
+	await page.keyboard.press(`${mod}+z`);
+	await expect.poll(() => docText(page)).toMatch(/<!-- pi -->\n\nFriday works\./);
+});
+
+test("a canvas edit may not empty the prompt it is answering: nothing changes, and the tool is told why", async ({ page }) => {
+	await openApp(page, answerWith([editAsked("remove this question", ""), ...hold(6), final("Could not."), settled()], 150), TYPO);
+	await write(page, "remove this question");
+	await send(page);
+	await expect.poll(async () => (await verdictsOf(page))["e1"], { timeout: 8000 }).toMatchObject({ error: expect.stringMatching(/prompt you are answering/) });
+	await turnOver(page);
+	expect(await docText(page)).toContain("remove this question");
+});
+
 test("a cell that runs is answered ok", async ({ page }) => {
 	await openApp(page, answerWith([...cellAnswer("1 + 1", "ok1"), verdictAsked("ok1"), ...hold(10), final("Done."), settled()], 250));
 	await write(page, "make a cell");

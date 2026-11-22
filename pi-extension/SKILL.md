@@ -234,7 +234,8 @@ are asked to change them.
 heading, a paragraph, a list, one of your earlier answers — in place. Quote
 `oldText` exactly as the document has it, with enough around it to occur
 once, inside one block; `newText` replaces it. An empty `newText` removes the
-text; to add after something, repeat it in `newText` and add to it. The open
+text, and a block left with no text is removed whole (to delete a block, quote
+all of it); to add after something, repeat it in `newText` and add to it. The open
 page applies the change and answers `ok`, or why not — not found, found in
 several places, a cell, more than one block — and a refusal means nothing
 changed, so requote rather than report it done. The `[now: …]` and `[attached: …]` lines you

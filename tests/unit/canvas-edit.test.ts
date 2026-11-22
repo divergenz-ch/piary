@@ -130,3 +130,54 @@ test("a quote that is nothing but the app's own lines is refused as empty", () =
 	assert.equal(plan.ok, false);
 	assert.match(!plan.ok ? plan.error : "", /empty/);
 });
+
+// -- an edit that empties a block takes the block (ADR 0065) --------------------
+
+test("an edit that leaves pi's block empty removes the block, marker included", () => {
+	const plan = planCanvasEdit(DOC, { oldText: "Friday works. The plan is fine.", newText: "" });
+	assert.ok(plan.ok, !plan.ok ? plan.error : "");
+	const after = apply(DOC, plan);
+	assert.equal(after, DOC.replace("<!-- pi -->\n\nFriday works. The plan is fine.\n\n", ""));
+	assert.match(after, /Ship on Friday\.\n\n<!-- pi:cell js #pie01 -->/);
+	// The change covers the block whole: the editor drops one that clips a marker.
+	assert.ok(plan.from <= DOC.indexOf("<!-- pi -->") && plan.to >= DOC.indexOf("<!-- pi:cell"));
+});
+
+test("a replacement of nothing but whitespace empties a block too", () => {
+	const plan = planCanvasEdit(DOC, { oldText: "Friday works. The plan is fine.", newText: "\n\n" });
+	assert.ok(plan.ok);
+	assert.doesNotMatch(apply(DOC, plan), /<!-- pi -->/);
+});
+
+test("a block with text left in it keeps its marker", () => {
+	const plan = planCanvasEdit(DOC, { oldText: "Friday works.", newText: "" });
+	assert.ok(plan.ok);
+	assert.match(apply(DOC, plan), /<!-- pi -->\n\n The plan is fine\./);
+});
+
+test("the user's own earlier prompt and a note are removed the same way, with the marker that folded the prompt", () => {
+	const md = "<!-- pi:note -->\n\n## Notes\n\n<!-- you -->\n\nfirst\n\n<!-- pi -->\n\none\n\n<!-- pi:block -->\n\n<!-- you -->\n\nsecond\n\n<!-- pi -->\n\ntwo\n\n<!-- you -->\n\n";
+	const prompt = planCanvasEdit(md, { oldText: "second", newText: "" });
+	assert.ok(prompt.ok, !prompt.ok ? prompt.error : "");
+	assert.equal(apply(md, prompt), md.replace("<!-- pi:block -->\n\n<!-- you -->\n\nsecond\n\n", ""));
+	assert.ok(prompt.from <= md.indexOf("<!-- pi:block -->") && prompt.to >= md.indexOf("<!-- pi -->\n\ntwo"));
+	const note = planCanvasEdit(md, { oldText: "## Notes", newText: "" });
+	assert.ok(note.ok);
+	assert.equal(apply(md, note), md.replace("<!-- pi:note -->\n\n## Notes\n\n", ""));
+});
+
+test("the prompt being answered cannot be emptied: the edit is refused and says why", () => {
+	const md = `${DOC}<!-- pi -->\n\nWorking on it.\n`;
+	const region = { from: DOC.length, to: md.length };
+	const plan = planCanvasEdit(md, { oldText: "fix the heading", newText: "" }, region);
+	assert.equal(plan.ok, false);
+	assert.match(!plan.ok ? plan.error : "", /prompt you are answering/);
+	// Changing its words is still an edit like any other.
+	assert.ok(planCanvasEdit(md, { oldText: "fix the heading", newText: "fix the title" }, region).ok);
+});
+
+test("the page's trailing prompt is where the user types next: emptied, it keeps its marker", () => {
+	const plan = planCanvasEdit(DOC, { oldText: "fix the heading", newText: "" });
+	assert.ok(plan.ok);
+	assert.match(apply(DOC, plan), /<!-- you -->\n\n\n*$/);
+});

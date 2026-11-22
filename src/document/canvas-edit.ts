@@ -3,9 +3,13 @@
 // must name exactly one place, inside one block of prose. The page applies the
 // change; this decides where, or says why not in words the agent can act on.
 //
+// An edit that leaves its block with no text takes the block, marker included
+// (ADR 0065): a marker over nothing is not what "remove this" asked for.
+//
 // Pure: a document and an edit in, a change or a refusal out.
 
-import { escapeBody, parseDocument, type DocSegmentKind } from "./format.ts";
+import { escapeBody, opensBlock, parseDocument, type DocSegmentKind } from "./format.ts";
+import { deleteSegment } from "./run.ts";
 import { isNowLine, withoutAppTail } from "./turn-context.ts";
 
 /** What the `canvas_edit` tool asks for: replace `oldText` with `newText`. */
@@ -47,7 +51,8 @@ function withoutAppLines(text: string): string {
  * Where `edit` lands in `md`, or why it cannot. `outside` is a span the edit
  * may not see — the running turn's own region, which is the answer being
  * written, not the canvas it writes about: a quote found only there is not
- * found, and one found there and elsewhere counts once.
+ * found, and one found there and elsewhere counts once. The prompt above it
+ * is the one being answered, which an edit may reword and may not empty.
  */
 export function planCanvasEdit(md: string, quoted: CanvasEdit, outside?: { from: number; to: number }): CanvasEditPlan {
 	const edit = { oldText: withoutAppLines(quoted.oldText), newText: withoutAppLines(quoted.newText) };
@@ -69,5 +74,32 @@ export function planCanvasEdit(md: string, quoted: CanvasEdit, outside?: { from:
 		return { ok: false, error: "that quote spans more than one block: change one block at a time, inside it" };
 	if (segment.kind === "cell") return { ok: false, error: `that text is cell #${segment.id}: change it with the \`cell\` tool, passing id "${segment.id}"` };
 	if (!PROSE.has(segment.kind)) return { ok: false, error: `that text is part of a ${segment.kind} block, a record Piary keeps; only prose can be changed` };
-	return { ok: true, from, to, insert: escapeBody(edit.newText) };
+	const insert = escapeBody(edit.newText);
+	if ((md.slice(segment.bodyFrom, from) + insert + md.slice(to, segment.to)).trim()) return { ok: true, from, to, insert };
+	// The edit leaves the block empty. The page's trailing prompt is where the
+	// user types next, so it keeps its marker, as `deleteSegment` would have it.
+	const index = parsed.segments.indexOf(segment);
+	if (segment.kind === "user" && index === parsed.segments.length - 1) return { ok: true, from, to, insert };
+	if (outside && segment === parsed.segments.findLast((s) => s.kind === "user" && s.from < outside.from))
+		return { ok: false, error: "that would remove the prompt you are answering, and its answer would be left with no question: leave text in it" };
+	const next = deleteSegment(md, parsed.segments, index);
+	if (next === null) return { ok: true, from, to, insert };
+	// The change covers the block whole, with the marker that folds it into the
+	// one above: the editor takes a change that removes a marker's segment and
+	// drops one that clips a marker.
+	const lead = opensBlock(segment.kind) && parsed.segments[index - 1]?.kind === "block" ? parsed.segments[index - 1]!.from : segment.from;
+	return { ok: true, ...spliceCovering(md, next, lead, segment.to) };
+}
+
+/** The one change that turns `before` into `after` and covers `from`..`to` of
+ *  `before`: what a whole-document function did, as a span the editor can
+ *  apply without moving what is around it. */
+function spliceCovering(before: string, after: string, from: number, to: number): { from: number; to: number; insert: string } {
+	const limit = Math.min(before.length, after.length);
+	let head = 0;
+	while (head < Math.min(limit, from) && before.charCodeAt(head) === after.charCodeAt(head)) head++;
+	let tail = 0;
+	const room = Math.min(limit - head, before.length - to);
+	while (tail < room && before.charCodeAt(before.length - 1 - tail) === after.charCodeAt(after.length - 1 - tail)) tail++;
+	return { from: head, to: before.length - tail, insert: after.slice(head, after.length - tail) };
 }

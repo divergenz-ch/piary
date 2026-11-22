@@ -33,7 +33,8 @@ export default function (pi: ExtensionAPI) {
 		description:
 			"Change prose already in this conversation's document — a heading, a paragraph, a list, an earlier answer " +
 			"— by quoting it. oldText must match the document exactly, once, inside one block; newText replaces it " +
-			"(empty removes it; repeat oldText and add to it to insert after). The open page applies the change and " +
+			"(empty removes it, and a block left with no text is removed whole; repeat oldText and add to it to insert " +
+				"after). The open page applies the change and " +
 			"answers ok, or why not, so a refusal means nothing changed: requote and try again. To change a cell, " +
 			"redefine it with the `cell` tool instead. The `[now: …]` and `[attached: …]` lines on the user's messages are " +
 			"added on the way to you and are not in the document: leave them out of both texts. Never edit the conversation's markdown file with edit, write " +

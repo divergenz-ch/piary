@@ -2331,6 +2331,7 @@ export class DocumentChat extends LitElement {
 	 * that holds is not found. Not marked as the machine's own edit, and kept in
 	 * the undo history: the user's ⌘Z takes it back like any change to their
 	 * text, and a rebuild reads it like any edit above the prompt (ADR 0002).
+	 * An edit that empties a block removes it, marker included (ADR 0065).
 	 */
 	applyCanvasEdit(edit: CanvasEdit): { ok: true } | { ok: false; error: string } {
 		const view = this.view;
@@ -2339,8 +2340,12 @@ export class DocumentChat extends LitElement {
 		const outside = region ? { from: region.turnAnchor, to: region.tailAnchor } : undefined;
 		const plan = planCanvasEdit(view.state.doc.toString(), edit, outside);
 		if (!plan.ok) return plan;
+		const before = view.state.doc;
 		view.dispatch({ changes: { from: plan.from, to: plan.to, insert: plan.insert }, userEvent: "piary.canvas-edit" });
-		return { ok: true };
+		// The editor's own rules may drop a change, and `ok` is the agent's only
+		// check that the edit happened.
+		const landed = view.state.doc !== before || before.sliceString(plan.from, plan.to) === plan.insert;
+		return landed ? { ok: true } : { ok: false, error: "the document did not take that change: nothing was changed" };
 	}
 
 	/**
