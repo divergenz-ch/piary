@@ -177,14 +177,27 @@ pub fn read(paths: &DocPaths, id: &str) -> Result<Option<String>, String> {
 /// synced before it is renamed, and the directory after, so the rename itself
 /// survives too (ADR 0018 §1). `sync_all` is `F_FULLFSYNC` on Apple targets,
 /// the call that reaches past the drive's cache; a plain `fsync` there does not.
+///
+/// A file that already holds `content` is left as it is. The rename would give
+/// it a new modification time, which is what the conversation list is ordered
+/// by (`entries`): a save that changed nothing, as a window makes when it opens
+/// a conversation and when it leaves one, would move it to the top.
 pub fn write(paths: &DocPaths, id: &str, content: &str) -> Result<(), String> {
     let path = path_of(paths, id)?;
     fs::create_dir_all(&paths.doc_dir)
         .map_err(|e| format!("creating the document directory: {e}"))?;
-    write_atomically(&path, content)?;
+    if !holds(&path, content) {
+        write_atomically(&path, content)?;
+    }
     // A snapshot that fails must not fail the save it follows.
     let _ = snapshot(paths, id, content, now_ms());
     Ok(())
+}
+
+/// Whether the file at `path` holds exactly `content`. A file that is missing
+/// or cannot be read does not.
+fn holds(path: &Path, content: &str) -> bool {
+    fs::read(path).is_ok_and(|bytes| bytes == content.as_bytes())
 }
 
 /// At least this long between two snapshots of one document: continuous typing
@@ -675,6 +688,26 @@ mod tests {
             listed[0].modified_ms > 1_600_000_000_000.0,
             "milliseconds since the epoch"
         );
+    }
+
+    #[test]
+    fn a_save_of_what_the_file_holds_leaves_its_place_in_the_list() {
+        let scratch = Scratch::new("entries-unchanged");
+        let paths = scratch.paths();
+        let ids = |paths: &DocPaths| -> Vec<String> {
+            entries(paths).unwrap().into_iter().map(|e| e.id).collect()
+        };
+        write(&paths, "older", "o").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        write(&paths, "newer", "n").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+
+        write(&paths, "older", "o").unwrap();
+        assert_eq!(ids(&paths), ["newer", "older"]);
+
+        // The pair: a save that changes the document still moves it up.
+        write(&paths, "older", "o, edited").unwrap();
+        assert_eq!(ids(&paths), ["older", "newer"]);
     }
 
     #[test]

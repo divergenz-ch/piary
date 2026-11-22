@@ -467,8 +467,9 @@ WDIO spec, which run only because the gate opened.
 
 **A spec that ends or relaunches the app starts its own.** The WDIO service holds one instance open
 for `shell.spec.ts`; a quit would end the process its session drives, an outside edit needs a
-document directory the test writes behind the app's back, and a Finder launch has a different parent
-altogether. So `e2e-app/quit.spec.ts`, `outside-edit.spec.ts` and `finder-log.spec.ts` launch the
+document directory the test writes behind the app's back, the list's order needs one whose files' times
+the test set, and a Finder launch has a different parent altogether. So `e2e-app/quit.spec.ts`,
+`outside-edit.spec.ts`, `list-order.spec.ts` and `finder-log.spec.ts` launch the
 same binary themselves (`e2e-app/helpers/instance.ts`) on a free WebDriver port
 (`TAURI_WEBDRIVER_PORT`) with a scratch `PI_DOC_DIR`, speak the W3C protocol to it directly, and end
 every process they recorded below it, pass or fail — by pid, never by name, because a developer's own
