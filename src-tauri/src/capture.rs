@@ -1,7 +1,7 @@
 //! The capture sidecar, as the Rust side holds it.
 //!
-//! Screen and system audio come from ScreenCaptureKit and camera/microphone
-//! from AVFoundation, in a Swift helper rather than through the webview
+//! Screen and system audio come from ScreenCaptureKit and the camera from
+//! AVFoundation, in a Swift helper rather than through the webview
 //! (ADR 0015). This module spawns it, writes commands to its stdin, and relays
 //! its JSON lines outward.
 //!

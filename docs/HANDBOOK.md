@@ -548,8 +548,9 @@ FACE             with the `face` preference on and agreed to (below), a message 
                  prompt pi does not hold as it stands is said as not known. Under a block
                  that was sent the menu asks whether it was right about the user; the two
                  counts are kept in `localStorage` (`piary.face.judged`) and said in the
-                 panel. A signed build gets the camera and the microphone through
-                 `src-tauri/Entitlements.plist` (`docs/packaging.md` §4). ⌥⌘F is Read My
+                 panel. A signed build gets the camera through
+                 `src-tauri/Entitlements.plist` (`docs/packaging.md` §4), and no
+                 microphone: the app asks for none. ⌥⌘F is Read My
                  Face's key: the switch itself, which stays where it is put, and the only
                  way to send without a block; no message is opted out alone.
 MODEL            a chip at the window's bottom-right picks the model and the effort from pi's own

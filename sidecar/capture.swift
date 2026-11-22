@@ -1,5 +1,6 @@
 // The capture helper: screen and system audio through ScreenCaptureKit, camera
-// and microphone through AVFoundation.
+// through AVFoundation. It takes no microphone: the app asks for none and holds
+// no entitlement to one, so a recording is the screen and what the Mac plays.
 //
 // Why a sidecar at all (ADR 0015): the webview's own getDisplayMedia is
 // unreliable in a WKWebView, and the native APIs are strictly more capable —
@@ -15,7 +16,7 @@
 //
 //   in   {"op":"status"}                      → what this machine allows
 //   in   {"op":"sources"}                     → displays and windows
-//   in   {"op":"devices"}                     → cameras and microphones
+//   in   {"op":"devices"}                     → cameras
 //   in   {"op":"start","target":…,"audio":…}  → begin a capture
 //   in   {"op":"stop"}                        → end it
 //   out  {"event":"…", …}
@@ -53,7 +54,7 @@ func log(_ message: String) {
 ///
 /// Screen Recording has no status API: the grant is discovered by attempting
 /// the call that needs it, and the app appears in System Settings only after it
-/// has tried once. Camera and microphone report directly, without prompting.
+/// has tried once. The camera reports directly, without prompting.
 func status() async -> [String: Any] {
     var screen = "denied"
     var displays = 0
@@ -73,10 +74,9 @@ func status() async -> [String: Any] {
         "displays": displays,
         "windows": windows,
         "camera": authName(AVCaptureDevice.authorizationStatus(for: .video)),
-        "microphone": authName(AVCaptureDevice.authorizationStatus(for: .audio)),
-        // macOS 13 brought system audio to ScreenCaptureKit; 15 brought the
-        // microphone into the same stream. Reported so the parent can offer
-        // what the machine can do rather than what the build hoped for.
+        // macOS 13 brought system audio to ScreenCaptureKit. Reported so the
+        // parent can offer what the machine can do rather than what the build
+        // hoped for.
         "systemAudio": true,
     ]
 }
@@ -120,39 +120,39 @@ func sources() async -> [String: Any] {
     }
 }
 
-/// The cameras and microphones this machine has.
+/// The cameras this machine has.
 func devices() -> [String: Any] {
+    // macOS 14 renamed the device type; 13 knows only the older name.
+    let external: AVCaptureDevice.DeviceType
+    if #available(macOS 14.0, *) {
+        external = .external
+    } else {
+        external = .externalUnknown
+    }
     let cameras = AVCaptureDevice.DiscoverySession(
-        deviceTypes: [.builtInWideAngleCamera, .external],
+        deviceTypes: [.builtInWideAngleCamera, external],
         mediaType: .video,
         position: .unspecified
     ).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] as [String: Any] }
 
-    let mics = AVCaptureDevice.DiscoverySession(
-        deviceTypes: [.microphone],
-        mediaType: .audio,
-        position: .unspecified
-    ).devices.map { ["id": $0.uniqueID, "name": $0.localizedName] as [String: Any] }
-
-    return ["event": "devices", "cameras": cameras, "microphones": mics]
+    return ["event": "devices", "cameras": cameras]
 }
 
 // MARK: - capturing
 
 /// Receives a stream's buffers and reports what arrived.
 ///
-/// System audio and microphone audio arrive as SEPARATE buffers with different
-/// format descriptions on independent clocks (ADR 0015). They are reported
-/// separately and never mixed here: writing both into one asset-writer input
-/// produces a corrupt file and raises no error, and mixing is the consumer's
-/// decision anyway.
+/// Only the screen and the system audio are asked for. A microphone, once one
+/// is, arrives as SEPARATE buffers with a different format description on its
+/// own clock (ADR 0015): it gets its own count here and its own asset-writer
+/// input downstream, because writing both into one produces a corrupt file and
+/// raises no error.
 final class Receiver: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     // Counters are touched only on the one sample-handler queue the stream is
     // given, which is what makes the unchecked conformance true rather than a
     // wish.
     private var frames = 0
     private var audioBuffers = 0
-    private var micBuffers = 0
     private var lastReport = Date()
 
     func stream(_ stream: SCStream, didOutputSampleBuffer buffer: CMSampleBuffer, of type: SCStreamOutputType) {
@@ -160,8 +160,8 @@ final class Receiver: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sen
         switch type {
         case .screen: frames += 1
         case .audio: audioBuffers += 1
-        case .microphone: micBuffers += 1
-        @unknown default: break
+        // What was not asked for does not arrive.
+        default: break
         }
         // Progress on a clock rather than per buffer: a 60fps capture would
         // otherwise be sixty lines a second on the control channel, which is
@@ -172,7 +172,6 @@ final class Receiver: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sen
                 "event": "progress",
                 "frames": frames,
                 "audioBuffers": audioBuffers,
-                "microphoneBuffers": micBuffers,
                 // The capture's own timestamp, carried so a consumer can align
                 // streams whose clocks are independent.
                 "presentationTime": CMSampleBufferGetPresentationTimeStamp(buffer).seconds,
@@ -219,7 +218,7 @@ actor Capture {
 
 let capture = Capture()
 
-func start(display: CGDirectDisplayID?, window: CGWindowID?, audio: Bool, microphone: Bool) async {
+func start(display: CGDirectDisplayID?, window: CGWindowID?, audio: Bool) async {
     if await capture.isRunning() {
         emit(["event": "error", "op": "start", "message": "a capture is already running"])
         return
@@ -253,9 +252,6 @@ func start(display: CGDirectDisplayID?, window: CGWindowID?, audio: Bool, microp
         // Without this the recording contains the app's own output, which for a
         // tool that plays back what it recorded is a feedback loop.
         config.excludesCurrentProcessAudio = true
-        if microphone {
-            config.captureMicrophone = true
-        }
 
         let receiver = Receiver()
         let stream = SCStream(filter: filter, configuration: config, delegate: receiver)
@@ -263,12 +259,9 @@ func start(display: CGDirectDisplayID?, window: CGWindowID?, audio: Bool, microp
         if audio {
             try stream.addStreamOutput(receiver, type: .audio, sampleHandlerQueue: .global(qos: .userInitiated))
         }
-        if microphone {
-            try stream.addStreamOutput(receiver, type: .microphone, sampleHandlerQueue: .global(qos: .userInitiated))
-        }
         try await stream.startCapture()
         await capture.hold(stream, receiver)
-        emit(["event": "started", "audio": audio, "microphone": microphone])
+        emit(["event": "started", "audio": audio])
     } catch {
         emit(["event": "error", "op": "start", "message": error.localizedDescription])
     }
@@ -341,8 +334,7 @@ func run() async {
             await start(
                 display: (message["display"] as? NSNumber)?.uint32Value,
                 window: (message["window"] as? NSNumber)?.uint32Value,
-                audio: message["audio"] as? Bool ?? false,
-                microphone: message["microphone"] as? Bool ?? false
+                audio: message["audio"] as? Bool ?? false
             )
         case "stop": await stop()
         case "quit":

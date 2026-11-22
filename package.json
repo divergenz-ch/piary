@@ -39,7 +39,7 @@
 		"rust:test": "node scripts/rust-test.ts",
 		"rust:check": "cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test",
 		"rust:bindings": "git diff --exit-code --quiet src/bridge-types.ts || { echo 'src/bridge-types.ts is stale — commit the file cargo test regenerated'; exit 1; }",
-		"sidecar:build": "mkdir -p sidecar/bin && swiftc -O sidecar/capture.swift -o \"sidecar/bin/piary-capture-$(rustc --print host-tuple)\" && cp \"sidecar/bin/piary-capture-$(rustc --print host-tuple)\" sidecar/bin/piary-capture",
+		"sidecar:build": "node scripts/sidecar-build.ts",
 		"app:e2e:build": "pnpm sidecar:build && pnpm app:build && cd src-tauri && cargo build --features e2e,tauri/custom-protocol",
 		"test:app": "wdio run wdio.conf.ts",
 		"app:dmg": "tauri build --bundles dmg"

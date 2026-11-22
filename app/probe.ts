@@ -227,13 +227,13 @@ export async function runProbe({ chat, turn, start, params }: ProbeDeps): Promis
 		"this machine's capture permissions are recorded",
 		!!reported,
 		reported
-			? `screen=${reported["screenRecording"]} camera=${reported["camera"]} mic=${reported["microphone"]} displays=${reported["displays"]}`
+			? `screen=${reported["screenRecording"]} camera=${reported["camera"]} displays=${reported["displays"]}`
 			: undefined,
 	);
 
 	await captureSend({ op: "devices" });
 	check(
-		"cameras and microphones are enumerated",
+		"cameras are enumerated",
 		await waitFor(() => captureEvents.some((event) => event["event"] === "devices"), 8_000),
 	);
 

@@ -537,8 +537,8 @@ any change to the webview, the menu, or the capture seam.
       Recording prompts once, names **Piary** and not the helper, and the grant
       survives a relaunch. The responsible-process inheritance (ADR 0015) is
       what makes this work and it is only observable on a first run.
-- [ ] **Camera and microphone prompts**, same check — and confirm the
-      `Info.plist` strings read as something a user would consent to.
+- [ ] **The camera prompt**, same check — and confirm the
+      `Info.plist` string reads as something a user would consent to.
 - [ ] **Display sleep and wake.** A capture running when the display sleeps, and
       the app after waking: no frozen window, no orphaned helper (`ps` for
       `piary-capture`).
