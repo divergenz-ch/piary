@@ -28,8 +28,10 @@ Two questions decide it: **how pi names the block**, and **which blocks it may r
    `docs/document-format.md` is untouched. An edit that leaves any text keeps the marker.
 2. **Every block a quote may land in can be removed: `you`, `pi` and `pi:note`.** These are the
    blocks `canvas_edit` could already empty, and an empty prompt or note was already no message
-   (`document-format.md` §Message reconstruction), so pi's history reads the same as it did after
-   the emptying edit. A cell, a tool's call, result or view and a file are still refused, as
+   (`document-format.md` §Message reconstruction), so no message leaves pi's history that the
+   emptying edit had not already taken. One thing differs: an empty prompt or note still ended
+   the answer above it, so the answers on either side were two assistant messages in a row;
+   with the marker gone they are one, as after the user's own delete. A cell, a tool's call, result or view and a file are still refused, as
    ADR 0033 §3 has it; a cell is a segment of its own, so removing the prose above one leaves it
    standing.
 3. **The removal is the user's own delete.** The span is `deleteSegment`'s
@@ -42,8 +44,9 @@ Two questions decide it: **how pi names the block**, and **which blocks it may r
    The page's trailing prompt is where the user types next, so emptied it stays, as it does for
    the user.
 5. **`ok` means the document changed.** The editor drops a change that clips a marker, without
-   an error, so the plan for a removal covers the block whole, and the page answers `ok` only
-   when the change landed: a change the editor dropped is a refusal.
+   an error, so the plan for a removal covers the block whole. As a guard, the page answers `ok`
+   only when the change landed: a change the editor dropped is a refusal. No plan is known to
+   reach the guard, so no test does.
 
 ### Alternatives weighed
 
