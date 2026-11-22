@@ -270,7 +270,8 @@ written on.
   justifies a change, and it is in `helpers/` because the runner must not collect it.
 - **Isolate `HOME` and any storage root.** `mkdtempSync` per test. A test that reads the developer's
   real `~/.pi` passes on their machine and nowhere else.
-- **Never hardcode a port.** The harness server and Vite take one the OS picks; a fixed port makes two
+- **Never hardcode a port.** The harness server and Vite take one the OS picks, and so does the app's
+  embedded WebDriver server (`wdio.conf.ts` sets `TAURI_WEBDRIVER_PORT`); a fixed port makes two
   checkouts fight.
 - **A contract test reads both sides of a seam and fails naming the drifted item.** The
   `tests/contract/` tier is source-text checks on purpose — canvas events ↔ the host table, menu

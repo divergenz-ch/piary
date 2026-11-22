@@ -40,13 +40,23 @@ export function sessionPort(role = "harness"): number {
 		// as the server failing to bind, which names the problem where it happens.
 		if (recorded) return recorded;
 	} catch {} // no claim yet (or an unreadable one): make a fresh one below
-	// A free port, found synchronously because this function's callers are a
-	// module's top level. `net.Server.listen()` is ASYNCHRONOUS — `address()` is
-	// null until its callback runs — so probing a real socket here cannot work and
-	// silently yields port 0, which becomes `http://127.0.0.1:0` and a 60s timeout
-	// that looks like a broken server. `execFileSync` gives the OS the same
-	// question and waits for the answer.
-	const port = Number(
+	const port = freePortSync();
+	writeFileSync(lock, String(port));
+	return port;
+}
+
+/**
+ * A port nothing is listening on, found synchronously because its callers are
+ * a config module's top level.
+ *
+ * `net.Server.listen()` is ASYNCHRONOUS — `address()` is null until its
+ * callback runs — so probing a real socket in this process cannot work and
+ * silently yields port 0, which becomes `http://127.0.0.1:0` and a 60s timeout
+ * that looks like a broken server. `execFileSync` gives the OS the same
+ * question and waits for the answer.
+ */
+export function freePortSync(): number {
+	return Number(
 		execFileSync(process.execPath, [
 			"-e",
 			'const s=require("node:net").createServer();s.listen(0,"127.0.0.1",()=>{process.stdout.write(String(s.address().port));s.close()})',
@@ -54,6 +64,4 @@ export function sessionPort(role = "harness"): number {
 			.toString()
 			.trim(),
 	);
-	writeFileSync(lock, String(port));
-	return port;
 }

@@ -66,7 +66,9 @@ fn install_webdriver<R: tauri::Runtime>(
     if !driven {
         return builder;
     }
-    eprintln!("piary: embedded WebDriver server on 127.0.0.1:4445 (PIARY_E2E=1)");
+    // The plugin's own rule: the port this variable names, else 4445.
+    let port = std::env::var("TAURI_WEBDRIVER_PORT").unwrap_or_else(|_| "4445".into());
+    eprintln!("piary: embedded WebDriver server on 127.0.0.1:{port} (PIARY_E2E=1)");
     let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
     if std::env::var("PIARY_E2E_SHOW").as_deref() == Ok("1") {
         return builder;

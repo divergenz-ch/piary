@@ -26,6 +26,7 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { freePortSync } from "./e2e/helpers/ports.ts";
 import { BINARY } from "./e2e-app/helpers/instance.ts";
 
 const ci = !!process.env["CI"];
@@ -37,6 +38,15 @@ const ci = !!process.env["CI"];
 // presents as "the server did not become ready", which reads as a missing
 // plugin and is not one.
 process.env["PIARY_E2E"] = "1";
+
+// The port the app's embedded WebDriver server listens on, which the plugin
+// and the service both read from this variable and otherwise take as 4445. A
+// fixed port is one every checkout shares: two runs at once attach to each
+// other's app, and a command that exists is answered "not found". So the
+// launcher takes a free one and hands it on through the environment, as it
+// does the document directory below: each worker loads this file again, and a
+// port chosen per load would have the worker look where no app listens.
+process.env["TAURI_WEBDRIVER_PORT"] ??= String(freePortSync());
 
 // The service's app writes its documents here, never into the workspace's real
 // conversations: without it the window's own document is the one `pnpm app`

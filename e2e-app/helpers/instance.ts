@@ -48,7 +48,7 @@ export function rmScratch(dir: string): void {
 }
 
 /** A port nothing is listening on, so an instance never meets the service's
- *  fixed 4445 or a developer's own test run. */
+ *  own app or a developer's own test run. */
 export function freePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const server = createServer();
