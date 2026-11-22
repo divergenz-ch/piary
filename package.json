@@ -1,6 +1,6 @@
 {
 	"name": "piary",
-	"version": "0.1.0",
+	"version": "0.0.1",
 	"description": "One canvas, not a chat: a markdown document the user and the pi agent both write into",
 	"type": "module",
 	"engines": {

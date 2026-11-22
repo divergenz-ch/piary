@@ -73,6 +73,16 @@ Failed running AppleScript
 That reads as a packaging bug and is not one — the `.app` built fine. On a
 headless runner, or over SSH, build the `.app` and make the DMG elsewhere.
 
+**A release is the disk image under a version tag** (ADR 0062). The version is written in
+`package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` (with `Cargo.lock`), and
+the tag is that version with a `v`:
+
+```sh
+pnpm app:release --dmg
+git tag -a v0.0.1 -m "Piary 0.0.1" && git push origin v0.0.1
+gh release create v0.0.1 src-tauri/target/universal-apple-darwin/release/bundle/dmg/Piary_0.0.1_universal.dmg --prerelease --title "Piary 0.0.1" --notes-file <notes>
+```
+
 ## 3. Running the built app
 
 ```sh
@@ -187,8 +197,10 @@ here and not as an ADR.
 
 ## 6. Not done yet
 
-- **A release.** No tag and no GitHub Release exists yet: a build nobody else
-  can open is not worth publishing, so the first one waits on §4.
+- **A release anyone can open.** `v0.0.1` is a pre-release holding an ad-hoc signed disk
+  image: Gatekeeper refuses it on another Mac until its quarantine mark is removed
+  (`xattr -dr com.apple.quarantine /Applications/Piary.app`), so it is for people who know what
+  they are running. The first release for everyone waits on §4.
 - **The notice of a newer version**, which the app owes whoever downloaded it
   (ADR 0062), and after it the question of whether an update installs itself:
   Tauri's updater is a new crate, a signing keypair and an endpoint.
