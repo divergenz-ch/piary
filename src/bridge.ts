@@ -173,7 +173,9 @@ export type ExportKind = "markdown" | "folder" | "zip" | "html" | "pdf";
  * (`content`). A PDF is this window's own page, printed by Rust: one
  * conversation a call, shown to paper by the caller first. `into` is the
  * token an earlier call of the same export was answered with, and names its
- * folder instead of asking again.
+ * folder instead of asking again: for another PDF, from the same window,
+ * until the next export. Rust refuses it for anything else, so it is no way
+ * to write where no panel was shown.
  */
 export function exportConversations(conversations: ExportRequest[], kind: ExportKind, into?: string): Promise<Exported | null> {
 	return invoke("export_conversations", { conversations, kind, into });

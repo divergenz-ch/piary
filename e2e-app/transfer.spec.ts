@@ -182,7 +182,16 @@ describe("a conversation exported and imported", () => {
 		// is handed, and the system printing that window to a file.
 		docDir = scratch("transfer-docs");
 		outDir = scratch("transfer-out");
-		const drawn = "---\npi: v1\nsession: welcome\n---\n\n# The walk\n\n<!-- you -->\n\nhow far is it\n\n<!-- pi -->\n\nIt is **42 km**.\n\n<!-- pi:cell js #sum -->\n\n```js\n6 * 7 * 1000\n```\n\n<!-- you -->\n\n";
+		// The view is the first a2ui surface this app has shown: its renderer is
+		// loaded for the export, and the export waits for it.
+		const surface = {
+			components: [
+				{ id: "root", component: "Column", children: ["said", "days"] },
+				{ id: "said", component: "Text", variant: "caption", text: "Kilometres walked each day." },
+				{ id: "days", component: "Chart", mark: "bar", x: "day", y: "km", data: [{ day: "Mon", km: 12 }, { day: "Tue", km: 30 }] },
+			],
+		};
+		const drawn = `---\npi: v1\nsession: welcome\n---\n\n# The walk\n\n<!-- you -->\n\nhow far is it\n\n<!-- pi -->\n\nIt is **42 km**.\n\n<!-- pi:view a2ui #toolu_a -->\n\n\`\`\`json\n${JSON.stringify(surface)}\n\`\`\`\n\n<!-- pi:result #toolu_a -->\n\n\`\`\`\nok\n\`\`\`\n\n<!-- pi:cell js #sum -->\n\n\`\`\`js\n6 * 7 * 1000\n\`\`\`\n\n<!-- you -->\n\n`;
 		writeFileSync(join(docDir, "welcome.md"), drawn);
 		const launched = await launch({ docDir, env: { PIARY_E2E_EXPORT_DIR: outDir } });
 		app = launched.app;
@@ -199,6 +208,9 @@ describe("a conversation exported and imported", () => {
 		// What the cell computed, not only its source.
 		expect(html.replace(/<[^>]*>/g, "")).toContain("42000");
 		expect(html).toContain("6 * 7 * 1000");
+		// The surface as it was drawn: its words, and its chart as a drawing.
+		expect(html).toContain("Kilometres walked each day.");
+		expect(html).toMatch(/<svg[^>]*class="plot-/);
 		expect(html).not.toContain("<script");
 
 		await choose(driver, "PDF");
@@ -217,6 +229,7 @@ describe("a conversation exported and imported", () => {
 		expect(Number(pages)).toBeGreaterThanOrEqual(1);
 		expect(text.join(" ")).toContain("It is 42 km.");
 		expect(text.join(" ")).toContain("42000");
+		expect(text.join(" ")).toContain("Kilometres walked each day.");
 		// The form the window shows on screen is not on the paper.
 		expect(text.join(" ")).not.toContain("Which conversations");
 		// And the same name is never printed over.

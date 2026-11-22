@@ -66,7 +66,10 @@ ever holds a whole conversation drawn.
   call goes through `objc2`, with two more features of crates the app already has.
 - **The page still names no path.** A PDF export of several conversations is several commands,
   one conversation each, and the panel is shown once: every answer carries a token for the
-  folder, the next command hands it back, and Rust holds only the last one.
+  folder, the next command hands it back, and Rust holds only the last one. The token is no
+  way around the panel: Rust takes it only for another PDF, only from the window the panel was
+  shown on, and only until the next export, so all it can bring about is one more conversation
+  printed into the folder the user just chose.
 - **One conversation that cannot be drawn or written is said, and the others go ahead**, as in
   every export.
 

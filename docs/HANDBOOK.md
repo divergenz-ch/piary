@@ -714,7 +714,8 @@ TRANSFER         Import and export act on conversations, each through a window o
                  paper shows, and Rust runs the webview's print operation to a file with no
                  panel (`src-tauri/src/print.rs`); several conversations are several
                  commands, and the folder asked for once is named to the next by the token
-                 the answer carries. A drawn export is not imported back.
+                 the answer carries, which Rust takes only for another PDF, from the same
+                 window, until the next export. A drawn export is not imported back.
 COMMANDS         what a `/` command is comes from one catalog (`app/command-catalog.ts`, pure): the
                  app's own (`/terminal`, `/subagent`, `/model`, `/thinking`, `/new`, `/resume`,
                  `/import`, `/export`, `/settings`, `/face`, `/login`, `/logout`), then this window's pi's

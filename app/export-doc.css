@@ -147,7 +147,9 @@
 	border-bottom: 2px solid var(--foreground);
 }
 
-.piary-export img {
+/* Nothing drawn is wider than the column it is read in: a chart drawn for a
+   window is scaled to a sheet of paper. */
+.piary-export :is(img, svg) {
 	max-width: 100%;
 	height: auto;
 }

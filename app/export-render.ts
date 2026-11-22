@@ -97,6 +97,28 @@ function quiet(root: Node): Promise<void> {
 	});
 }
 
+/** Whether an a2ui view has drawn: its surface, or why there is none. Its
+ *  renderer is loaded when the first one is shown, and until then the view's
+ *  element is empty and nothing under it changes. */
+const drew = (host: Element): boolean => host.childNodes.length > 0 || host.hasAttribute("data-answer-ui-error");
+
+/** How often a view is looked at while it has not drawn. */
+const DREW_POLL_MS = 50;
+
+/** Resolves once every one of `hosts` has drawn, or the bound has passed. */
+async function rendered(hosts: readonly Element[]): Promise<void> {
+	const deadline = Date.now() + DRAW_BOUND_MS;
+	while (!hosts.every(drew) && Date.now() < deadline) await wait(DREW_POLL_MS);
+}
+
+/** What copying out of the canvas found on the way. */
+interface Copying {
+	/** The custom elements written as plain ones, by name. */
+	elements: Set<string>;
+	/** The pictures that could not be read, by the address they had. */
+	lost: string[];
+}
+
 const asDataUrl = (blob: Blob): Promise<string> =>
 	new Promise((resolve, reject) => {
 		const reader = new FileReader();
@@ -124,11 +146,11 @@ async function inlined(url: string): Promise<string | null> {
  * can run or reach anywhere but a web or mail address a reader clicks.
  *
  * A custom element is written as a plain one that says what it was (`WAS`),
- * and its name is added to `elements`: left as it is, the copy placed in this
+ * and its name is noted: left as it is, the copy placed in this
  * window to be printed would become the live element again and draw over
  * itself. A `span`, because an element nothing defines is laid out as one.
  */
-async function still(live: Element, elements: Set<string>): Promise<Element> {
+async function still(live: Element, { elements, lost }: Copying): Promise<Element> {
 	const copy = live.cloneNode(true) as Element;
 	const lives = [live, ...live.querySelectorAll("*")];
 	const copies = [copy, ...copy.querySelectorAll("*")];
@@ -167,7 +189,10 @@ async function still(live: Element, elements: Set<string>): Promise<Element> {
 				if (picture) {
 					pictures.push(
 						inlined(new URL(value, location.href).href).then((data) => {
-							if (data === null) to.removeAttribute(name);
+							if (data === null) {
+								to.removeAttribute(name);
+								lost.push(value);
+							}
 							else to.setAttribute(name, data);
 						}),
 					);
@@ -301,11 +326,11 @@ export async function renderConversation(id: string, md: string): Promise<Render
 		const [shown] = await Promise.all([pictures(md), Promise.all(ids.map((cell) => chat.cellVerdict(cell, CELLS_BOUND_MS)))]);
 		// A widget's kept value is put back after its cell first ran, which runs
 		// the cells reading it again; a view draws after its renderer loads.
+		await rendered([...views.querySelectorAll("piary-a2ui")]);
 		await quiet(stage);
-		await wait(0);
 		const running = new Set((await Promise.all(ids.map(async (cell) => ((await chat.cellVerdict(cell, QUIET_MS * 2)).verdict === "running" ? cell : null)))).filter((cell) => cell !== null));
 
-		const elements = new Set<string>();
+		const copying: Copying = { elements: new Set(), lost: [] };
 		const drawnArtifacts = new Map<string, string>();
 		for (const artifact of artifacts) {
 			const late = artifact.members.filter((cell) => running.has(cell.id));
@@ -315,17 +340,24 @@ export async function renderConversation(id: string, md: string): Promise<Render
 			}
 			const frame = chat.cellEls.get(artifact.members[0]?.id ?? "")?.closest("pi-artifact")?.querySelector(".artifact");
 			if (!frame) continue;
-			const copy = await still(frame, elements);
+			const copy = await still(frame, copying);
 			for (const chrome of copy.querySelectorAll(".artifact-activity, .artifact-source-head, .artifact-code, .cell-rail")) chrome.remove();
 			drawnArtifacts.set(artifact.key, copy.outerHTML);
 		}
 		const drawnViews = new Map<string, string>();
-		for (const [view, el] of viewEls) drawnViews.set(view, (await still(el, elements)).outerHTML);
+		let undrawn = 0;
+		for (const [view, el] of viewEls) {
+			// Shown as its payload instead, which the document does hold.
+			if ([...el.querySelectorAll("piary-a2ui")].some((host) => !drew(host))) undrawn++;
+			else drawnViews.set(view, (await still(el, copying)).outerHTML);
+		}
+		if (undrawn) without.push(`the drawing of ${undrawn === 1 ? "a view" : `${undrawn} views`}, not drawn in time`);
+		if (copying.lost.length) without.push(`${copying.lost.length === 1 ? "a picture" : `${copying.lost.length} pictures`} a cell or a view showed, which could not be read`);
 		if (shown.missing.length) without.push(`${shown.missing.length === 1 ? "a picture" : `${shown.missing.length} pictures`} this workspace does not hold (${shown.missing.join(", ")})`);
 
 		const drawn: Drawn = { artifacts: drawnArtifacts, views: drawnViews, images: shown.images, liveViews };
 		const body = exportBody(md, drawn);
-		const css = exportCss(elements);
+		const css = exportCss(copying.elements);
 		return { html: exportPage({ title: nameOf(id, md), css, body }), body, css, without };
 	} finally {
 		stage.remove();

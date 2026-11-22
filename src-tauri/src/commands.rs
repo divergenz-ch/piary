@@ -442,7 +442,8 @@ async fn print_page<R: Runtime>(window: &tauri::WebviewWindow<R>) -> Result<Vec<
 /// own page, printed: the page shows one conversation to paper and asks for
 /// that one, so a PDF export of several is several calls, and every call
 /// after the first names the folder by the token the first was answered with
-/// (`into`) instead of asking again.
+/// (`into`) instead of asking again. The token names it for another PDF, to
+/// the same window, and for nothing else (`bundle::Exports`).
 #[tauri::command]
 pub async fn export_conversations<R: Runtime>(
     window: tauri::WebviewWindow<R>,
@@ -457,13 +458,13 @@ pub async fn export_conversations<R: Runtime>(
         return Err("a PDF is printed one conversation at a time".into());
     }
     let into = match into {
-        Some(token) => exports.get(&token)?,
+        Some(token) => exports.get(&token, kind, window.label())?,
         None => match pick(&window, Pick::ExportInto) {
             Some(folder) => folder,
             None => return Ok(None),
         },
     };
-    let token = exports.hold(into.clone());
+    let token = exports.hold(into.clone(), kind, window.label());
     // Why the page was not printed is that one conversation's outcome.
     let printed = match kind {
         bundle::Kind::Pdf => Some(print_page(&window).await),

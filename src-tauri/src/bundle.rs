@@ -104,35 +104,53 @@ impl Kind {
     }
 }
 
-/// The folder the last export went into, by the token the page holds for it.
+/// The folder a PDF export is going into, by the token its window holds for it.
 ///
 /// A PDF is printed from the page one conversation at a time, so an export of
 /// several is several commands, and the panel is shown for the first alone:
 /// the others name the folder by this token. The page never names a path
-/// (ADR 0049).
+/// (ADR 0049), and a token is no way around the panel: it names the folder
+/// only for another PDF, only to the window the panel was shown on, and only
+/// until the next export. So what a token can bring about is one more
+/// conversation printed where the user just chose to have them printed.
 #[derive(Debug, Default)]
 pub struct Exports {
-    held: Mutex<Option<(String, PathBuf)>>,
+    held: Mutex<Option<Held>>,
     next: AtomicU64,
 }
 
+#[derive(Debug)]
+struct Held {
+    token: String,
+    window: String,
+    folder: PathBuf,
+}
+
 impl Exports {
-    /// Holds `folder` in place of the one held, and answers with its token.
-    pub fn hold(&self, folder: PathBuf) -> String {
+    /// Answers with a token for `folder`, which the user chose on `window`
+    /// for an export of `kind`. Whatever was held is let go; only a PDF
+    /// export's folder is held in its place.
+    pub fn hold(&self, folder: PathBuf, kind: Kind, window: &str) -> String {
         let token = format!("export-{}", self.next.fetch_add(1, Ordering::Relaxed));
-        *self.lock() = Some((token.clone(), folder));
+        *self.lock() = (kind == Kind::Pdf).then(|| Held {
+            token: token.clone(),
+            window: window.to_string(),
+            folder,
+        });
         token
     }
 
-    /// The folder `token` names, if it is the one still held.
-    pub fn get(&self, token: &str) -> Result<PathBuf, String> {
+    /// The folder `token` names to `window`, for one more export of `kind`.
+    pub fn get(&self, token: &str, kind: Kind, window: &str) -> Result<PathBuf, String> {
         match &*self.lock() {
-            Some((held, folder)) if held == token => Ok(folder.clone()),
+            Some(held) if kind == Kind::Pdf && held.token == token && held.window == window => {
+                Ok(held.folder.clone())
+            }
             _ => Err("that export's folder is no longer held; export again".to_string()),
         }
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, Option<(String, PathBuf)>> {
+    fn lock(&self) -> std::sync::MutexGuard<'_, Option<Held>> {
         self.held
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -745,14 +763,31 @@ mod tests {
     }
 
     #[test]
-    fn the_folder_of_an_export_is_named_by_its_token_until_the_next_export() {
+    fn a_pdf_exports_folder_is_named_by_its_token_to_its_own_window_until_the_next_export() {
         let exports = Exports::default();
-        let first = exports.hold(PathBuf::from("first"));
-        assert_eq!(exports.get(&first), Ok(PathBuf::from("first")));
-        let second = exports.hold(PathBuf::from("second"));
-        assert!(exports.get(&first).is_err());
-        assert_eq!(exports.get(&second), Ok(PathBuf::from("second")));
-        assert!(exports.get("../somewhere").is_err());
+        let first = exports.hold(PathBuf::from("first"), Kind::Pdf, "export");
+        assert_eq!(
+            exports.get(&first, Kind::Pdf, "export"),
+            Ok(PathBuf::from("first"))
+        );
+        // Not for a kind the page supplies the content of, and not to
+        // another window: either would be a file written with no panel.
+        for kind in [Kind::Html, Kind::Markdown, Kind::Folder, Kind::Zip] {
+            assert!(exports.get(&first, kind, "export").is_err(), "{kind:?}");
+        }
+        assert!(exports.get(&first, Kind::Pdf, "doc-notes").is_err());
+        assert!(exports.get("export-7", Kind::Pdf, "export").is_err());
+
+        let second = exports.hold(PathBuf::from("second"), Kind::Pdf, "export");
+        assert!(exports.get(&first, Kind::Pdf, "export").is_err());
+        assert_eq!(
+            exports.get(&second, Kind::Pdf, "export"),
+            Ok(PathBuf::from("second"))
+        );
+        // An export of another kind holds nothing, and lets go of what was.
+        let other = exports.hold(PathBuf::from("third"), Kind::Html, "export");
+        assert!(exports.get(&other, Kind::Pdf, "export").is_err());
+        assert!(exports.get(&second, Kind::Pdf, "export").is_err());
     }
 
     #[test]
