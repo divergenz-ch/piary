@@ -129,6 +129,12 @@ pub struct Preferences {
     /// user's face moved at an answer and no message followed (ADR 0061).
     /// It means something only while a face is read.
     pub face_speaks: bool,
+    /// The app asks GitHub whether a newer release exists, and says so when
+    /// one does (ADR 0063). Off, it makes no request and shows no notice.
+    pub update_check: bool,
+    /// The version the user dismissed the notice of, as `0.2.0`. That one is
+    /// not announced again; a later one is. Empty, none was dismissed.
+    pub update_dismissed: String,
 }
 
 /// How the user tuned the reading of their face: what is too weak or too
@@ -178,6 +184,8 @@ impl Default for Preferences {
             face_camera: String::new(),
             face_tuning: FaceReading::default(),
             face_speaks: false,
+            update_check: true,
+            update_dismissed: String::new(),
         }
     }
 }
@@ -296,6 +304,31 @@ pub enum FaceSource {
         script: String,
     },
     None,
+}
+
+/// Where a window that was given the turn asks whether a newer Piary exists
+/// (`harness::update_source`): GitHub, an answer standing in for GitHub's, or
+/// nowhere.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum UpdateSource {
+    Github,
+    /// The text GitHub would have answered with, for `app/update.ts` to read.
+    Script {
+        answer: String,
+    },
+    None,
+}
+
+/// The version this app is, and the newest release tag a check has read since
+/// launch, if one has (ADR 0063).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateState {
+    pub current: String,
+    pub latest: Option<String>,
 }
 
 /// What a suite's run came to: how many assertions were made and how many of

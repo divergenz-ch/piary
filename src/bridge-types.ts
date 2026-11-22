@@ -164,7 +164,17 @@ faceTuning: FaceReading,
  * user's face moved at an answer and no message followed (ADR 0061).
  * It means something only while a face is read.
  */
-faceSpeaks: boolean, };
+faceSpeaks: boolean, 
+/**
+ * The app asks GitHub whether a newer release exists, and says so when
+ * one does (ADR 0063). Off, it makes no request and shows no notice.
+ */
+updateCheck: boolean, 
+/**
+ * The version the user dismissed the notice of, as `0.2.0`. That one is
+ * not announced again; a later one is. Empty, none was dismissed.
+ */
+updateDismissed: string, };
 
 /**
  * One assertion's outcome, as the page reports it to whoever launched the app.
@@ -225,6 +235,19 @@ cwd: string,
  * is looking at. Absent before the page has measured one.
  */
 cols: number | null, rows: number | null, };
+
+/**
+ * Where a window that was given the turn asks whether a newer Piary exists
+ * (`harness::update_source`): GitHub, an answer standing in for GitHub's, or
+ * nowhere.
+ */
+export type UpdateSource = { "kind": "github" } | { "kind": "script", answer: string, } | { "kind": "none" };
+
+/**
+ * The version this app is, and the newest release tag a check has read since
+ * launch, if one has (ADR 0063).
+ */
+export type UpdateState = { current: string, latest: string | null, };
 
 /**
  * What a suite's run came to: how many assertions were made and how many of

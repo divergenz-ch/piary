@@ -32,6 +32,7 @@ mod session;
 mod store;
 mod teardown;
 mod transcript;
+mod update;
 mod watch;
 mod windows;
 mod wire;
@@ -164,6 +165,7 @@ fn main() {
             app.manage(exit::Exit::default());
             app.manage(windows::Shown::default());
             app.manage(std::sync::Arc::new(bundle::Imports::default()));
+            app.manage(update::Updates::default());
             // After `Exit` is managed, because the first signal reads it. A
             // listener that cannot be installed leaves the signals' default,
             // which ends the app without the sequence; said, not fatal.
@@ -249,6 +251,9 @@ fn main() {
             commands::preferences_write,
             commands::open_preferences,
             commands::face_source,
+            commands::update_state,
+            commands::update_claim,
+            commands::update_found,
             commands::menu_chords,
             commands::overlay_support,
             commands::capture_start,

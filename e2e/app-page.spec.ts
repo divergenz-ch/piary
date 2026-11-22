@@ -10,7 +10,7 @@
 // `src/bridge.ts` is the only module that talks to Rust, so stubbing
 // `window.__TAURI_INTERNALS__` is all it takes to boot the page without an app.
 // That is the seam working as designed: one place to replace.
-import { expect, test } from "./helpers/console-guard.ts";
+import { allowConsoleError, expect, test } from "./helpers/console-guard.ts";
 import { KNOWN_COMMANDS, refusal } from "./helpers/ipc-surface.ts";
 import { final, partial, settled, toolCallAnswer, toolResultEnd, toolRun, usageOf } from "./helpers/scripted-pi.ts";
 import { afterFrames } from "./helpers/frames.ts";
@@ -4652,7 +4652,7 @@ test("the Preferences window shows what is kept, and a change is written and sho
 		// Rust keeps the change, then tells every window, this one included.
 		preferences_write: { emit: ["preferences-changed", { cellWorkPulse: false }] },
 	});
-	await expect(page.locator(".prefs-group h2")).toHaveText(["Runs", "Camera"]);
+	await expect(page.locator(".prefs-group h2")).toHaveText(["Runs", "Camera", "Updates"]);
 	const pulse = page.getByLabel("Pulse the cell a run is working on");
 	await expect(pulse).toBeChecked();
 	// A key the file lacks is its default: the face is not read.
@@ -4660,7 +4660,7 @@ test("the Preferences window shows what is kept, and a change is written and sho
 	await pulse.click();
 	await expect(pulse).not.toBeChecked();
 	const writes = (await ipcCalls(page)).filter((call) => call.cmd === "preferences_write").map((call) => call.args);
-	expect(writes, "the whole of the preferences, with the one change").toEqual([{ preferences: { cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false } }]);
+	expect(writes, "the whole of the preferences, with the one change").toEqual([{ preferences: { cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "" } }]);
 	// Another window's change arrives the same way, and the control follows it.
 	await emitToPage(page, "preferences-changed", { cellWorkPulse: true });
 	await expect(pulse).toBeChecked();
@@ -4715,4 +4715,148 @@ test("the Preferences window answers the host's close at once: it holds nothing 
 	await expect(page.getByLabel("Pulse the cell a run is working on")).toBeChecked();
 	await emitToPage(page, "exit-flush", { turnBoundMs: 2000 });
 	await expect.poll(async () => (await ipcCalls(page)).some((call) => call.cmd === "exit_flushed")).toBe(true);
+});
+
+// The notice of a newer version (ADR 0063). Rust gives a window the turn to ask
+// (`update_claim`) and tells every window what was read (`update-latest`);
+// GitHub is answered here, so a spec says what is released.
+const GITHUB_LATEST = "https://api.github.com/repos/divergenz-ch/piary/releases/latest";
+const updatePill = (page: import("@playwright/test").Page) => page.locator(".update-pill");
+
+/** Answers the page's request to GitHub with `answer`, and counts the requests. */
+async function githubAnswers(page: import("@playwright/test").Page, answer: { status?: number; body?: unknown } | "unreachable"): Promise<{ count: number }> {
+	const asked = { count: 0 };
+	await page.route(GITHUB_LATEST, (route) => {
+		asked.count++;
+		return answer === "unreachable" ? route.abort("internetdisconnected") : route.fulfill({ status: answer.status ?? 200, contentType: "application/json", body: JSON.stringify(answer.body ?? {}) });
+	});
+	return asked;
+}
+
+/** A window of version `current` that is given the turn, Rust telling every
+ *  window the tag it is handed, as it does. */
+const withTheTurn = (current: string, tag: string): Answers => ({
+	update_state: { current, latest: null },
+	update_claim: { afterCall: "update_claim", before: { kind: "github" }, after: { kind: "none" } },
+	update_found: { emit: ["update-latest", tag] },
+	open_url: null,
+});
+
+test("a build older than the latest release says so beside the model, and its button opens the release's page", { tag: "@smoke" }, async ({ page }) => {
+	// The answer's own link is not where the button goes.
+	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0", html_url: "https://example.org/elsewhere" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", withTheTurn("0.1.0", "v0.2.0"));
+	await expect(updatePill(page)).toHaveText("Update 0.2.0");
+	expect(await ptyCalls(page, "update_found"), "Rust is handed the tag that was read").toEqual([{ tag: "v0.2.0" }]);
+	expect(asked.count, "one request").toBe(1);
+	// In the chip, the model right after it.
+	expect(await updatePill(page).evaluate((pill) => [pill.parentElement?.className, (pill.nextElementSibling as HTMLElement | null)?.dataset["pick"]])).toEqual(["model-chip", "model"]);
+	await updatePill(page).click();
+	const menu = page.locator(".doc-block-menu");
+	await expect(menu.locator(".doc-menu-note")).toHaveText("Piary 0.2.0 is available. This is 0.1.0.");
+	await menu.getByRole("button", { name: "Open the download page" }).click();
+	await expect.poll(() => ptyCalls(page, "open_url")).toEqual([{ url: "https://github.com/divergenz-ch/piary/releases/tag/v0.2.0" }]);
+});
+
+test("a build that is current shows no notice", async ({ page }) => {
+	await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", withTheTurn("0.2.0", "v0.2.0"));
+	await expect.poll(() => ptyCalls(page, "update_found")).toEqual([{ tag: "v0.2.0" }]);
+	await expect(updatePill(page)).toBeHidden();
+});
+
+test("a window not given the turn makes no request, and shows what another window read", async ({ page }) => {
+	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	// What Rust answers with the preference off, and to every window but one
+	// within the hour.
+	await openApp(page, "<!-- you -->\n\nhello\n\n", { update_state: { current: "0.1.0", latest: null }, update_claim: { kind: "none" } });
+	await expect.poll(async () => (await ptyCalls(page, "update_claim")).length, "the turn was asked for").toBeGreaterThan(0);
+	await expect(updatePill(page)).toBeHidden();
+	await emitToPage(page, "update-latest", "v0.2.0");
+	await expect(updatePill(page)).toHaveText("Update 0.2.0");
+	expect(asked.count, "nothing was asked of GitHub").toBe(0);
+});
+
+test("a window opened after a check shows what was read, with no request of its own", async ({ page }) => {
+	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	await openApp(page, "<!-- you -->\n\nhello\n\n", { update_state: { current: "0.1.0", latest: "v0.2.0" }, update_claim: { kind: "none" } });
+	await expect(updatePill(page)).toHaveText("Update 0.2.0");
+	expect(asked.count).toBe(0);
+});
+
+test("with the check switched off the notice goes, and comes back with it", async ({ page }) => {
+	await openApp(page, "<!-- you -->\n\nhello\n\n", { update_state: { current: "0.1.0", latest: "v0.2.0" }, update_claim: { kind: "none" } });
+	await expect(updatePill(page)).toBeVisible();
+	await emitToPage(page, "preferences-changed", { updateCheck: false });
+	await expect(updatePill(page)).toBeHidden();
+	await emitToPage(page, "preferences-changed", { updateCheck: true });
+	await expect(updatePill(page)).toBeVisible();
+});
+
+for (const [what, answer, said, engineSays] of [
+	// The engine reports a refused request on the console itself.
+	["a refusal from GitHub", { status: 404, body: { message: "Not Found" } }, "GitHub answered 404", /^Failed to load resource: the server responded with a status of 404/],
+	["no network", "unreachable", "no newer version was looked up", null],
+	["an answer that names no version", { body: { tag_name: "nightly" } }, "the answer names no released version", null],
+] as const) {
+	test(`${what} shows nothing, and is written to the log`, async ({ page }) => {
+		if (engineSays) allowConsoleError(page, engineSays);
+		const asked = await githubAnswers(page, answer);
+		await openApp(page, "<!-- you -->\n\nhello\n\n", withTheTurn("0.1.0", "v0.2.0"));
+		await expect.poll(async () => (await ptyCalls(page, "log_line")).filter((line) => (line as { level: string }).level === "update").map((line) => (line as { message: string }).message)).toEqual([expect.stringContaining(said)]);
+		expect(asked.count).toBe(1);
+		expect(await ptyCalls(page, "update_found"), "nothing is handed to Rust").toEqual([]);
+		await expect(updatePill(page)).toBeHidden();
+		await expect(page.locator("#status"), "nothing the user asked for failed").toHaveText("");
+	});
+}
+
+test("a dismissed version is kept as dismissed and not announced again; the one after it is", async ({ page }) => {
+	await openApp(page, "<!-- you -->\n\nhello\n\n", {
+		update_state: { current: "0.1.0", latest: "v0.2.0" },
+		update_claim: { kind: "none" },
+		preferences_read: { cellWorkPulse: false },
+		// Rust keeps the change, then tells every window.
+		preferences_write: { emit: ["preferences-changed", { cellWorkPulse: false, updateDismissed: "0.2.0" }] },
+	});
+	await updatePill(page).click();
+	await page.locator(".doc-block-menu").getByRole("button", { name: "Dismiss this version" }).click();
+	await expect(updatePill(page)).toBeHidden();
+	const writes = (await ptyCalls(page, "preferences_write")) as { preferences: Record<string, unknown> }[];
+	expect(writes.map((write) => [write.preferences["updateDismissed"], write.preferences["cellWorkPulse"]]), "the version, and every other preference as it was").toEqual([["0.2.0", false]]);
+	// Told again of the version dismissed, as the next check will.
+	await emitToPage(page, "update-latest", "v0.2.0");
+	await expect(updatePill(page)).toBeHidden();
+	await emitToPage(page, "update-latest", "v0.3.0");
+	await expect(updatePill(page)).toHaveText("Update 0.3.0");
+});
+
+test("a version dismissed before this launch is not announced at the next, not even until what is kept has been read", async ({ page }) => {
+	// The version is known at once, and what the user keeps a moment later.
+	await page.addInitScript(() => {
+		const seen: string[] = ((window as unknown as { __pillSeen: string[] }).__pillSeen = []);
+		new MutationObserver(() => {
+			const pill = document.querySelector<HTMLElement>(".update-pill");
+			if (pill && !pill.hidden) seen.push(pill.textContent ?? "");
+		}).observe(document, { subtree: true, childList: true, attributes: true });
+	});
+	await openApp(page, "<!-- you -->\n\nhello\n\n", {
+		update_state: { current: "0.1.0", latest: "v0.2.0" },
+		update_claim: { kind: "none" },
+		preferences_read: { delayMs: 600, value: { updateDismissed: "0.2.0" } },
+	});
+	await expect.poll(async () => (await ptyCalls(page, "update_claim")).length, "what is kept has been read").toBeGreaterThan(0);
+	await expect(updatePill(page)).toBeHidden();
+	expect(await page.evaluate(() => (window as unknown as { __pillSeen: string[] }).__pillSeen), "the pill was never shown").toEqual([]);
+});
+
+test("a first run looks nothing up behind its splash or under its tour", async ({ page }) => {
+	const asked = await githubAnswers(page, { body: { tag_name: "v0.2.0" } });
+	await takeTheTour(page, { ...withTheTurn("0.1.0", "v0.2.0") });
+	// Told of a version by another window, while it is walked.
+	await emitToPage(page, "update-latest", "v0.2.0");
+	await expect(coach(page)).toBeVisible();
+	await expect(updatePill(page)).toBeHidden();
+	expect(await ptyCalls(page, "update_claim"), "the turn is not asked for").toEqual([]);
+	expect(asked.count).toBe(0);
 });

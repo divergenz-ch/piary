@@ -106,6 +106,8 @@ mod tests {
                 pitch: 15,
             },
             face_speaks: !Preferences::default().face_speaks,
+            update_check: !Preferences::default().update_check,
+            update_dismissed: "0.2.0".into(),
         };
         write(&file, &chosen).expect("write");
         assert_eq!(read(&file), chosen);

@@ -970,7 +970,7 @@ test("the face is turned on from its pill: the first time, only after reading wh
 	await page.locator(".doc-face-sheet").getByRole("button", { name: "Turn on" }).click();
 	await expect(facePill(page)).toHaveAttribute("data-state", "idle");
 	await expect(facePill(page)).toHaveAttribute("aria-pressed", "true");
-	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: true, faceExplained: true, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false }]);
+	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: true, faceExplained: true, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false, updateCheck: true, updateDismissed: "" }]);
 
 	// Agreed to once: off and on again asks nothing.
 	await facePill(page).click();
@@ -996,7 +996,7 @@ test("a face switched on and never agreed to reads nothing, and the window in fr
 	await expect(sheet).toHaveCount(1);
 	await sheet.getByRole("button", { name: "Not now" }).click();
 	await expect(facePill(page)).toHaveAttribute("data-state", "off");
-	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false }]);
+	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false, updateCheck: true, updateDismissed: "" }]);
 	// Off, coming back to the window asks nothing.
 	await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 	await expect(sheet).toHaveCount(0);
@@ -1011,7 +1011,7 @@ test("switched on from the Preferences window, the document in front shows the s
 	await expect(sheet).toBeVisible();
 	await sheet.getByRole("button", { name: "Turn on" }).click();
 	await expect(facePill(page)).toHaveAttribute("data-state", "idle");
-	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: true, faceExplained: true, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false }]);
+	expect((await hostLog(page)).preferences).toEqual([{ cellWorkPulse: true, face: true, faceExplained: true, faceCamera: "", faceTuning: MEASURED, faceSpeaks: false, updateCheck: true, updateDismissed: "" }]);
 	await write(page, "hello");
 	await expect(facePill(page)).toHaveAttribute("data-state", "watching");
 });
@@ -1115,7 +1115,7 @@ test("with more than one camera the pill's menu chooses which is read, and the c
 	await expect(facePill(page)).toHaveAttribute("data-state", "watching");
 	await facePill(page).click();
 	await faceMenu(page).getByRole("button", { name: "Studio Display Camera" }).click();
-	expect((await hostLog(page)).preferences.at(-1)).toEqual({ ...AGREED, faceCamera: "Studio Display Camera", faceTuning: MEASURED, faceSpeaks: false });
+	expect((await hostLog(page)).preferences.at(-1)).toEqual({ ...AGREED, faceCamera: "Studio Display Camera", faceTuning: MEASURED, faceSpeaks: false, updateCheck: true, updateDismissed: "" });
 	// Read from the chosen camera from the next key on.
 	await expect(facePill(page)).toHaveAttribute("data-state", "idle");
 	await facePill(page).click();
@@ -2687,7 +2687,7 @@ test("what is passed on is set where it is shown, applies at once, is kept, and 
 
 	await least.getByRole("button", { name: "slight" }).click();
 	await expect(least.getByRole("button", { name: "slight" })).toHaveAttribute("aria-pressed", "true");
-	expect((await hostLog(page)).preferences).toEqual([{ ...AGREED, faceTuning: { ...MEASURED, intensity: "B" }, faceSpeaks: false }]);
+	expect((await hostLog(page)).preferences).toEqual([{ ...AGREED, faceTuning: { ...MEASURED, intensity: "B" }, faceSpeaks: false, updateCheck: true, updateDismissed: "" }]);
 	await expect(inspector(page).locator(".face-draft")).toContainText("lip corners pulled up slight");
 	await expect(inspector(page).locator(".face-recent s")).toHaveCount(0);
 
@@ -2700,7 +2700,7 @@ test("what is passed on is set where it is shown, applies at once, is kept, and 
 
 	await inspector(page).getByRole("button", { name: "Reset" }).click();
 	await expect(least.getByRole("button", { name: "marked" })).toHaveAttribute("aria-pressed", "true");
-	expect((await hostLog(page)).preferences.at(-1)).toEqual({ ...AGREED, faceTuning: MEASURED, faceSpeaks: false });
+	expect((await hostLog(page)).preferences.at(-1)).toEqual({ ...AGREED, faceTuning: MEASURED, faceSpeaks: false, updateCheck: true, updateDismissed: "" });
 });
 
 test("a block's menu says what its message carried, as pi's transcript holds it", async ({ page }) => {

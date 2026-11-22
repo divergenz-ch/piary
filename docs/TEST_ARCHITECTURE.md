@@ -490,6 +490,16 @@ import asks for a file in, or the one an export asks for a folder in. In a debug
 what an import opens and `PIARY_E2E_EXPORT_DIR` the folder an export goes into, so a spec exports
 into a folder and imports a file out of it (`e2e-app/transfer.spec.ts`). The panel itself is §7's.
 
+**A newer version is an answer handed over, never GitHub's.** The app asks GitHub whether a
+newer release exists (ADR 0063). No suite may: it would make a request per launch from whoever
+runs it, and would pass or fail by what is released that day. The page asks Rust for the turn
+and where to ask (`update_claim`), and Rust answers "GitHub" only to a run no harness drives
+(`harness::update_source`). A driven debug build gets the text in the file `PIARY_UPDATE_SCRIPT`
+names, read as GitHub's answer would be, or no turn at all (`e2e-app/update.spec.ts`). The page
+specs answer the command themselves and route the one address the page fetches, so the request,
+a refusal and no network are each driven there (`e2e/app-page.spec.ts`); the scripted host of
+the flows gives no turn.
+
 **A face is a script, never a camera.** No automated layer may read a real face: a run that
 needed one would need a person, and would light the user's camera while they work. The page asks
 Rust what reads the face (`face_source`), and Rust answers "the camera" only to a run no harness

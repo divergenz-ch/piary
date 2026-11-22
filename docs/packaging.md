@@ -74,8 +74,9 @@ That reads as a packaging bug and is not one — the `.app` built fine. On a
 headless runner, or over SSH, build the `.app` and make the DMG elsewhere.
 
 **A release is the disk image under a version tag** (ADR 0062). The version is written in
-`package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` (with `Cargo.lock`), and
-the tag is that version with a `v`:
+`package.json`, which `src-tauri/tauri.conf.json` names as its own; `src-tauri/Cargo.toml` and
+`Cargo.lock` repeat it, and `tests/contract/version.test.ts` fails while they differ. The tag is
+that version with a `v`, and must be: the app reads a release's tag as its version (ADR 0063).
 
 ```sh
 pnpm app:release --dmg
@@ -162,7 +163,8 @@ its own.
 What goes in it, one UTC-stamped entry each: the page's forwarded console and
 its uncaught errors and rejections (`PAGE <level> …`, via
 `src/forward-console.ts`), every notice the status line shows
-(`PAGE notice …`), every relay's note about a line it dropped (ADR 0019 §6), a
+(`PAGE notice …`), a check for a newer version that could not be made
+(`PAGE update …`), every relay's note about a line it dropped (ADR 0019 §6), a
 Rust panic, and every exchange with pi (`PI …`): a session's start, rebuild and
 exit, each command the page sends with pi's verdict on it, and each of pi's
 events but the streamed partials, which the `_end` event after them repeats
@@ -201,9 +203,11 @@ here and not as an ADR.
   image: Gatekeeper refuses it on another Mac until its quarantine mark is removed
   (`xattr -dr com.apple.quarantine /Applications/Piary.app`), so it is for people who know what
   they are running. The first release for everyone waits on §4.
-- **The notice of a newer version**, which the app owes whoever downloaded it
-  (ADR 0062), and after it the question of whether an update installs itself:
-  Tauri's updater is a new crate, a signing keypair and an endpoint.
+- **An update that installs itself.** The app says when a newer version exists
+  and opens its download page (ADR 0063); installing it is Tauri's updater, a
+  new crate, a signing keypair and an endpoint, and is not decided (ADR 0062).
+  Until a release that is not a pre-release is published, GitHub answers the
+  app's check with 404, which is a line in the log and nothing on screen.
 - **A second machine.** The build has only ever run on the machine that made it,
   so the "works on a clean Mac" half of the phase gate is open. An ad-hoc signed
   app will be refused by Gatekeeper elsewhere, which is exactly what signing

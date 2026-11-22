@@ -43,11 +43,12 @@ use crate::session::{self, Sessions, Sink as SessionSink, Spawn};
 use crate::store::Store;
 use crate::teardown;
 use crate::transcript;
+use crate::update::{self, Updates};
 use crate::windows::{self, Geometry};
 use crate::wire::{
     format_report, DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource,
     ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest,
-    Verdict, WindowBox,
+    UpdateSource, UpdateState, Verdict, WindowBox,
 };
 
 /// Writes one line to stdout and makes sure it is actually out.
@@ -823,6 +824,58 @@ pub fn face_source() -> FaceSource {
         .filter(|_| driven)
         .and_then(|path| std::fs::read_to_string(path).ok());
     harness::face_source(driven, script)
+}
+
+/// The version this app is, and the newest release a check has read since
+/// launch (ADR 0063): what a window draws its notice from without asking
+/// anyone.
+#[tauri::command]
+pub fn update_state<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) -> UpdateState {
+    UpdateState {
+        current: app.package_info().version.to_string(),
+        latest: updates.latest(),
+    }
+}
+
+/// Gives the calling window the turn to ask whether a newer Piary exists, and
+/// says where to ask: GitHub, or in a driven run the answer
+/// `PIARY_UPDATE_SCRIPT` names. `None` is no turn: another window asked within
+/// the hour, the preference is off, or a driven run has no script. Decided
+/// here, for every window at once, so the preference off is no request from
+/// any of them (`update.rs`).
+#[tauri::command]
+pub fn update_claim<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) -> UpdateSource {
+    let driven = harness::driven(
+        cfg!(all(feature = "e2e", debug_assertions)),
+        std::env::var("PIARY_E2E").ok().as_deref(),
+    );
+    let script = std::env::var_os(update::SCRIPT_ENV)
+        .filter(|_| driven)
+        .and_then(|path| std::fs::read_to_string(path).ok());
+    let source = harness::update_source(driven, script);
+    // Preferences that cannot be found are the defaults, which check.
+    let wanted = preferences_path(&app)
+        .map_or_else(|_| Preferences::default(), |path| preferences::read(&path))
+        .update_check;
+    if source == UpdateSource::None || !updates.claim(std::time::Instant::now(), wanted) {
+        return UpdateSource::None;
+    }
+    source
+}
+
+/// A check read the release tag `tag`: kept for windows opened later, and told
+/// to every window now.
+#[tauri::command]
+pub fn update_found<R: Runtime>(
+    app: AppHandle<R>,
+    updates: State<'_, Updates>,
+    tag: String,
+) -> Result<(), String> {
+    if !updates.found(&tag) {
+        return Err(format!("not a release tag: {} bytes", tag.len()));
+    }
+    app.emit(update::LATEST_EVENT, tag)
+        .map_err(|e| e.to_string())
 }
 
 /// The chord of every menu item that has one, by the id its click emits, as

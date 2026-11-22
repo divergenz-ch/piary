@@ -437,6 +437,9 @@ function install(resolver: string, options: Options): string {
         return Promise.resolve();
       }
       if (command === "face_source") return Promise.resolve(options.faceScript ? { kind: "script", script: options.faceScript } : { kind: "none" });
+      // No flow is about a newer version: nothing is asked and nothing was read.
+      if (command === "update_claim") return Promise.resolve({ kind: "none" });
+      if (command === "update_state") return Promise.resolve({ current: "0.0.0", latest: null });
       return Promise.resolve();
     },
   };

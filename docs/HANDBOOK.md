@@ -101,7 +101,8 @@ Durable docs only — each owns its own status, so this list never tracks per-ta
 WEBVIEW (WKWebView)
   app/main.ts  assembles the page from feature modules (ADR 0024): turn.ts (a send
    │           and its stream), model.ts, login.ts, terminals.ts, conversations.ts,
-   │           history.ts (the rebuild), attachments.ts, transfer.ts, menubar.ts, …
+   │           history.ts (the rebuild), attachments.ts, transfer.ts, menubar.ts,
+   │           update.ts (the notice of a newer version, in model.ts's chip: ADR 0063), …
    ├── app/face/  the user's face, from a detector to the message pi is handed
    │           (ADR 0058, ADR 0055, ADR 0057, ADR 0059, ADR 0060, ADR 0061): index.ts (the module, and the
    │           camera's life), log.ts (a key log per prompt), detector.ts (the
@@ -184,6 +185,8 @@ RUST  src-tauri/src/
    ├── menu_keys.rs   the key each menu item really has, read back from AppKit
    │                   (ADR 0051)
    ├── preferences.rs the user's preferences, one JSON file (ADR 0048)
+   ├── update.rs      whose turn it is to check for a newer version, and the tag
+   │                   last read (ADR 0063)
    └── capture.rs     the Swift capture sidecar (ADR 0015)
 PI  the user's own `pi`, plus Piary's package `pi-extension/` (the view, cell,
     canvas_edit, budget and terminal tools, the login commands, the skill — ADR 0030)
@@ -373,6 +376,9 @@ TEST ENV         PIARY_E2E=1 arms the app's embedded WebDriver server (one of th
                  in view, the cameras there are (TEST_ARCHITECTURE.md §6).
                  PIARY_FACE_RECORD=1, at build time, adds the fixture recorder's page to the
                  build (`app/face-record.html`, TEST_ARCHITECTURE.md §6).
+                 PIARY_UPDATE_SCRIPT names a file the same build answers the check for a
+                 newer version with, in place of GitHub: a driven run never asks GitHub, and
+                 with no script asks nothing (`harness::update_source`).
                  PI_E2E_DISABLED=1 (or =true) turns OFF the one
                  `pnpm test:app` spec that spends a real model call — on by default, because the
                  boundary it covers is the product. It skips loudly either way.
@@ -452,6 +458,27 @@ PREFERENCES      how the user chose the app to behave: `preferences.json` in the
                  alone: the lock on that artifact is always on (ADR 0054). `face` (off,
                  under Camera), `faceSpeaks` (off, under Camera), and `faceExplained`,
                  `faceCamera` and `faceTuning`, which have no row there: FACE below.
+                 `updateCheck` (on, under Updates) and `updateDismissed`, which has no row
+                 there: UPDATES below.
+UPDATES          the app says when a newer version exists (ADR 0063). A document's window asks
+                 Rust for the turn to check (`update_claim`) at launch, when a preference
+                 changes and every five minutes; Rust grants one an hour for the whole app
+                 and none with the `updateCheck` preference off (`src-tauri/src/update.rs`).
+                 The window with the turn asks GitHub for the repository's latest release
+                 with `fetch` (`app/update.ts`), the only request the app itself makes to
+                 GitHub, and hands Rust the tag it read; Rust keeps it for windows opened
+                 later (`update_state`) and tells every window (`update-latest`). A tag is
+                 three numbers, with or without `v`, compared with the app's own version;
+                 a pre-release is never the latest. A later one is a pill in the model
+                 chip, left of the model, `Update 0.2.0`, whose menu opens the release's page, at an
+                 address built from the version and never taken from the answer, and
+                 dismisses that version for every window and launch (the `updateDismissed`
+                 preference); the next version is announced again. No network, a refusal
+                 or an answer naming no version shows nothing and is a `PAGE update` line
+                 in the log. Not shown during the tour. The rules are pure
+                 (`app/update-check.ts`). The app's version is written in `package.json`:
+                 `tauri.conf.json` names that file, and `tests/contract/version.test.ts`
+                 holds `Cargo.toml` and `Cargo.lock` to it. Nothing installs an update.
 FACE             with the `face` preference on and agreed to (below), a message may end with a
                  `[face]` block: what the user's face did while it was typed, as a few lines of plain
                  words tied to the words typed (`docs/face-format.md`, normative). Movements,

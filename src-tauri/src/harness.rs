@@ -28,10 +28,44 @@ pub fn face_source(driven: bool, script: Option<String>) -> crate::wire::FaceSou
     }
 }
 
+/// Where this run asks whether a newer Piary exists (ADR 0063). A driven run
+/// never asks GitHub: a suite that did would make a request per launch from
+/// whoever runs it, and would pass or fail by what is released that day. It
+/// gets the answer it was handed (`PIARY_UPDATE_SCRIPT`'s file, read by the
+/// caller), or asks nothing. Every other run asks GitHub.
+pub fn update_source(driven: bool, script: Option<String>) -> crate::wire::UpdateSource {
+    use crate::wire::UpdateSource;
+    match (driven, script) {
+        (false, _) => UpdateSource::Github,
+        (true, Some(answer)) => UpdateSource::Script { answer },
+        (true, None) => UpdateSource::None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{driven, face_source};
-    use crate::wire::FaceSource;
+    use super::{driven, face_source, update_source};
+    use crate::wire::{FaceSource, UpdateSource};
+
+    #[test]
+    fn a_driven_run_asks_a_script_or_nothing_and_never_github() {
+        assert_eq!(update_source(true, None), UpdateSource::None);
+        assert_eq!(
+            update_source(true, Some("{}".into())),
+            UpdateSource::Script {
+                answer: "{}".into()
+            }
+        );
+    }
+
+    #[test]
+    fn a_run_nobody_drives_asks_github_whatever_script_is_lying_about() {
+        assert_eq!(update_source(false, None), UpdateSource::Github);
+        assert_eq!(
+            update_source(false, Some("{}".into())),
+            UpdateSource::Github
+        );
+    }
 
     #[test]
     fn a_driven_run_reads_a_script_or_nothing_and_never_the_camera() {

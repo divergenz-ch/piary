@@ -527,6 +527,23 @@ The steps stay written for when each lands.
      - Over a week of your own use, open *face: what was sent* on messages now and then and
        say whether the block was right. The panel's count is the measure.
 
+20. **A newer version.** No automated layer asks GitHub (`docs/TEST_ARCHITECTURE.md` §6), so
+     this is the only check of the real request. It needs a published release that is not a
+     pre-release, newer than the build: until there is one, expect a line
+     `PAGE update no newer version was looked up: GitHub answered 404` in the log
+     (`docs/packaging.md` §5) a moment after launch, and nothing on screen.
+     - With such a release: a moment after launch a pill `Update X.Y.Z` is left of the model
+       in its chip. Its menu names both versions; *Open the download page* opens that release's page
+       in the browser.
+     - Open a second document window: the pill is there at once, and the log shows no second
+       request.
+     - *Dismiss this version*: the pill goes in every window, and is not back after a
+       relaunch.
+     - Settings… → Updates, switch *Check for a newer version* off, relaunch with the
+       network watched (Little Snitch, or `nettop -p $(pgrep -x piary)`): no connection to
+       `api.github.com`.
+     - With the network off, launch: nothing on screen, one `PAGE update` line in the log.
+
 ## Importing and exporting a conversation
 
 Both act on conversations, not on the window in front, and each has a window

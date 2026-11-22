@@ -11,7 +11,7 @@ import { onPreferencesChanged, preferencesRead, type Preferences } from "../src/
 /** What the app does with nothing kept: `Preferences::default()` in
  *  `src-tauri/src/wire.rs`, to which `tests/contract/preferences.test.ts`
  *  holds this. */
-export const DEFAULT_PREFERENCES: Preferences = { cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false };
+export const DEFAULT_PREFERENCES: Preferences = { cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "" };
 
 let current: Preferences = DEFAULT_PREFERENCES;
 const watchers = new Set<(preferences: Preferences) => void>();

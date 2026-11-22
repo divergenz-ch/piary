@@ -31,6 +31,7 @@ import { onPiEvent, piRunning, piSend, piStart, type PiReply } from "../src/brid
 import type { AppContext } from "./context.ts";
 import { openMenu } from "./menu.ts";
 import "./model.css";
+import { mountUpdate } from "./update.ts";
 import { effortRows, type ModelInfo, type ModelPick, type ModelPicker, modelRows, pickOf, stagedPick } from "./picks.ts";
 
 const stageKey = (id: string) => `piary-pick:${id}`;
@@ -57,6 +58,8 @@ export function mountModelPicker({ sid, notify, signIn }: Pick<AppContext, "sid"
 	const effortPill = pill("effort", "Thinking effort");
 	chip.append(modelPill, effortPill);
 	document.body.append(chip);
+	// The notice of a newer version, left of the model (ADR 0063).
+	mountUpdate(chip, notify);
 
 	/** What pi runs, as it last said; `null` until it has been asked. */
 	let current: ModelPick | null = null;

@@ -1,0 +1,26 @@
+/* The notice that a newer Piary exists, left of the model in its chip
+   (`app/update.ts`): a pill of the chip's size, outlined in the text's own
+   colour so it reads as something to act on, and still: nothing is wrong. */
+.update-pill {
+	flex: none;
+	border: 1px solid var(--foreground);
+	border-radius: 9999px;
+	background: var(--background);
+	padding: 0.0625rem 0.5rem;
+	font: inherit;
+	font-size: 0.75rem;
+	color: var(--foreground);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.update-pill:hover {
+	background: var(--foreground);
+	color: var(--background);
+}
+
+/* Not during the tour, whose steps cut out what they are about. */
+.update-pill[hidden],
+body.coaching .update-pill {
+	display: none;
+}

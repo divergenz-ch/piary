@@ -18,7 +18,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const REPO = join(import.meta.dirname, "..", "..");
+export const REPO = join(import.meta.dirname, "..", "..");
 
 /** The binary layer 4 drives. `pnpm app:e2e:build` leaves it here; a RELEASE
  *  binary has no WebDriver server at all (`src-tauri/src/main.rs`). */

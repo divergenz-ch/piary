@@ -55,6 +55,13 @@ const ROWS: { [Key in keyof Preferences]: (Key extends Switch ? Row : never) | n
 		label: "Let the agent speak first",
 		hint: "When your face moves at an answer and you write nothing for a few seconds, the agent is shown what your face did and may add a sentence or two under its answer, marked as unasked, or say nothing. Each time is one more request to the model. Only while your face is read.",
 	},
+	updateCheck: {
+		group: "Updates",
+		label: "Check for a newer version",
+		hint: "At launch and once an hour, Piary asks GitHub for its newest release, and says beside the model when there is one. The request carries nothing of yours, and it is the only one Piary makes to GitHub. Off, none is made.",
+	},
+	// Set by dismissing the notice itself, beside the model (`app/update.ts`).
+	updateDismissed: null,
 };
 
 /** Said when a change could not be kept; the control stays where it was. */

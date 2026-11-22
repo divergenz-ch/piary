@@ -16,9 +16,9 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 // Generated from src-tauri/src/wire.rs by `cargo test export_bindings`. The
 // wire types are declared once, in Rust, so the two ends cannot disagree about
 // a payload without the compiler saying so. Never hand-edit.
-import type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, Verdict, WindowBox } from "./bridge-types.ts";
+import type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox } from "./bridge-types.ts";
 
-export type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, Verdict, WindowBox };
+export type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox };
 
 /**
  * What pi answers a command with.
@@ -346,6 +346,30 @@ export function preferencesWrite(preferences: Preferences): Promise<void> {
  *  for one in a driven run (`PIARY_FACE_SCRIPT`), or nothing (ADR 0058). */
 export function faceSource(): Promise<FaceSource> {
 	return invoke("face_source");
+}
+
+/** The version this app is, and the newest release tag a check has read
+ *  since launch (ADR 0063). */
+export function updateState(): Promise<UpdateState> {
+	return invoke("update_state");
+}
+
+/** Asks for the turn to check for a newer Piary. `none` is no turn: another
+ *  window checked within the hour, the preference is off, or a driven run has
+ *  nothing to ask. Otherwise, where to ask. */
+export function updateClaim(): Promise<UpdateSource> {
+	return invoke("update_claim");
+}
+
+/** A check read the release tag `tag`: every window then hears it through
+ *  `onUpdateLatest`. */
+export function updateFound(tag: string): Promise<void> {
+	return invoke("update_found", { tag });
+}
+
+/** Calls back with the release tag a check read, in any window. */
+export function onUpdateLatest(handler: (tag: string) => void): Promise<UnlistenFn> {
+	return on<string>("update-latest", handler);
 }
 
 /** The chord of every menu item that has one, by the id its click emits, as

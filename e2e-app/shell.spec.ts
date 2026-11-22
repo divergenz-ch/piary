@@ -488,7 +488,7 @@ describe("the app's shell", () => {
 				handler: internals.transformCallback((event) => heard.push(event.payload)),
 			});
 		});
-		expect(valueOf(await invoke<{ value?: { cellWorkPulse: boolean }; error?: string }>("preferences_read"))).toEqual({ cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false });
+		expect(valueOf(await invoke<{ value?: { cellWorkPulse: boolean }; error?: string }>("preferences_read"))).toEqual({ cellWorkPulse: true, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "" });
 
 		// The click as the page hears it, then the command the page answers
 		// it with: asked twice, there is one window.
@@ -513,10 +513,10 @@ describe("the app's shell", () => {
 		// window heard the change and reads it back from the file.
 		await closeAndReturn(main);
 		await browser.waitUntil(
-			async () => (await browser.execute(() => JSON.stringify((window as unknown as { __preferencesHeard: unknown[] }).__preferencesHeard))) === '[{"cellWorkPulse":false,"face":false,"faceExplained":false,"faceCamera":"","faceTuning":{"intensity":"C","minMs":500,"yaw":12,"pitch":10},"faceSpeaks":false}]',
+			async () => (await browser.execute(() => JSON.stringify((window as unknown as { __preferencesHeard: unknown[] }).__preferencesHeard))) === '[{"cellWorkPulse":false,"face":false,"faceExplained":false,"faceCamera":"","faceTuning":{"intensity":"C","minMs":500,"yaw":12,"pitch":10},"faceSpeaks":false,"updateCheck":true,"updateDismissed":""}]',
 			{ timeout: 10_000, timeoutMsg: "the main window never heard the preference change" },
 		);
-		expect(valueOf(await invoke<{ value?: { cellWorkPulse: boolean }; error?: string }>("preferences_read"))).toEqual({ cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false });
+		expect(valueOf(await invoke<{ value?: { cellWorkPulse: boolean }; error?: string }>("preferences_read"))).toEqual({ cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "" });
 		// Back as it was, for the specs after this one.
 		valueOf(await invoke<{ value?: null; error?: string }>("preferences_write", { preferences: { cellWorkPulse: true } }));
 	});
