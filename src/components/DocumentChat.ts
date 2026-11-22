@@ -140,6 +140,7 @@ import "./CellBlock.ts";
 import type { PiCell } from "./CellBlock.ts";
 import "./ArtifactBlock.ts";
 import type { ArtifactMember, PiArtifact } from "./ArtifactBlock.ts";
+import { clearEdits, editHighlight, noteEdit } from "./edit-highlight.ts";
 import { placeRunBadge, runBadgeField, setRunBadge } from "./run-badge.ts";
 
 /** Shared empty set: an idle frame should not be handed a fresh one every sync. */
@@ -1788,6 +1789,7 @@ export class DocumentChat extends LitElement {
 					cellsField,
 					askField,
 					runBadgeField,
+					editHighlight,
 					liveViewsField,
 					decoField,
 					lineClasses,
@@ -2297,11 +2299,19 @@ export class DocumentChat extends LitElement {
 		const plan = planCanvasEdit(view.state.doc.toString(), edit, outside);
 		if (!plan.ok) return plan;
 		const before = view.state.doc;
-		view.dispatch({ changes: { from: plan.from, to: plan.to, insert: plan.insert }, userEvent: "piary.canvas-edit" });
+		const tr = view.state.update({ changes: { from: plan.from, to: plan.to, insert: plan.insert }, userEvent: "piary.canvas-edit" });
+		view.dispatch(tr);
 		// The editor's own rules may drop a change, and `ok` is the agent's only
 		// check that the edit happened.
 		const landed = view.state.doc !== before || before.sliceString(plan.from, plan.to) === plan.insert;
-		return landed ? { ok: true } : { ok: false, error: "the document did not take that change: nothing was changed" };
+		if (!landed) return { ok: false, error: "the document did not take that change: nothing was changed" };
+		// What changed is shown where it is (ADR 0067), read off the change that
+		// was applied, and in a transaction of its own that is no step of the undo
+		// history.
+		const marks: StateEffect<unknown>[] = [];
+		tr.changes.iterChanges((_fromA, _toA, fromB, toB, inserted) => void marks.push(noteEdit.of({ from: fromB, to: toB, removal: !inserted.toString().trim() })));
+		if (marks.length) view.dispatch({ effects: marks });
+		return { ok: true };
 	}
 
 	/**
@@ -3439,7 +3449,7 @@ export class DocumentChat extends LitElement {
 			return;
 		}
 		this.#resetCells();
-		view.dispatch({ effects: setRunBadge.of(null) });
+		view.dispatch({ effects: [setRunBadge.of(null), clearEdits.of(null)] });
 		this.classList.remove("doc-focus");
 		this.#userTypedDuringTurn = false;
 		this.#headEdited = false;

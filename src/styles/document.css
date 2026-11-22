@@ -1695,6 +1695,61 @@ document-chat .doc-run-badge-first + .cm-line.doc-block-first::before {
 	top: 0;
 }
 
+/* Text pi changed with a canvas edit, lit once it is in view and fading by
+   itself (a decoration: it writes no document text, ADR 0067). The time is
+   the field's, handed over as a property, so the fade ends when the mark is
+   taken away. */
+document-chat .doc-edit-lit,
+document-chat .cm-line.doc-edit-lit-line {
+	animation: doc-edit-lit var(--doc-edit-lit-ms, 2400ms) ease-out forwards;
+}
+document-chat .doc-edit-lit {
+	border-radius: 0.1875rem;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+@keyframes doc-edit-lit {
+	0%,
+	35% {
+		background-color: color-mix(in oklab, var(--warning) 32%, transparent);
+	}
+	100% {
+		background-color: transparent;
+	}
+}
+
+/* A change that landed out of view: a link pinned to the scroller's edge on
+   the side it is on, one click from wherever the reader is. Under the bar at
+   the top, and clear of the chips at the bottom. */
+document-chat .doc-edit-jump {
+	position: absolute;
+	left: 50%;
+	translate: -50% 0;
+	z-index: 10;
+	padding: 0.25rem 0.75rem;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	line-height: 1rem;
+	color: var(--foreground);
+	background: color-mix(in oklab, var(--warning) 18%, var(--background));
+	border: 1px solid color-mix(in oklab, var(--warning) 45%, var(--border));
+	border-radius: 9999px;
+	box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 10%, transparent);
+	cursor: pointer;
+}
+document-chat .doc-edit-jump[hidden] {
+	display: none;
+}
+document-chat .doc-edit-jump:hover {
+	background: color-mix(in oklab, var(--warning) 28%, var(--background));
+}
+document-chat .doc-edit-jump-above {
+	top: 3.5rem;
+}
+document-chat .doc-edit-jump-below {
+	bottom: 3.5rem;
+}
+
 /* An extension's dialog, in the buffer under the run that asked it (a block
    widget — it writes no document text). Not a card: it is a segment of the
    block that asked, so it takes the block's own left inset — and no rule of

@@ -3,6 +3,8 @@
 **Status:** accepted (2026-11-14). Quoted text is the block addressing, chosen over block ids and
 positions. Amended by [ADR 0065](0065-a-canvas-edit-that-empties-a-block-removes-it.md): an edit
 that empties a block removes it. §6 was added on 2026-11-23: an edit does not answer the prompt.
+[ADR 0067](0067-a-canvas-edit-is-lit-where-it-landed-and-linked-to-when-out-of-view.md) is what the
+canvas shows of an edit that landed.
 
 ## Context
 

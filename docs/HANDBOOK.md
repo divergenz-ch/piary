@@ -435,7 +435,11 @@ CANVAS EDITS     pi changes prose already in the document with `canvas_edit(oldT
                  user's own delete of a segment does; the prompt being answered is refused, and the
                  trailing prompt keeps its marker (ADR 0065). An edit that adds lines under the
                  prompt being answered is refused too, and told to write them as the reply: an
-                 answer is never an edit of its question (ADR 0033 §6).
+                 answer is never an edit of its question (ADR 0033 §6). The text an edit put in is lit once
+                 it is in view and fades by itself; one that landed out of view waits behind a link
+                 pinned to the scroller's edge on its side (`changed above ↑`), which scrolls to it
+                 and moves no caret. Neither is document text, and both are the canvas's own
+                 (`src/components/edit-highlight.ts`, ADR 0067).
 RUN BOUNDS       the agent proposes, the app enforces (ADR 0031). The app's pi gets
                  `PIARY_VERDICTS=1`, and its `cell` tool waits for the page's verdict on the cell
                  (`app/cell-verdicts.ts`, `notebook-cells.md` §Policy): 3 failed writes per cell per

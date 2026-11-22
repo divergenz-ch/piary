@@ -2355,6 +2355,9 @@ test("pi fixes an earlier block through its canvas tool: the block changes in pl
 	await write(page, "fix the heading's typo");
 	await send(page);
 	await expect.poll(async () => (await verdictsOf(page))["e1"], { timeout: 8000 }).toEqual({ ok: true });
+	// In view, the changed text is lit where it is, and no link is offered.
+	await expect(page.locator(".doc-edit-lit", { hasText: "The plan" })).toBeVisible();
+	await expect(page.locator(".doc-edit-jump-above")).toBeHidden();
 	await turnOver(page);
 	const md = await docText(page);
 	expect(md).toMatch(/^<!-- you -->\n\n# The plan\n\nShip on Friday\./);
@@ -2366,6 +2369,58 @@ test("pi fixes an earlier block through its canvas tool: the block changes in pl
 	const mod = process.platform === "darwin" ? "Meta" : "Control";
 	await page.keyboard.press(`${mod}+z`);
 	await expect.poll(() => docText(page)).toContain("# Teh plan");
+});
+
+/** `TYPO`, with more plan under the heading than a window shows. */
+const TALL_TYPO = `<!-- you -->\n\n# Teh plan\n\n${Array.from({ length: 60 }, (_, i) => `Step ${i + 1} of the plan.\n\n`).join("")}<!-- pi -->\n\nNoted.\n\n<!-- you -->\n\n`;
+
+test("a canvas edit out of view is one click away: a link goes to it, the changed text is lit, then fades (ADR 0067)", async ({ page }) => {
+	await openApp(page, answerWith([editAsked("# Teh plan", "# The plan"), ...hold(6), final("Fixed the heading."), settled()], 150), TALL_TYPO);
+	// The reader is at the foot of the page, writing the next prompt.
+	await page.locator(".cm-scroller").first().hover();
+	await page.mouse.wheel(0, 20000);
+	await expect(page.locator(".cm-line", { hasText: "Noted." })).toBeInViewport();
+	await writeAtTail(page, "fix the heading's typo");
+	await send(page);
+	await expect.poll(async () => (await verdictsOf(page))["e1"], { timeout: 8000 }).toEqual({ ok: true });
+	const link = page.locator(".doc-edit-jump-above");
+	await expect(link).toBeVisible();
+	await expect(link).toHaveText("changed above ↑");
+	await expect(link).toBeInViewport();
+	await expect(page.locator(".doc-edit-jump-below")).toBeHidden();
+	// Nothing is lit where nobody is looking: the fade is kept for the reader.
+	await expect(page.locator(".doc-edit-lit")).toHaveCount(0);
+	await turnOver(page);
+	const md = await docText(page);
+	await link.click();
+	const lit = page.locator(".doc-edit-lit", { hasText: "The plan" });
+	await expect(lit).toBeInViewport();
+	await expect(link).toBeHidden();
+	await expect(page.locator(".doc-edit-lit")).toHaveCount(0, { timeout: 6000 });
+	// Neither the link nor the light is document text, and the caret is still
+	// in the trailing prompt: what is typed next is the next prompt.
+	expect(await docText(page)).toBe(md);
+	await page.keyboard.type("thanks");
+	expect(await docText(page)).toMatch(/<!-- you -->\n\nthanks\n*$/);
+});
+
+test("a click on the link while the run goes on keeps the reader at the change when the answer lands", async ({ page }) => {
+	await openApp(page, answerWith([editAsked("# Teh plan", "# The plan"), ...hold(12), final("Fixed the heading."), settled()], 150), TALL_TYPO);
+	await page.locator(".cm-scroller").first().hover();
+	await page.mouse.wheel(0, 20000);
+	await expect(page.locator(".cm-line", { hasText: "Noted." })).toBeInViewport();
+	await writeAtTail(page, "fix the heading's typo");
+	await send(page);
+	const link = page.locator(".doc-edit-jump-above");
+	await expect(link).toBeVisible();
+	await link.click();
+	const heading = page.locator(".cm-line", { hasText: /The plan$/ });
+	await expect(heading).toBeInViewport();
+	expect(await page.evaluate(() => (document.querySelector("document-chat") as unknown as { streaming: boolean }).streaming)).toBe(true);
+	await turnOver(page);
+	expect(await docText(page)).toContain("Fixed the heading.");
+	// The answer was written at the foot of the page, and the page did not go there.
+	await expect(heading).toBeInViewport();
 });
 
 test("a canvas edit whose quote the document does not hold changes nothing, and the tool is told why", async ({ page }) => {
