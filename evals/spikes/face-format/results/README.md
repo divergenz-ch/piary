@@ -3,8 +3,8 @@
 The feature is being built whatever this says. The experiment looked for the best way to build
 it from what a webcam face model and the app's keystroke log can supply today, and for what
 agents do with this kind of information. Every block an agent saw was written from a case's
-timeline by `build.ts`; the timelines were written by an agent that saw each scene and never
-the truth an answer is judged against.
+timeline by `build.ts`; the timelines were written by an agent that saw each scene
+(`scenes.json`, which no script reads) and never the truth an answer is judged against.
 
 Models: Haiku 5.5, Sonnet 5.5, Opus 5.5 through the user's own pi with Piary's prompt, effort
 asked `off` (pi applied `off` on Haiku and `low` on Sonnet and Opus), three reps. Every number
