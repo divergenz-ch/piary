@@ -4,9 +4,10 @@ How `Piary.app` is built, what is in it, and what the release path still needs.
 Running it in development is `running-the-app.md`. The framework decision and its costs are ADR 0014; capture's
 permission model is ADR 0015.
 
-**Status: a local app builds and runs. Signing and notarization are not done** —
-they wait on an Apple Developer certificate, and §4 is what to do when one
-arrives.
+**Status: a build for both kinds of Mac is made and checked by one command.
+Signing and notarization are not done** — they wait on an Apple Developer
+certificate, and §4 is what to do when one arrives. ADR 0062 is how the app
+reaches other people.
 
 ---
 
@@ -28,15 +29,15 @@ its model, fetched once and held to a checksum (ADR 0058). A build that cannot
 get them fails there, by name. The first build on a machine needs the network
 for the model; later ones do not.
 
-**Size: 13.9 MiB**, of which about 8 are that wasm and model, compressed. Worth
+**Size: 13.9 MiB** for one architecture, of which about 8 are that wasm and
+model, compressed, and 28.8 MiB for both. Worth
 stating because size is most of why the shell is Tauri (ADR 0014) — a
 bundled-Chromium equivalent is around 150 MB. The release profile does the
 work: `lto`, `codegen-units = 1`, `opt-level = "s"`, `strip`.
 
 ```
 Piary.app/Contents/
-├── Info.plist          NSCameraUsageDescription, NSMicrophoneUsageDescription,
-│                       LSMinimumSystemVersion 13.0
+├── Info.plist          NSCameraUsageDescription, LSMinimumSystemVersion 13.0
 ├── MacOS/piary         the app
 ├── MacOS/piary-capture the Swift capture helper (ADR 0015)
 ├── Resources/          the built page, with `face/` (the detector's wasm and model)
@@ -87,11 +88,14 @@ Not done, and **not to be trusted until verified end to end**, because of one
 specific upstream problem.
 
 0. **The entitlements are in place** (`src-tauri/Entitlements.plist`, named in
-   `tauri.conf.json`): the camera and the microphone. A Developer ID build runs
-   under the Hardened Runtime, where a process without them is refused both with
+   `tauri.conf.json`): the camera, and nothing for the microphone, which the
+   app does not use (ADR 0062). A Developer ID build runs under the Hardened
+   Runtime, where a process without the entitlement is refused the camera with
    no prompt. **Verify on the first signed build that the camera is asked for
-   once and then works** (step 19 of `docs/running-the-app.md`): an ad-hoc local
-   build does not run hardened, so it cannot show this.
+   once and then works** (step 19 of `docs/running-the-app.md`).
+   `pnpm app:release` with no identity makes an ad-hoc build that runs hardened
+   with the same entitlements, so the refusal can be rehearsed on the build
+   machine; `pnpm app:bundle` signs nothing and cannot show it.
 1. **Set the credentials.** `APPLE_SIGNING_IDENTITY` (or
    `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD`), plus either
    `APPLE_API_KEY`/`APPLE_API_ISSUER`/`APPLE_API_KEY_PATH` or
@@ -177,8 +181,11 @@ here and not as an ADR.
 
 ## 6. Not done yet
 
-- **Auto-update.** Tauri's updater needs a signing keypair and an endpoint, and
-  both are decisions for when there is something to update *to*.
+- **A release.** No tag and no GitHub Release exists yet: a build nobody else
+  can open is not worth publishing, so the first one waits on §4.
+- **The notice of a newer version**, which the app owes whoever downloaded it
+  (ADR 0062), and after it the question of whether an update installs itself:
+  Tauri's updater is a new crate, a signing keypair and an endpoint.
 - **A second machine.** The build has only ever run on the machine that made it,
   so the "works on a clean Mac" half of the phase gate is open. An ad-hoc signed
   app will be refused by Gatekeeper elsewhere, which is exactly what signing

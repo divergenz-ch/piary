@@ -34,6 +34,7 @@
 		"face:assets": "node scripts/face-assets.ts",
 		"app:page": "vite build --config app/vite.config.ts",
 		"app:bundle": "tauri build",
+		"app:release": "node scripts/release-build.ts",
 		"tauri": "tauri",
 		"verify:rust": "pnpm rust:check && pnpm rust:bindings",
 		"rust:test": "node scripts/rust-test.ts",

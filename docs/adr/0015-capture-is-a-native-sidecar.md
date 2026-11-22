@@ -1,6 +1,6 @@
 # ADR 0015 — Capture is a native sidecar, not a webview feature
 
-**Status:** accepted; amended by [ADR 0058](0058-the-face-is-read-in-the-page-and-only-words-leave-it.md) (reading a face is not capture and happens in the page). Depends on [ADR 0014](0014-native-application-tauri.md) for the shell, and
+**Status:** accepted; amended by [ADR 0058](0058-the-face-is-read-in-the-page-and-only-words-leave-it.md) (reading a face is not capture and happens in the page) and by [ADR 0062](0062-piary-reaches-other-people-as-one-build-on-github-releases.md) (no microphone until a feature records from one). Depends on [ADR 0014](0014-native-application-tauri.md) for the shell, and
 renders through the live-view seam in [ADR 0013](0013-inline-terminal-and-live-views.md).
 
 ## Context
