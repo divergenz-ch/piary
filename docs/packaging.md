@@ -76,7 +76,7 @@ headless runner, or over SSH, build the `.app` and make the DMG elsewhere.
 **A release is the disk image under a version tag** (ADR 0062). The version is written in
 `package.json`, which `src-tauri/tauri.conf.json` names as its own; `src-tauri/Cargo.toml` and
 `Cargo.lock` repeat it, and `tests/contract/version.test.ts` fails while they differ. The tag is
-that version with a `v`, and must be: the app reads a release's tag as its version (ADR 0063).
+that version with a `v`, and must be: the app reads a release's tag as its version (ADR 0064).
 
 ```sh
 pnpm app:release --dmg
@@ -204,7 +204,7 @@ here and not as an ADR.
   (`xattr -dr com.apple.quarantine /Applications/Piary.app`), so it is for people who know what
   they are running. The first release for everyone waits on §4.
 - **An update that installs itself.** The app says when a newer version exists
-  and opens its download page (ADR 0063); installing it is Tauri's updater, a
+  and opens its download page (ADR 0064); installing it is Tauri's updater, a
   new crate, a signing keypair and an endpoint, and is not decided (ADR 0062).
   Until a release that is not a pre-release is published, GitHub answers the
   app's check with 404, which is a line in the log and nothing on screen.

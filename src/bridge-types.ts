@@ -167,7 +167,7 @@ faceTuning: FaceReading,
 faceSpeaks: boolean, 
 /**
  * The app asks GitHub whether a newer release exists, and says so when
- * one does (ADR 0063). Off, it makes no request and shows no notice.
+ * one does (ADR 0064). Off, it makes no request and shows no notice.
  */
 updateCheck: boolean, 
 /**
@@ -245,7 +245,7 @@ export type UpdateSource = { "kind": "github" } | { "kind": "script", answer: st
 
 /**
  * The version this app is, and the newest release tag a check has read since
- * launch, if one has (ADR 0063).
+ * launch, if one has (ADR 0064).
  */
 export type UpdateState = { current: string, latest: string | null, };
 

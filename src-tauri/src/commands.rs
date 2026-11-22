@@ -827,7 +827,7 @@ pub fn face_source() -> FaceSource {
 }
 
 /// The version this app is, and the newest release a check has read since
-/// launch (ADR 0063): what a window draws its notice from without asking
+/// launch (ADR 0064): what a window draws its notice from without asking
 /// anyone.
 #[tauri::command]
 pub fn update_state<R: Runtime>(app: AppHandle<R>, updates: State<'_, Updates>) -> UpdateState {

@@ -4717,7 +4717,7 @@ test("the Preferences window answers the host's close at once: it holds nothing 
 	await expect.poll(async () => (await ipcCalls(page)).some((call) => call.cmd === "exit_flushed")).toBe(true);
 });
 
-// The notice of a newer version (ADR 0063). Rust gives a window the turn to ask
+// The notice of a newer version (ADR 0064). Rust gives a window the turn to ask
 // (`update_claim`) and tells every window what was read (`update-latest`);
 // GitHub is answered here, so a spec says what is released.
 const GITHUB_LATEST = "https://api.github.com/repos/divergenz-ch/piary/releases/latest";

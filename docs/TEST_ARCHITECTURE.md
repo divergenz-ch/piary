@@ -491,7 +491,7 @@ what an import opens and `PIARY_E2E_EXPORT_DIR` the folder an export goes into, 
 into a folder and imports a file out of it (`e2e-app/transfer.spec.ts`). The panel itself is §7's.
 
 **A newer version is an answer handed over, never GitHub's.** The app asks GitHub whether a
-newer release exists (ADR 0063). No suite may: it would make a request per launch from whoever
+newer release exists (ADR 0064). No suite may: it would make a request per launch from whoever
 runs it, and would pass or fail by what is released that day. The page asks Rust for the turn
 and where to ask (`update_claim`), and Rust answers "GitHub" only to a run no harness drives
 (`harness::update_source`). A driven debug build gets the text in the file `PIARY_UPDATE_SCRIPT`

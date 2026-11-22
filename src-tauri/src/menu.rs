@@ -179,7 +179,7 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         &[
             &MenuItem::with_id(app, ids::WELCOME, "Welcome to Piary", true, None::<&str>)?,
             // Asks now, whatever the hour and the preference say: the user
-            // asked (ADR 0063).
+            // asked (ADR 0064).
             &MenuItem::with_id(
                 app,
                 ids::CHECK_UPDATES,

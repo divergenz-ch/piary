@@ -28,7 +28,7 @@ pub fn face_source(driven: bool, script: Option<String>) -> crate::wire::FaceSou
     }
 }
 
-/// Where this run asks whether a newer Piary exists (ADR 0063). A driven run
+/// Where this run asks whether a newer Piary exists (ADR 0064). A driven run
 /// never asks GitHub: a suite that did would make a request per launch from
 /// whoever runs it, and would pass or fail by what is released that day. It
 /// gets the answer it was handed (`PIARY_UPDATE_SCRIPT`'s file, read by the

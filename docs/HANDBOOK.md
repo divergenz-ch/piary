@@ -102,7 +102,7 @@ WEBVIEW (WKWebView)
   app/main.ts  assembles the page from feature modules (ADR 0024): turn.ts (a send
    │           and its stream), model.ts, login.ts, terminals.ts, conversations.ts,
    │           history.ts (the rebuild), attachments.ts, transfer.ts, menubar.ts,
-   │           update.ts (the notice of a newer version, in model.ts's chip: ADR 0063), …
+   │           update.ts (the notice of a newer version, in model.ts's chip: ADR 0064), …
    ├── app/face/  the user's face, from a detector to the message pi is handed
    │           (ADR 0058, ADR 0055, ADR 0057, ADR 0059, ADR 0060, ADR 0061): index.ts (the module, and the
    │           camera's life), log.ts (a key log per prompt), detector.ts (the
@@ -186,7 +186,7 @@ RUST  src-tauri/src/
    │                   (ADR 0051)
    ├── preferences.rs the user's preferences, one JSON file (ADR 0048)
    ├── update.rs      whose turn it is to check for a newer version, and the tag
-   │                   last read (ADR 0063)
+   │                   last read (ADR 0064)
    └── capture.rs     the Swift capture sidecar (ADR 0015)
 PI  the user's own `pi`, plus Piary's package `pi-extension/` (the view, cell,
     canvas_edit, budget and terminal tools, the login commands, the skill — ADR 0030)
@@ -460,7 +460,7 @@ PREFERENCES      how the user chose the app to behave: `preferences.json` in the
                  `faceCamera` and `faceTuning`, which have no row there: FACE below.
                  `updateCheck` (on, under Updates) and `updateDismissed`, which has no row
                  there: UPDATES below.
-UPDATES          the app says when a newer version exists (ADR 0063). A document's window asks
+UPDATES          the app says when a newer version exists (ADR 0064). A document's window asks
                  Rust for the turn to check (`update_claim`) at launch, when a preference
                  changes and every five minutes; Rust grants one an hour for the whole app
                  and none with the `updateCheck` preference off (`src-tauri/src/update.rs`).

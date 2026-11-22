@@ -1,5 +1,5 @@
 // The notice of a newer version, where only the real app joins its halves
-// (ADR 0063): Rust says which version the app is, gives one window the turn
+// (ADR 0064): Rust says which version the app is, gives one window the turn
 // to ask, reads the preference that switches the check off, and tells every
 // window what was read. A driven build is handed its answer in place of
 // GitHub's (`PIARY_UPDATE_SCRIPT`, `docs/TEST_ARCHITECTURE.md` §6). What the

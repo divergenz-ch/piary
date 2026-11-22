@@ -1,7 +1,7 @@
 // The app has one version, written in `package.json`.
 //
 // `tauri.conf.json` points at that file, so the bundle's version and the one
-// the running app compares against a release (ADR 0063) are read from it.
+// the running app compares against a release (ADR 0064) are read from it.
 // Cargo cannot read it, so `Cargo.toml` and `Cargo.lock` repeat it, and this
 // holds them to it: a release cut with one of them behind would be a build
 // that announces itself as older than it is.

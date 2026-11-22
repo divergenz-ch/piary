@@ -1,5 +1,5 @@
 // Whether a newer Piary exists, as rules: reading GitHub's answer, comparing
-// two versions, what a window announces and where its button goes (ADR 0063).
+// two versions, what a window announces and where its button goes (ADR 0064).
 // Pure: the request and the pill are `app/update.ts`'s.
 
 /** The repository whose releases are Piary's (ADR 0062). */

@@ -130,7 +130,7 @@ pub struct Preferences {
     /// It means something only while a face is read.
     pub face_speaks: bool,
     /// The app asks GitHub whether a newer release exists, and says so when
-    /// one does (ADR 0063). Off, it makes no request and shows no notice.
+    /// one does (ADR 0064). Off, it makes no request and shows no notice.
     pub update_check: bool,
     /// The version the user dismissed the notice of, as `0.2.0`. That one is
     /// not announced again; a later one is. Empty, none was dismissed.
@@ -322,7 +322,7 @@ pub enum UpdateSource {
 }
 
 /// The version this app is, and the newest release tag a check has read since
-/// launch, if one has (ADR 0063).
+/// launch, if one has (ADR 0064).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../src/bridge-types.ts")]
 #[serde(rename_all = "camelCase")]

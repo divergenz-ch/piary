@@ -1,5 +1,5 @@
 // The notice that a newer Piary exists: a pill in the model chip, left of the
-// model, and the check behind it (ADR 0063).
+// model, and the check behind it (ADR 0064).
 //
 // Rust gives one window at a time the turn to ask (`update_claim`), so the
 // app makes one request an hour however many windows it has, and none with

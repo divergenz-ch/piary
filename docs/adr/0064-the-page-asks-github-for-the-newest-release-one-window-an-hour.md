@@ -1,4 +1,4 @@
-# ADR 0063 — The page asks GitHub for the newest release, one window an hour, and a pill says so
+# ADR 0064 — The page asks GitHub for the newest release, one window an hour, and a pill says so
 
 **Status:** accepted (2026-11-22). Where the notice appears and how often the app checks were
 put to the user and decided that day. Carries out rule 5 of

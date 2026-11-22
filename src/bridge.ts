@@ -349,7 +349,7 @@ export function faceSource(): Promise<FaceSource> {
 }
 
 /** The version this app is, and the newest release tag a check has read
- *  since launch (ADR 0063). */
+ *  since launch (ADR 0064). */
 export function updateState(): Promise<UpdateState> {
 	return invoke("update_state");
 }

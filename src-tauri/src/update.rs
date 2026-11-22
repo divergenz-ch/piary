@@ -1,5 +1,5 @@
 //! Whether a newer Piary exists: when the app may ask, and what it last heard
-//! (ADR 0063).
+//! (ADR 0064).
 //!
 //! The request itself is the page's: Rust holds no HTTP client. What is kept
 //! here is what must be one for the app rather than one per window: the turn
