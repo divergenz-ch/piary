@@ -1,0 +1,279 @@
+/* A conversation exported to read without Piary (ADR 0066): the page
+   `src/document/export-html.ts` writes. Everything is under `.piary-export`
+   or `.px-page`, because these rules are in two places at once: copied into
+   the exported file, and in the Export window, which shows the same
+   conversation to paper for a PDF. */
+
+.px-page {
+	margin: 0;
+	background: var(--background);
+}
+
+.piary-export {
+	box-sizing: border-box;
+	width: min(52rem, 100%);
+	margin: 0 auto;
+	padding: 3rem 1.5rem 5rem;
+	font-family: "Noto Serif", var(--font-serif);
+	font-size: 1.0625rem;
+	line-height: 1.6;
+	color: var(--foreground);
+	background: var(--background);
+	overflow-wrap: anywhere;
+	user-select: text;
+	-webkit-user-select: text;
+	cursor: auto;
+	/* The tints and rules are part of what is read. */
+	-webkit-print-color-adjust: exact;
+	print-color-adjust: exact;
+}
+
+.piary-export .px-seg {
+	margin-top: 0.75rem;
+}
+
+/* A prompt opens a turn: the room above it is what separates two. */
+.piary-export .px-you {
+	margin-top: 2.5rem;
+	padding-left: 1.125rem;
+	border-left: 2px solid var(--foreground);
+}
+
+.piary-export > .px-you:first-child {
+	margin-top: 0;
+}
+
+.piary-export .px-pi,
+.piary-export .px-view,
+.piary-export .px-file,
+.piary-export .px-artifact,
+.piary-export .px-step {
+	padding-left: 1.125rem;
+	border-left: 2px solid var(--border);
+}
+
+.piary-export .px-aside {
+	color: var(--muted-foreground);
+}
+
+.piary-export .px-role {
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	font-style: normal;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
+
+.piary-export .px-prose > :first-child {
+	margin-top: 0.125rem;
+}
+
+.piary-export .px-prose > :last-child {
+	margin-bottom: 0;
+}
+
+.piary-export .px-prose :is(p, ul, ol, blockquote, pre, table) {
+	margin: 0.75rem 0;
+}
+
+.piary-export .px-prose :is(h1, h2, h3, h4, h5, h6) {
+	margin: 1.5rem 0 0.5rem;
+	line-height: 1.25;
+}
+
+.piary-export .px-prose h1 {
+	font-size: 1.625rem;
+}
+
+.piary-export .px-prose h2 {
+	font-size: 1.3125rem;
+}
+
+.piary-export .px-prose h3 {
+	font-size: 1.125rem;
+}
+
+.piary-export .px-prose :is(ul, ol) {
+	padding-left: 1.5rem;
+}
+
+.piary-export .px-prose ul {
+	list-style: disc;
+}
+
+.piary-export .px-prose ol {
+	list-style: decimal;
+}
+
+.piary-export .px-prose blockquote {
+	padding-left: 1rem;
+	border-left: 2px solid var(--border);
+	color: var(--muted-foreground);
+}
+
+.piary-export .px-prose a {
+	color: var(--accent-foreground);
+	text-decoration: underline;
+}
+
+.piary-export .px-prose hr {
+	margin: 1.5rem 0;
+	border: 0;
+	border-top: 1px solid var(--border);
+}
+
+.piary-export .px-prose :not(pre) > code {
+	border-radius: 0.25rem;
+	background: var(--muted);
+	padding: 0.0625rem 0.3125rem;
+	font-family: var(--font-mono);
+	font-size: 0.875em;
+}
+
+.piary-export .px-prose table {
+	border-collapse: collapse;
+	font-size: 0.9375rem;
+}
+
+.piary-export .px-prose :is(th, td) {
+	border-bottom: 1px solid var(--border);
+	padding: 0.375rem 0.75rem 0.375rem 0;
+	text-align: left;
+}
+
+.piary-export .px-prose th {
+	border-bottom: 2px solid var(--foreground);
+}
+
+.piary-export img {
+	max-width: 100%;
+	height: auto;
+}
+
+.piary-export :is(.px-code, .px-prose pre) {
+	margin: 0.375rem 0;
+	border-radius: 0.375rem;
+	background: var(--muted);
+	padding: 0.625rem 0.75rem;
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	white-space: pre-wrap;
+}
+
+.piary-export .px-code-name {
+	margin-top: 0.5rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--muted-foreground);
+}
+
+.piary-export .px-quiet,
+.piary-export .px-missing {
+	margin: 0.25rem 0;
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.875rem;
+	font-style: italic;
+	color: var(--muted-foreground);
+}
+
+.piary-export .px-thinking {
+	font-family: "Noto Sans", var(--font-sans);
+	font-size: 0.9375rem;
+	font-style: italic;
+	white-space: pre-wrap;
+	color: var(--muted-foreground);
+}
+
+/* A step, and an artifact's source: closed until the reader opens it. */
+.piary-export :is(.px-step, .px-source) {
+	margin-top: 0.375rem;
+}
+
+.piary-export :is(.px-step, .px-source) > summary {
+	cursor: pointer;
+	list-style-position: inside;
+}
+
+.piary-export .px-error > summary {
+	color: var(--destructive);
+}
+
+.piary-export .px-artifact {
+	margin: 0.75rem 0 0;
+}
+
+/* The rule down the side is the segment's own here. */
+.piary-export .px-canvas .doc-view {
+	padding-left: 0;
+}
+
+.piary-export .px-canvas .doc-view::before {
+	content: none;
+}
+
+/* The canvas this window draws a conversation with before exporting it: laid
+   out at a column's width, so what is drawn is as wide as in a window, and
+   where nobody sees it. */
+.export-stage {
+	position: fixed;
+	top: 0;
+	left: -200vw;
+	width: 52rem;
+	height: 40rem;
+	overflow: hidden;
+	visibility: hidden;
+	user-select: none;
+}
+
+/* The canvas keeps the frames it is not showing in a hidden park. Nothing of
+   the staged canvas is in view, so every frame is there, and one that is not
+   laid out has no width for a chart to take. */
+.export-stage .doc-cell-park {
+	display: block !important;
+}
+
+/* What this window shows to paper: the conversation being written as a PDF,
+   and nothing of the form. */
+#print-root {
+	display: none;
+}
+
+@media print {
+	html,
+	body {
+		display: block !important;
+		height: auto !important;
+		overflow: visible !important;
+		padding: 0 !important;
+		background: #fff !important;
+	}
+
+	body > :not(#print-root) {
+		display: none !important;
+	}
+
+	#print-root {
+		display: block;
+	}
+}
+
+/* On paper the page's own margins are the room around the text, and nothing
+   short is cut in two. A step stays folded, as the canvas shows it: its label
+   says what ran, and the HTML export is where its content can be opened. */
+@media print {
+	.piary-export {
+		width: 100%;
+		padding: 0;
+	}
+
+	.piary-export :is(.px-role, h1, h2, h3, h4, h5, h6, summary) {
+		break-after: avoid;
+	}
+
+	.piary-export :is(img, svg, tr, .px-artifact .px-output) {
+		break-inside: avoid;
+	}
+}

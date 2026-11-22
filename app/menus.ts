@@ -5,7 +5,7 @@
 // an item is disabled — and every edit goes through the pure
 // functions in `src/document/`, applied as an undoable splice.
 
-import { type DocumentChat, roleLabel } from "../src/components/DocumentChat.ts";
+import type { DocumentChat } from "../src/components/DocumentChat.ts";
 import {
 	BLOCK_MARKER,
 	blockKeyOf,
@@ -13,6 +13,7 @@ import {
 	type DocSegment,
 	deleteBlockText,
 	parseDocument,
+	roleLabel,
 	serializeView,
 	snippetQuote,
 } from "../src/document/format.ts";

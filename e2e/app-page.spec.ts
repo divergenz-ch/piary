@@ -2274,7 +2274,7 @@ test("the Export window asks which conversations, then as what, with the one in 
 	await page.getByRole("button", { name: "Export…" }).click();
 	await expect(outcome(page)).toHaveText("notes → Desktop/notes.md.");
 	// The file alone carries no attachments.
-	expect(await argsOf(page, "export_conversations")).toEqual([{ conversations: [{ id: "notes", attachments: [] }], kind: "markdown" }]);
+	expect(await argsOf(page, "export_conversations")).toEqual([{ conversations: [{ id: "notes", attachments: [], content: null }], kind: "markdown" }]);
 });
 
 test("several conversations leave as zips, each with the attachments its own document references, and each is reported", async ({ page }) => {
@@ -2298,8 +2298,8 @@ test("several conversations leave as zips, each with the attachments its own doc
 	expect(await argsOf(page, "export_conversations")).toEqual([
 		{
 			conversations: [
-				{ id: "notes", attachments: ["shot-a1.png", "paper-b2.pdf"] },
-				{ id: "plan", attachments: ["map-c3.png"] },
+				{ id: "notes", attachments: ["shot-a1.png", "paper-b2.pdf"], content: null },
+				{ id: "plan", attachments: ["map-c3.png"], content: null },
 			],
 			kind: "zip",
 		},
@@ -2348,6 +2348,181 @@ test("an export whose panel is cancelled, or that Rust refuses, is not reported 
 	await answerFromNow(page, "export_conversations", { reject: "the disk is full" });
 	await go.click();
 	await expect(outcome(page).locator(".transfer-failed")).toHaveText("the disk is full");
+});
+
+// ---- a conversation drawn, to read without Piary (ADR 0066)
+
+/** A conversation with one of everything a drawn export has to settle: a
+ *  picture, prose with HTML and a script address in it, a step, a terminal's
+ *  view, an a2ui view, a cell that reads kept state, and one that paints. */
+const DRAWN = [
+	"---\npi: v1\nsession: notes\n---\n\n# The trip\n\n",
+	"<!-- pi:file image/png #shot-a1.png -->\n\n![shot.png](/attachments/shot-a1.png)\n\n",
+	"<!-- you -->\n\nhow far is it? <script>window.reached = true</script> [maybe](javascript:window.reached=true)\n\n",
+	"<!-- pi -->\n\nIt is **42 km**.\n\n",
+	'<!-- pi:tool bash #t1 -->\n\n```json\n{ "command": "ls" }\n```\n\n',
+	"<!-- pi:result #t1 -->\n\n```\nmap.txt\n```\n\n",
+	"<!-- pi:view terminal #term1 -->\n\n```json\n{}\n```\n\n",
+	`<!-- pi:view a2ui #toolu_a -->\n\n\`\`\`json\n${JSON.stringify({ components: [{ id: "root", component: "Text", variant: "caption", text: "Down from 58." }] })}\n\`\`\`\n\n`,
+	"<!-- pi:result #toolu_a -->\n\n```\nok\n```\n\n",
+	"<!-- pi:cell js #st -->\n\n```js\nconst n = view(state('n', 1))\n```\n\n",
+	"<!-- pi:cell js #show -->\n\n```js\nhtl.html`<button class=\"bump\" onclick=${() => setState('n', n + 1)}>n is ${n}</button>`\n```\n\n",
+	'<!-- pi:cell js #paint -->\n\n```js\nconst c = document.createElement("canvas"); c.width = 20; c.height = 10; c.className = "painted"; c.getContext("2d").fillRect(0, 0, 20, 10); display(c);\n```\n\n',
+	"<!-- you -->\n\n",
+].join("");
+
+/** What a drawn export is asked of Rust with. */
+type DrawnAsk = { conversations: { id: string; attachments: string[]; content: string | null }[]; kind: string; into?: string };
+
+const drawnAnswers = (extra: Answers = {}): Answers => ({
+	"docs_read@notes": DRAWN,
+	attachments_read: { png: [8, 6] },
+	cell_state_read: { state: { v: 2, views: {}, store: { n: 7 } } },
+	...extra,
+});
+
+test("a conversation leaves as a web page: drawn as the canvas draws it, in one file that runs nothing and asks for nothing", async ({ page, browser }) => {
+	test.setTimeout(60_000);
+	await openExport(page, drawnAnswers({ export_conversations: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.html", missing: [], error: null }] } }));
+	await page.getByLabel("Web page (.html)").check();
+	await page.getByRole("button", { name: "Export…" }).click();
+	await expect(outcome(page)).toHaveText("notes → out/notes.html.", { timeout: 30_000 });
+	const [asked] = await argsOf<DrawnAsk>(page, "export_conversations");
+	expect(asked!.kind).toBe("html");
+	expect(asked!.conversations.map(({ id, attachments }) => ({ id, attachments }))).toEqual([{ id: "notes", attachments: [] }]);
+	const html = asked!.conversations[0]!.content!;
+	// The canvas it was drawn with is gone from the window, and took no focus.
+	await expect(page.locator("document-chat, .export-stage")).toHaveCount(0);
+	expect(await page.evaluate(() => (window as unknown as { reached?: boolean }).reached)).toBeUndefined();
+
+	// Read the way someone without Piary reads it: a browser, no script, no network.
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	try {
+		const reader = await context.newPage();
+		const asked: string[] = [];
+		reader.on("request", (request) => {
+			if (!request.url().startsWith("data:") && request.url() !== "about:blank") asked.push(request.url());
+		});
+		await reader.setContent(html);
+		await expect(reader).toHaveTitle("The trip");
+		const doc = reader.locator(".piary-export");
+		await expect(doc.locator(".px-you .px-prose").last()).toContainText("how far is it? <script>window.reached = true</script> maybe");
+		await expect(doc.locator(".px-pi strong")).toHaveText("42 km");
+		await expect(doc.locator("script, a[href^='javascript'], [onclick]")).toHaveCount(0);
+		// The picture is in the file, at its own size.
+		const shot = doc.locator(".px-file img");
+		await expect(shot).toHaveAttribute("src", /^data:image\/png;base64,/);
+		expect(await shot.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([8, 6]);
+		// A step is folded, and opens.
+		const step = doc.locator("details.px-step", { hasText: "output" });
+		await expect(step.locator("pre")).toBeHidden();
+		await step.locator("summary").click();
+		await expect(step.locator("pre")).toHaveText("map.txt");
+		await expect(doc.locator(".px-view", { hasText: "terminal" })).toContainText("A terminal ran here. What it showed is not kept.");
+		// The a2ui surface, as it was drawn.
+		await expect(doc.locator(".px-view", { hasText: "a2ui" }).locator(".px-canvas")).toContainText("Down from 58.");
+		// The cells ran from the state the conversation kept; a control is
+		// what it showed, and does nothing.
+		const bump = doc.locator("button.bump");
+		await expect(bump).toHaveText("n is 7");
+		await expect(bump).toBeDisabled();
+		// What a cell painted is a picture now.
+		const painted = doc.locator("img.painted");
+		await expect(painted).toBeVisible();
+		expect(await painted.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([20, 10]);
+		await expect(doc.locator("canvas")).toHaveCount(0);
+		// Its source is under it, folded.
+		await expect(doc.locator(".px-source").first().locator("pre").first()).toBeHidden();
+		expect(html).toContain("const n = view(state(&#39;n&#39;, 1))");
+		// No element of the app's own is left to be defined by whatever opens the file.
+		expect(await doc.evaluate((root) => [...root.querySelectorAll("*")].filter((el) => el.localName.includes("-")).map((el) => el.localName))).toEqual([]);
+		expect(asked, "the page asks no server for anything").toEqual([]);
+		expect(html).not.toMatch(/url\((?!["']?data:)/);
+	} finally {
+		await context.close();
+	}
+});
+
+test("a conversation that cannot be drawn is said, and the others still leave", async ({ page }) => {
+	test.setTimeout(60_000);
+	await openExport(
+		page,
+		drawnAnswers({
+			"docs_read@plan": null,
+			export_conversations: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.html", missing: [], error: null }] },
+		}),
+	);
+	await conversation(page, "plan").check();
+	await page.getByLabel("Web page (.html)").check();
+	await page.getByRole("button", { name: "Export…" }).click();
+	await expect(outcome(page).locator("p")).toHaveText(["notes → out/notes.html.", "plan was not exported: plan has not been saved yet."], { timeout: 30_000 });
+	const [asked] = await argsOf<DrawnAsk>(page, "export_conversations");
+	expect(asked!.conversations.map(({ id }) => id)).toEqual(["notes"]);
+});
+
+test("a picture the store does not hold is left out of a web page, and said", async ({ page }) => {
+	test.setTimeout(60_000);
+	await openExport(
+		page,
+		drawnAnswers({
+			"docs_read@notes": "---\npi: v1\n---\n\n<!-- you -->\n\nsee ![the shot](/attachments/shot-a1.png)\n",
+			attachments_read: { reject: "shot-a1.png is not stored" },
+			export_conversations: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.html", missing: [], error: null }] },
+		}),
+	);
+	await page.getByLabel("Web page (.html)").check();
+	await page.getByRole("button", { name: "Export…" }).click();
+	await expect(outcome(page)).toHaveText("notes → out/notes.html, without a picture this workspace does not hold (shot-a1.png).", { timeout: 30_000 });
+	const [asked] = await argsOf<DrawnAsk>(page, "export_conversations");
+	expect(asked!.conversations[0]!.content).toContain('<span class="px-missing">the shot</span>');
+});
+
+test("a PDF is this window shown to paper, one conversation a call, and the folder asked for once", async ({ page }) => {
+	test.setTimeout(60_000);
+	await openExport(
+		page,
+		drawnAnswers({
+			"docs_read@untitled": "<!-- you -->\n\nno heading here\n",
+			export_conversations: { delayMs: 600, value: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.pdf", missing: [], error: null }] } },
+		}),
+	);
+	await conversation(page, "untitled").check();
+	await page.getByLabel("PDF").check();
+	await page.getByRole("button", { name: "Export…" }).click();
+	// While Rust prints, the conversation is what the window shows to paper,
+	// and nothing of it is on screen.
+	const paper = page.locator("#print-root");
+	await expect.poll(async () => (await argsOf(page, "export_conversations")).length, { timeout: 30_000 }).toBe(1);
+	await expect(paper.locator(".piary-export button.bump")).toHaveText("n is 7");
+	await expect(paper).toBeHidden();
+	await page.emulateMedia({ media: "print" });
+	await expect(paper.locator(".px-pi strong")).toBeVisible();
+	await expect(page.locator("#export, #outcome")).toHaveCount(2);
+	for (const form of await page.locator("#export, #outcome").all()) await expect(form).toBeHidden();
+	// The cell's element was copied as a plain one: placed in this window, it
+	// did not become a live cell and draw over what was copied.
+	await expect(paper.locator("pi-cell, pi-artifact, document-chat")).toHaveCount(0);
+	await page.emulateMedia({ media: "screen" });
+
+	await expect.poll(async () => (await argsOf(page, "export_conversations")).length, { timeout: 30_000 }).toBe(2);
+	await expect(paper.locator(".piary-export")).toContainText("no heading here");
+	await expect(outcome(page).locator("p")).toHaveCount(2, { timeout: 30_000 });
+	await expect(paper, "nothing is left to print by accident").toBeEmpty();
+	expect(await argsOf<DrawnAsk>(page, "export_conversations")).toEqual([
+		{ conversations: [{ id: "notes", attachments: [], content: null }], kind: "pdf" },
+		{ conversations: [{ id: "untitled", attachments: [], content: null }], kind: "pdf", into: "export-0" },
+	]);
+});
+
+test("a PDF export whose panel is closed prints nothing more", async ({ page }) => {
+	test.setTimeout(60_000);
+	await openExport(page, drawnAnswers({ "docs_read@untitled": "<!-- you -->\n\nno heading here\n", export_conversations: null }));
+	await conversation(page, "untitled").check();
+	await page.getByLabel("PDF").check();
+	await page.getByRole("button", { name: "Export…" }).click();
+	await expect(outcome(page)).toHaveText("Nothing was exported.", { timeout: 30_000 });
+	expect(await argsOf(page, "export_conversations")).toHaveLength(1);
+	await expect(page.locator("#print-root")).toBeEmpty();
 });
 
 /** Boots the Import window's page (`app/import.html`), on an import of

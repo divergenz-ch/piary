@@ -67,12 +67,16 @@ impl Drop for Scratch {
 
 // ---- export
 
-/// The three things a conversation is exported as.
+/// The things a conversation is exported as. The first three are the document
+/// itself (ADR 0049); the last two are what the page drew of it, for a reader
+/// without Piary (ADR 0066).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     Markdown,
     Folder,
     Zip,
+    Html,
+    Pdf,
 }
 
 impl Kind {
@@ -82,6 +86,8 @@ impl Kind {
             "markdown" => Ok(Kind::Markdown),
             "folder" => Ok(Kind::Folder),
             "zip" => Ok(Kind::Zip),
+            "html" => Ok(Kind::Html),
+            "pdf" => Ok(Kind::Pdf),
             other => Err(format!("{other:?} is not a kind of export")),
         }
     }
@@ -92,7 +98,64 @@ impl Kind {
             Kind::Markdown => format!("{id}.md"),
             Kind::Folder => id.to_string(),
             Kind::Zip => format!("{id}.zip"),
+            Kind::Html => format!("{id}.html"),
+            Kind::Pdf => format!("{id}.pdf"),
         }
+    }
+}
+
+/// The folder the last export went into, by the token the page holds for it.
+///
+/// A PDF is printed from the page one conversation at a time, so an export of
+/// several is several commands, and the panel is shown for the first alone:
+/// the others name the folder by this token. The page never names a path
+/// (ADR 0049).
+#[derive(Debug, Default)]
+pub struct Exports {
+    held: Mutex<Option<(String, PathBuf)>>,
+    next: AtomicU64,
+}
+
+impl Exports {
+    /// Holds `folder` in place of the one held, and answers with its token.
+    pub fn hold(&self, folder: PathBuf) -> String {
+        let token = format!("export-{}", self.next.fetch_add(1, Ordering::Relaxed));
+        *self.lock() = Some((token.clone(), folder));
+        token
+    }
+
+    /// The folder `token` names, if it is the one still held.
+    pub fn get(&self, token: &str) -> Result<PathBuf, String> {
+        match &*self.lock() {
+            Some((held, folder)) if held == token => Ok(folder.clone()),
+            _ => Err("that export's folder is no longer held; export again".to_string()),
+        }
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, Option<(String, PathBuf)>> {
+        self.held
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+}
+
+/// A file a page is printed to, read back and removed.
+#[derive(Debug)]
+pub struct Printed(Scratch);
+
+impl Printed {
+    pub fn new() -> Result<Self, String> {
+        Scratch::new().map(Self)
+    }
+
+    /// Where the print goes.
+    pub fn path(&self) -> PathBuf {
+        self.0 .0.join("page.pdf")
+    }
+
+    /// What was printed.
+    pub fn read(&self) -> Result<Vec<u8>, String> {
+        fs::read(self.path()).map_err(|e| format!("the page was not printed: {e}"))
     }
 }
 
@@ -101,11 +164,15 @@ impl Kind {
 ///
 /// A name the folder already has is never written over: several conversations
 /// leave in one export, and no panel asked about each.
+///
+/// `drawn` is the file a drawn kind is written as: the page made it, or the
+/// page was printed to it. The other kinds are read from the store.
 pub fn export_into(
     paths: &DocPaths,
     id: &str,
     kind: Kind,
     names: &[String],
+    drawn: Option<&[u8]>,
     into: &Path,
 ) -> Result<(String, Vec<String>), String> {
     docs::check_id(id).map_err(|bad| bad.message().to_string())?;
@@ -118,6 +185,10 @@ pub fn export_into(
         Kind::Markdown => export_markdown(paths, id, &dest).map(|()| Vec::new()),
         Kind::Folder => export_folder(paths, id, names, &dest),
         Kind::Zip => export_zip(paths, id, names, &dest),
+        Kind::Html | Kind::Pdf => {
+            let drawn = drawn.ok_or_else(|| format!("nothing was drawn of {id}"))?;
+            docs::write_atomically(&dest, drawn).map(|()| Vec::new())
+        }
     }?;
     Ok((name, missing))
 }
@@ -588,13 +659,14 @@ mod tests {
     fn a_conversation_is_exported_into_a_folder_under_its_own_name_in_each_kind() {
         let w = exporting();
         let own = names(&["shot-a1.png"]);
-        let (name, missing) = export_into(&w.paths, "notes", Kind::Markdown, &own, &w.out).unwrap();
+        let (name, missing) =
+            export_into(&w.paths, "notes", Kind::Markdown, &own, None, &w.out).unwrap();
         assert_eq!((name.as_str(), missing.len()), ("notes.md", 0));
         assert_eq!(fs::read_to_string(w.out.join("notes.md")).unwrap(), DOC);
-        let (name, _) = export_into(&w.paths, "notes", Kind::Folder, &own, &w.out).unwrap();
+        let (name, _) = export_into(&w.paths, "notes", Kind::Folder, &own, None, &w.out).unwrap();
         assert_eq!(name, "notes");
         assert!(w.out.join("notes/attachments/shot-a1.png").exists());
-        let (name, _) = export_into(&w.paths, "notes", Kind::Zip, &own, &w.out).unwrap();
+        let (name, _) = export_into(&w.paths, "notes", Kind::Zip, &own, None, &w.out).unwrap();
         assert_eq!(name, "notes.zip");
         assert_eq!(stage_zip(&w.out.join("notes.zip")).unwrap().content, DOC);
     }
@@ -606,7 +678,7 @@ mod tests {
         fs::write(w.out.join("notes.zip"), "an older export").unwrap();
         fs::create_dir_all(w.out.join("notes")).unwrap();
         for kind in [Kind::Markdown, Kind::Folder, Kind::Zip] {
-            let error = export_into(&w.paths, "notes", kind, &[], &w.out).unwrap_err();
+            let error = export_into(&w.paths, "notes", kind, &[], None, &w.out).unwrap_err();
             assert!(error.contains("is already there"), "{kind:?}: {error}");
         }
         assert_eq!(
@@ -623,10 +695,64 @@ mod tests {
     #[test]
     fn an_export_names_a_kind_or_is_refused_and_an_id_that_is_a_path_is_refused() {
         assert_eq!(Kind::named("zip"), Ok(Kind::Zip));
-        assert!(Kind::named("pdf").is_err());
+        assert_eq!(Kind::named("pdf"), Ok(Kind::Pdf));
+        assert!(Kind::named("docx").is_err());
         let w = exporting();
-        assert!(export_into(&w.paths, "../notes", Kind::Markdown, &[], &w.out).is_err());
+        assert!(export_into(&w.paths, "../notes", Kind::Markdown, &[], None, &w.out).is_err());
         assert!(visible(&w.out).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_drawn_kind_is_written_as_what_was_drawn_under_the_conversations_name() {
+        let w = exporting();
+        let (name, missing) = export_into(
+            &w.paths,
+            "notes",
+            Kind::Html,
+            &[],
+            Some(b"<p>drawn</p>"),
+            &w.out,
+        )
+        .unwrap();
+        assert_eq!((name.as_str(), missing.len()), ("notes.html", 0));
+        assert_eq!(
+            fs::read_to_string(w.out.join("notes.html")).unwrap(),
+            "<p>drawn</p>"
+        );
+        let (name, _) =
+            export_into(&w.paths, "notes", Kind::Pdf, &[], Some(b"%PDF-"), &w.out).unwrap();
+        assert_eq!(name, "notes.pdf");
+        assert_eq!(fs::read(w.out.join("notes.pdf")).unwrap(), b"%PDF-");
+    }
+
+    #[test]
+    fn a_drawn_kind_with_nothing_drawn_or_a_name_already_there_writes_nothing() {
+        let w = exporting();
+        for kind in [Kind::Html, Kind::Pdf] {
+            let error = export_into(&w.paths, "notes", kind, &[], None, &w.out).unwrap_err();
+            assert!(error.contains("nothing was drawn"), "{kind:?}: {error}");
+        }
+        assert!(visible(&w.out).unwrap().is_empty());
+        fs::write(w.out.join("notes.html"), "an older export").unwrap();
+        let error =
+            export_into(&w.paths, "notes", Kind::Html, &[], Some(b"new"), &w.out).unwrap_err();
+        assert!(error.contains("is already there"), "{error}");
+        assert_eq!(
+            fs::read_to_string(w.out.join("notes.html")).unwrap(),
+            "an older export"
+        );
+        assert!(export_into(&w.paths, "../notes", Kind::Html, &[], Some(b"x"), &w.out).is_err());
+    }
+
+    #[test]
+    fn the_folder_of_an_export_is_named_by_its_token_until_the_next_export() {
+        let exports = Exports::default();
+        let first = exports.hold(PathBuf::from("first"));
+        assert_eq!(exports.get(&first), Ok(PathBuf::from("first")));
+        let second = exports.hold(PathBuf::from("second"));
+        assert!(exports.get(&first).is_err());
+        assert_eq!(exports.get(&second), Ok(PathBuf::from("second")));
+        assert!(exports.get("../somewhere").is_err());
     }
 
     #[test]

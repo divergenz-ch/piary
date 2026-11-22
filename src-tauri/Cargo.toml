@@ -25,8 +25,8 @@ zip = { version = "=9.6.0", default-features = false, features = ["deflate-flate
 # nothing (ADR 0051). Ranges, not pins: these must stay the versions Tauri
 # resolves, or the binary carries two copies.
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSArray"] }
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder", "NSMenu", "NSMenuItem", "NSEvent"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSArray", "NSURL"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder", "NSMenu", "NSMenuItem", "NSEvent", "NSPrintInfo"] }
 
 [profile.release]
 # A smaller binary matters here: the bundle size is half of why the shell is

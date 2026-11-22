@@ -18,6 +18,10 @@ import { type Driver, Instance, rmScratch, scratch, until } from "./helpers/inst
 /** How long a window, a save and an archive made or read may take. */
 const DONE_MS = 15_000;
 
+/** How long a conversation may take to be drawn and written: the canvas is
+ *  loaded, its cells run and what they drew stands still before it is taken. */
+const DRAWN_MS = 45_000;
+
 /** How long a script may take while a new window's page is still loading,
  *  and the driver's own default, put back once it has answered. */
 const FIRST_SCRIPT_MS = 2_000;
@@ -170,6 +174,54 @@ describe("a conversation exported and imported", () => {
 		await until(async () => JSON.stringify(await chosen()) === '["welcome-2"]', DONE_MS, "the open Export window never took the conversation asked for");
 		// And no second Export window.
 		expect((await driver.windows()).length).toBe(before.length);
+	});
+
+	it("leaves drawn, as a web page and as a PDF, with what its cell computed in both", async () => {
+		// The halves joined only here (ADR 0066): the Export window running the
+		// conversation's cell in a canvas nobody sees, Rust writing the page it
+		// is handed, and the system printing that window to a file.
+		docDir = scratch("transfer-docs");
+		outDir = scratch("transfer-out");
+		const drawn = "---\npi: v1\nsession: welcome\n---\n\n# The walk\n\n<!-- you -->\n\nhow far is it\n\n<!-- pi -->\n\nIt is **42 km**.\n\n<!-- pi:cell js #sum -->\n\n```js\n6 * 7 * 1000\n```\n\n<!-- you -->\n\n";
+		writeFileSync(join(docDir, "welcome.md"), drawn);
+		const launched = await launch({ docDir, env: { PIARY_E2E_EXPORT_DIR: outDir } });
+		app = launched.app;
+		const { driver } = launched;
+
+		await openFromMenu(driver, "export");
+		await choose(driver, "Web page");
+		await choose(driver, "Export…");
+		const page = join(outDir, "welcome.html");
+		await until(async () => (await outcome(driver)) === `welcome → ${basename(outDir)}/welcome.html.`, DRAWN_MS, "the web page was never reported");
+		const html = readFileSync(page, "utf8");
+		expect(html).toContain("<title>The walk</title>");
+		expect(html).toContain("It is <strong>42 km</strong>.");
+		// What the cell computed, not only its source.
+		expect(html.replace(/<[^>]*>/g, "")).toContain("42000");
+		expect(html).toContain("6 * 7 * 1000");
+		expect(html).not.toContain("<script");
+
+		await choose(driver, "PDF");
+		await choose(driver, "Export…");
+		const pdf = join(outDir, "welcome.pdf");
+		await until(async () => (await outcome(driver)) === `welcome → ${basename(outDir)}/welcome.pdf.`, DRAWN_MS, "the PDF was never reported");
+		expect(readFileSync(pdf).subarray(0, 5).toString("latin1")).toBe("%PDF-");
+		// Read by the system's own PDF reader, not the code that asked for it:
+		// the file is for other programs, and its text is text.
+		const read = execFileSync(
+			"/usr/bin/osascript",
+			["-l", "JavaScript", "-e", `ObjC.import("PDFKit"); const d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath(${JSON.stringify(pdf)})); d.pageCount + "\\n" + d.string.js`],
+			{ encoding: "utf8" },
+		);
+		const [pages, ...text] = read.split("\n");
+		expect(Number(pages)).toBeGreaterThanOrEqual(1);
+		expect(text.join(" ")).toContain("It is 42 km.");
+		expect(text.join(" ")).toContain("42000");
+		// The form the window shows on screen is not on the paper.
+		expect(text.join(" ")).not.toContain("Which conversations");
+		// And the same name is never printed over.
+		await choose(driver, "Export…");
+		await until(async () => (await outcome(driver)).includes("welcome.pdf is already there"), DRAWN_MS, "a second PDF under the same name was not refused");
 	});
 
 	it("replaces a conversation a window shows, keeps what it replaced, and the window follows", async () => {

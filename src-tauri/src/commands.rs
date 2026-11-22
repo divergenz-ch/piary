@@ -25,7 +25,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::attachments;
-use crate::bundle::{self, Imports};
+use crate::bundle::{self, Exports, Imports};
 use crate::capture::{Capture, Sink as CaptureSink};
 use crate::cell_state;
 use crate::diag;
@@ -38,6 +38,7 @@ use crate::menu;
 use crate::menu_keys;
 use crate::pi_cli;
 use crate::preferences;
+use crate::print;
 use crate::pty::{OpenRequest, PtyEvent, Ptys, Sink};
 use crate::session::{self, Sessions, Sink as SessionSink, Spawn};
 use crate::store::Store;
@@ -385,21 +386,88 @@ fn pick<R: Runtime>(window: &tauri::WebviewWindow<R>, ask: Pick) -> Option<PathB
     picked.and_then(|path| path.into_path().ok())
 }
 
+/// How long a page may take to be printed to a file. A long conversation is
+/// printed in well under a second; past this the print path has stopped
+/// answering, and the export says so instead of waiting for it.
+const PRINT_BOUND: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// What `window`'s page looks like on paper, as the bytes of a PDF
+/// (`print.rs`). The page decides what it shows to paper with its print
+/// styles; nothing is shown on screen.
+async fn print_page<R: Runtime>(window: &tauri::WebviewWindow<R>) -> Result<Vec<u8>, String> {
+    let printed = bundle::Printed::new()?;
+    let dest = printed.path();
+    let (answer, answered) = std::sync::mpsc::channel::<Result<bool, String>>();
+    window
+        .with_webview(move |webview| {
+            let (done, ran) = std::sync::mpsc::channel();
+            let began = match objc2::MainThreadMarker::new() {
+                // SAFETY: Tauri hands this closure the window's own WKWebView,
+                // on the main thread, while the window stands.
+                Some(mtm) => unsafe { print::start(mtm, webview.inner(), &dest, done) },
+                None => Err("the page was reached off the main thread".into()),
+            };
+            match began {
+                // The operation answers on the main thread, later: waited for
+                // off it, so this closure returns and lets it run.
+                Ok(()) => {
+                    std::thread::spawn(move || {
+                        let _ = answer.send(ran.recv().map_err(|e| e.to_string()));
+                    });
+                }
+                Err(error) => {
+                    let _ = answer.send(Err(error));
+                }
+            }
+        })
+        .map_err(|e| e.to_string())?;
+    let wrote = tauri::async_runtime::spawn_blocking(move || answered.recv_timeout(PRINT_BOUND))
+        .await
+        .map_err(|e| format!("the page was not printed: {e}"))?
+        .map_err(|_| "the page was not printed in time".to_string())??;
+    if !wrote {
+        return Err("the system did not print the page".into());
+    }
+    printed.read()
+}
+
 /// Writes conversations into a folder the user chooses, each under its own
 /// name: its markdown file, a folder bundle or a zip bundle, with the
 /// attachments the page read out of its document (ADR 0049). `null` when the
 /// panel was cancelled. One conversation that cannot be written is answered
 /// with why, and does not hold up the others.
+///
+/// The two drawn kinds are what the page made of a conversation (ADR 0066).
+/// HTML arrives as each request's `content`. A PDF is the calling window's
+/// own page, printed: the page shows one conversation to paper and asks for
+/// that one, so a PDF export of several is several calls, and every call
+/// after the first names the folder by the token the first was answered with
+/// (`into`) instead of asking again.
 #[tauri::command]
 pub async fn export_conversations<R: Runtime>(
     window: tauri::WebviewWindow<R>,
     store: State<'_, Store>,
+    exports: State<'_, Arc<Exports>>,
     conversations: Vec<ExportRequest>,
     kind: String,
+    into: Option<String>,
 ) -> Result<Option<Exported>, String> {
     let kind = bundle::Kind::named(&kind)?;
-    let Some(into) = pick(&window, Pick::ExportInto) else {
-        return Ok(None);
+    if kind == bundle::Kind::Pdf && conversations.len() != 1 {
+        return Err("a PDF is printed one conversation at a time".into());
+    }
+    let into = match into {
+        Some(token) => exports.get(&token)?,
+        None => match pick(&window, Pick::ExportInto) {
+            Some(folder) => folder,
+            None => return Ok(None),
+        },
+    };
+    let token = exports.hold(into.clone());
+    // Why the page was not printed is that one conversation's outcome.
+    let printed = match kind {
+        bundle::Kind::Pdf => Some(print_page(&window).await),
+        _ => None,
     };
     let paths = store.paths.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -407,7 +475,14 @@ pub async fn export_conversations<R: Runtime>(
         let conversations = conversations
             .into_iter()
             .map(|asked| {
-                match bundle::export_into(&paths, &asked.id, kind, &asked.attachments, &into) {
+                let drawn = match (&printed, &asked.content) {
+                    (Some(printed), _) => printed.as_deref().map(Some).map_err(String::clone),
+                    (None, content) => Ok(content.as_deref().map(str::as_bytes)),
+                };
+                let written = drawn.and_then(|drawn| {
+                    bundle::export_into(&paths, &asked.id, kind, &asked.attachments, drawn, &into)
+                });
+                match written {
                     Ok((name, missing)) => ExportedOne {
                         id: asked.id,
                         name,
@@ -429,6 +504,7 @@ pub async fn export_conversations<R: Runtime>(
         );
         Ok(Some(Exported {
             folder,
+            into: token,
             conversations,
         }))
     })

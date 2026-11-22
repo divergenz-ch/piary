@@ -27,6 +27,7 @@ mod menu;
 mod menu_keys;
 mod pi_cli;
 mod preferences;
+mod print;
 mod pty;
 mod session;
 mod store;
@@ -167,6 +168,7 @@ fn main() {
             app.manage(exit::Exit::default());
             app.manage(windows::Shown::default());
             app.manage(std::sync::Arc::new(bundle::Imports::default()));
+            app.manage(std::sync::Arc::new(bundle::Exports::default()));
             app.manage(update::Updates::default());
             // After `Exit` is managed, because the first signal reads it. A
             // listener that cannot be installed leaves the signals' default,

@@ -7,16 +7,22 @@
 export type DocEntry = { id: string, modifiedMs: number, };
 
 /**
- * One conversation an export is asked for: its id, and the stored names of
- * the attachments its document references, which the page read out of it.
+ * One conversation an export is asked for: its id, the stored names of the
+ * attachments its document references, which the page read out of it, and
+ * for an HTML export the page it was drawn as (ADR 0066).
  */
-export type ExportRequest = { id: string, attachments: Array<string>, };
+export type ExportRequest = { id: string, attachments: Array<string>, 
+/**
+ * `null` for every kind but HTML.
+ */
+content: string | null, };
 
 /**
- * What an export came to: the folder the user chose, by its name alone, and
+ * What an export came to: the folder the user chose, by its name alone and
+ * by the token that names it to the next command of the same export, and
  * each conversation's outcome in the order asked.
  */
-export type Exported = { folder: string, conversations: Array<ExportedOne>, };
+export type Exported = { folder: string, into: string, conversations: Array<ExportedOne>, };
 
 /**
  * What became of one conversation of an export.

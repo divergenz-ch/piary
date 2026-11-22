@@ -93,7 +93,9 @@ wrote and runs cell code, so whatever the page may ask Rust for, that content ma
   longer import back as the document it was.
 - **Carrying every file in `attachments/`.** It holds every conversation's files.
 - **For now: a rendered export (HTML, PDF)**, which first has to say what a cell, a drawn answer
-  and a terminal become in a static file; and **converting a document of another version**, which
+  and a terminal become in a static file
+  ([ADR 0066](0066-a-conversation-is-exported-drawn-as-a-page-or-a-pdf.md) says it, and adds
+  the two); and **converting a document of another version**, which
   has nothing to convert from while only `v1` exists.
 
 ## Consequences

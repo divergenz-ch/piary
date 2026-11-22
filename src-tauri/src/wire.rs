@@ -220,14 +220,17 @@ pub struct Stored {
     pub size: u32,
 }
 
-/// One conversation an export is asked for: its id, and the stored names of
-/// the attachments its document references, which the page read out of it.
+/// One conversation an export is asked for: its id, the stored names of the
+/// attachments its document references, which the page read out of it, and
+/// for an HTML export the page it was drawn as (ADR 0066).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../src/bridge-types.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct ExportRequest {
     pub id: String,
     pub attachments: Vec<String>,
+    /// `null` for every kind but HTML.
+    pub content: Option<String>,
 }
 
 /// What became of one conversation of an export.
@@ -246,13 +249,15 @@ pub struct ExportedOne {
     pub error: Option<String>,
 }
 
-/// What an export came to: the folder the user chose, by its name alone, and
+/// What an export came to: the folder the user chose, by its name alone and
+/// by the token that names it to the next command of the same export, and
 /// each conversation's outcome in the order asked.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../src/bridge-types.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Exported {
     pub folder: String,
+    pub into: String,
     pub conversations: Vec<ExportedOne>,
 }
 

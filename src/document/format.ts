@@ -228,6 +228,53 @@ export function promptFrom(segs: readonly DocSegment[], i: number): number {
 	return segs[first]?.from ?? segs[i].from;
 }
 
+/** Tool calls the page does not draw, call or result: Piary's own bookkeeping,
+ *  whose effect is shown elsewhere — `budget`'s estimate is the max time
+ *  beside the run badge (ADR 0031). Both stay in the file, which is transcript
+ *  truth; they are just not chrome. */
+export const QUIET_TOOLS: ReadonlySet<string> = new Set(["budget"]);
+
+/** The word the page calls a segment by. One function, so a host menu naming a
+ *  segment and an export labelling it cannot drift from the label the reader
+ *  is looking at. */
+export function roleLabel(seg: DocSegment): string {
+	switch (seg.kind) {
+		case "user":
+			return "you";
+		case "assistant":
+			return "agent";
+		case "thinking":
+			return "thinking";
+		case "toolCall":
+			return seg.name ?? "tool";
+		case "toolResult":
+			return seg.isError ? "error" : "output";
+		case "file":
+			// The mime, not "file": "image/png" says what the model will get, and a
+			// label that reads the same for a picture and a PDF says nothing.
+			return seg.name ?? "file";
+		case "view":
+			return seg.name ?? "view";
+		case "cell":
+			// A grouped cell names its artifact — the cue that its output lives
+			// at the group's anchor, not below this fence.
+			return seg.group ? `cell @${seg.group}` : "cell";
+		case "aside":
+			return "agent · unasked";
+		case "note":
+			// Never rendered as a label (page material carries none) — this is
+			// the word the cell's handle and menu call it by.
+			return "markdown";
+		case "artifact":
+			// Only drawn when the artifact is shown as its text: rendered, the
+			// frame stands in the marker's place and carries its own label.
+			return `artifact @${seg.name ?? ""}`;
+		default:
+			// block and opaque markers stay a quiet dot.
+			return "·";
+	}
+}
+
 export interface DocBlock {
 	/** Segment index of the opening user segment. */
 	opensAt: number;

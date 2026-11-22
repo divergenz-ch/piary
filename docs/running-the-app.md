@@ -428,6 +428,9 @@ The steps stay written for when each lands.
        panel asks for a folder, and each conversation is written into it
        under its own name. The window lists what was written. Export again
        into the same folder: nothing is overwritten, and the window says so.
+       Then a conversation with a chart in it, as **Web page (.html)** and as
+       **PDF**: open both outside Piary. The chart is drawn, the steps are
+       folded, and the PDF's text can be selected.
      - **A row's ⋯ → export…** in the conversation list brings the Export
        window to the front with that conversation ticked alone.
      - **File → Import…** opens the Import window. Choose a zip just
@@ -571,14 +574,21 @@ of its own.
      ```
 
      A zip holds that folder as its one top-level entry.
+   - **Web page (.html)** or **PDF** — the conversation *drawn*, for someone
+     without Piary: the prose, each chart and drawn answer as it looks now, a
+     tool's steps folded. The web page is one file with its pictures inside;
+     it runs nothing and loads nothing. Cells are run to draw it, so this
+     takes a few seconds. A terminal's output is not in the document, so the
+     export says only that one ran. Neither can be imported back: export the
+     Markdown or a bundle for that.
 
 A row's **⋯** in the conversation list has **export…** too: it opens the same
 window with that conversation ticked, and no other. If the window is already
 open it comes to the front on that conversation.
 
 **Export…** then asks for a folder, in the system's panel, and writes each
-conversation into it under its own name: `notes.md`, a `notes` folder, or
-`notes.zip`. The window lists what was written. Two things to know:
+conversation into it under its own name: `notes.md`, a `notes` folder,
+`notes.zip`, `notes.html` or `notes.pdf`. The window lists what was written. Two things to know:
 
 - **A name the folder already has is never overwritten.** That conversation is
   not exported, the window says so, and the others are.

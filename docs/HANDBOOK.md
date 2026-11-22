@@ -141,6 +141,9 @@ WEBVIEW (WKWebView)
         │     ├── face-episodes.ts  a detector's samples → what the face did, as
         │     │              steps: rest, hold, blink, pose, the gates (ADR 0058)
         │     ├── turn-context.ts  what a send adds for pi alone, and its removal
+        │     ├── export-html.ts  a conversation as a page that reads without Piary:
+        │     │              each segment as the canvas draws it, around what the
+        │     │              page drew of its cells and views (ADR 0066)
         │     └── branch.ts / modes.ts / command-doc.ts / ask.ts / canvas-edit.ts / bundle.ts
         ├── src/components/*  Lit custom elements (CellBlock, ArtifactBlock,
         │     CellEditor, ChatIndex, SessionList)
@@ -184,6 +187,8 @@ RUST  src-tauri/src/
    │                   outlives the app (ADR 0019)
    ├── menu_keys.rs   the key each menu item really has, read back from AppKit
    │                   (ADR 0051)
+   ├── print.rs       a window's page written out as a PDF, by the system's print
+   │                   path with a file for a printer (ADR 0066)
    ├── preferences.rs the user's preferences, one JSON file (ADR 0048)
    ├── update.rs      whose turn it is to check for a newer version, and the tag
    │                   last read (ADR 0064)
@@ -319,8 +324,9 @@ for the next layer only when the one below cannot express the setup. Full ladder
   `tauri-plugin-dialog` (the system's open and save panels for import and export, pinned exactly
   and called from Rust only: the page is granted none of its commands, ADR 0049; it brings `rfd`
   and `tauri-plugin-fs`), `objc2` + `objc2-app-kit` + `objc2-foundation` (the menu bar's key equivalents, read back
-  from AppKit; ranges rather than pins, because they must stay the versions Tauri resolves or
-  the binary carries two copies, ADR 0051),
+  from AppKit, ADR 0051, and the print operation that writes a page as a PDF, ADR 0066; ranges
+  rather than pins, because they must stay the versions Tauri resolves or the binary carries
+  two copies),
   and `tauri-plugin-wdio-webdriver`, optional behind the `e2e` feature.
 - **Utilities:** extend `src/utils/*`. No `lodash`-class libraries.
 - **Never a platform-specific binary in runtime `dependencies`** — `optionalDependencies` plus a
@@ -688,7 +694,27 @@ TRANSFER         Import and export act on conversations, each through a window o
                  is never extracted as it says: every entry is checked first (a path that reaches
                  outside or a symlink refuses it whole), then only the document and the files
                  under `attachments/` are written out (`src-tauri/src/bundle.rs`, ADR 0049).
-                 There is no HTML or PDF export and no version conversion.
+                 There is no version conversion.
+                 Two more forms are the conversation drawn, for a reader without Piary
+                 (ADR 0066): a web page (`notes.html`) or a PDF (`notes.pdf`). The page is
+                 written from the document by a pure function
+                 (`src/document/export-html.ts`), which draws each segment by the canvas's own
+                 rules: prose under its label, a step folded, a terminal as one line saying it
+                 ran. What only a page can make is handed to it by `app/export-render.ts`,
+                 which the Export window loads when one of the two is first asked for: it
+                 mounts the real canvas off screen and inert, lets the cells run from the
+                 state the conversation kept (twenty seconds; one still running is exported
+                 as its source and named in the window), and copies out what each drew and
+                 what each view's template draws, made still: a control disabled at its
+                 value, a `<canvas>` as a picture, pictures as bytes, no script, handler or
+                 custom element. The page is one file: its styles are read from the
+                 window's own sheets, its pictures are `data:` urls, no font is carried, and
+                 its policy allows no script and no request. A PDF is the Export window
+                 printed: the window puts one conversation in `#print-root`, which only
+                 paper shows, and Rust runs the webview's print operation to a file with no
+                 panel (`src-tauri/src/print.rs`); several conversations are several
+                 commands, and the folder asked for once is named to the next by the token
+                 the answer carries. A drawn export is not imported back.
 COMMANDS         what a `/` command is comes from one catalog (`app/command-catalog.ts`, pure): the
                  app's own (`/terminal`, `/subagent`, `/model`, `/thinking`, `/new`, `/resume`,
                  `/import`, `/export`, `/settings`, `/face`, `/login`, `/logout`), then this window's pi's

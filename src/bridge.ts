@@ -156,8 +156,10 @@ export function attachmentsPath(name: string): Promise<string> {
 	return invoke("attachments_path", { name });
 }
 
-/** The three things a conversation is exported as (ADR 0049). */
-export type ExportKind = "markdown" | "folder" | "zip";
+/** The things a conversation is exported as: the document itself, alone or in
+ *  a bundle (ADR 0049), or what the page drew of it, for a reader without
+ *  Piary (ADR 0066). */
+export type ExportKind = "markdown" | "folder" | "zip" | "html" | "pdf";
 
 /**
  * Writes conversations into a folder the user chooses in the system's panel,
@@ -166,9 +168,15 @@ export type ExportKind = "markdown" | "folder" | "zip";
  *
  * No path crosses here in either direction: Rust shows the panel, so the page
  * cannot be made to write anywhere the user did not choose.
+ *
+ * An HTML export carries each conversation as the page drawn of it
+ * (`content`). A PDF is this window's own page, printed by Rust: one
+ * conversation a call, shown to paper by the caller first. `into` is the
+ * token an earlier call of the same export was answered with, and names its
+ * folder instead of asking again.
  */
-export function exportConversations(conversations: ExportRequest[], kind: ExportKind): Promise<Exported | null> {
-	return invoke("export_conversations", { conversations, kind });
+export function exportConversations(conversations: ExportRequest[], kind: ExportKind, into?: string): Promise<Exported | null> {
+	return invoke("export_conversations", { conversations, kind, into });
 }
 
 /** Shows the Import or the Export window, focusing it when it is already
