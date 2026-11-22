@@ -53,6 +53,12 @@ and asks for its own. `bundle.externalBin` is what puts it there; Tauri requires
 the target triple in the source filename and strips it on the way in, which is
 why `pnpm sidecar:build` writes both names.
 
+**The icon is drawn once, in `src-tauri/icons/icon.svg`**, and the files beside it are made
+from it: `pnpm tauri icon src-tauri/icons/icon.svg`, keeping the five the bundle
+names (`tauri.conf.json`) and discarding the Windows, iOS and Android sets the
+command also writes. The drawing leaves the margin a macOS icon has around its
+rounded square, so the Dock shows it the size of its neighbours.
+
 ## 2. The DMG needs a GUI session
 
 `pnpm app:dmg` builds one, and **it is not part of `app:bundle`.** The DMG step
