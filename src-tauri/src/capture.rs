@@ -495,4 +495,51 @@ mod tests {
         // cleared rather than the first stop having lied.
         assert_eq!(capture.stop().unwrap(), None);
     }
+
+    /// A dotted version as numbers, so `13.0` and `13` compare equal.
+    fn version(text: &str) -> Vec<u32> {
+        let mut parts: Vec<u32> = text.split('.').map(|part| part.parse().unwrap()).collect();
+        while parts.last() == Some(&0) {
+            parts.pop();
+        }
+        parts
+    }
+
+    #[test]
+    fn the_helper_runs_on_the_oldest_macos_the_app_accepts() {
+        // The compiler's default target is the build machine's SDK. A helper
+        // built that way launches here and on nothing older, so only its load
+        // command can say it: the app would start on macOS 13 and its capture
+        // would not.
+        let Some(path) = built_helper() else {
+            eprintln!("skipped: run `pnpm sidecar:build` to build the capture helper");
+            return;
+        };
+        let config =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/tauri.conf.json"))
+                .unwrap();
+        let config: serde_json::Value = serde_json::from_str(&config).unwrap();
+        let minimum = config["bundle"]["macOS"]["minimumSystemVersion"]
+            .as_str()
+            .expect("tauri.conf.json names the minimum macOS");
+        let loads = std::process::Command::new("otool")
+            .arg("-l")
+            .arg(&path)
+            .output()
+            .expect("otool");
+        let loads = String::from_utf8_lossy(&loads.stdout);
+        let needs = loads
+            .split("LC_BUILD_VERSION")
+            .nth(1)
+            .and_then(|after| {
+                after
+                    .lines()
+                    .find_map(|line| line.trim().strip_prefix("minos "))
+            })
+            .expect("the helper says which macOS it needs");
+        assert!(
+            version(needs) <= version(minimum),
+            "the helper needs macOS {needs}, and the app says it runs on {minimum}"
+        );
+    }
 }
