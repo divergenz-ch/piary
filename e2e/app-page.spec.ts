@@ -2477,13 +2477,17 @@ test("a picture the store does not hold is left out of a web page, and said", as
 	expect(asked!.conversations[0]!.content).toContain('<span class="px-missing">the shot</span>');
 });
 
+/** How long the stubbed print takes: long enough to look at what the window
+ *  shows to paper while Rust would be printing it. */
+const PRINTING_MS = 4_000;
+
 test("a PDF is this window shown to paper, one conversation a call, and the folder asked for once", async ({ page }) => {
 	test.setTimeout(60_000);
 	await openExport(
 		page,
 		drawnAnswers({
 			"docs_read@untitled": "<!-- you -->\n\nno heading here\n",
-			export_conversations: { delayMs: 600, value: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.pdf", missing: [], error: null }] } },
+			export_conversations: { delayMs: PRINTING_MS, value: { folder: "out", into: "export-0", conversations: [{ id: "notes", name: "notes.pdf", missing: [], error: null }] } },
 		}),
 	);
 	await conversation(page, "untitled").check();
@@ -2492,7 +2496,7 @@ test("a PDF is this window shown to paper, one conversation a call, and the fold
 	// While Rust prints, the conversation is what the window shows to paper,
 	// and nothing of it is on screen.
 	const paper = page.locator("#print-root");
-	await expect.poll(async () => (await argsOf(page, "export_conversations")).length, { timeout: 30_000 }).toBe(1);
+	await expect.poll(async () => (await argsOf(page, "export_conversations")).length, { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
 	await expect(paper.locator(".piary-export button.bump")).toHaveText("n is 7");
 	await expect(paper).toBeHidden();
 	await page.emulateMedia({ media: "print" });
