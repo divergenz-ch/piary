@@ -2457,6 +2457,19 @@ test("a canvas edit may not empty the prompt it is answering: nothing changes, a
 	expect(await docText(page)).toContain("remove this question");
 });
 
+test("a forward delete leaves the caret where it is: the next key lands there, not at the line's start", async ({ page }) => {
+	// WebKit moves a caret to the start of a text node written whole, and
+	// CodeMirror puts it back only when the place it wants has changed, which a
+	// forward delete's has not (`src/components/caret-guard.ts`).
+	await openApp(page, answerWith([final("x"), settled()], 150), "<!-- you -->\n\nGive me three names for a houseplant.\n");
+	await page.locator(".cm-line", { hasText: "Give me three" }).click();
+	await page.keyboard.press("Home");
+	for (let i = 0; i < "Give me ".length; i++) await page.keyboard.press("ArrowRight");
+	for (let i = 0; i < "three".length; i++) await page.keyboard.press("Delete");
+	await page.keyboard.type("five");
+	expect(await docText(page)).toContain("Give me five names for a houseplant.");
+});
+
 test("a canvas edit may not write the answer into the prompt it is answering: nothing changes, and the tool is told where the answer goes", async ({ page }) => {
 	// A sent prompt, edited and sent again, with its old answer under it.
 	const asked = "Give me five names for a houseplant.";

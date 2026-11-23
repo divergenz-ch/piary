@@ -140,6 +140,7 @@ import "./CellBlock.ts";
 import type { PiCell } from "./CellBlock.ts";
 import "./ArtifactBlock.ts";
 import type { ArtifactMember, PiArtifact } from "./ArtifactBlock.ts";
+import { caretGuard } from "./caret-guard.ts";
 import { clearEdits, editHighlight, noteEdit } from "./edit-highlight.ts";
 import { placeRunBadge, runBadgeField, setRunBadge } from "./run-badge.ts";
 
@@ -1790,6 +1791,7 @@ export class DocumentChat extends LitElement {
 					askField,
 					runBadgeField,
 					editHighlight,
+					caretGuard,
 					liveViewsField,
 					decoField,
 					lineClasses,
