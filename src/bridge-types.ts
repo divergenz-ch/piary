@@ -91,6 +91,21 @@ export type FaceSource = { "kind": "camera" } | { "kind": "script", script: stri
 export type FlushRequest = { turnBoundMs: number, };
 
 /**
+ * One event a driven run hands its own window as the system would
+ * (`harness_pointer`, ADR 0068). A point is in the page's CSS pixels, from
+ * the page's top left.
+ */
+export type HarnessEvent = { "kind": "move", x: number, y: number, } | { "kind": "down", x: number, y: number, clicks: number, } | { "kind": "up", x: number, y: number, clicks: number, } | { "kind": "wheel", x: number, y: number, dx: number, dy: number, } | { "kind": "keyDown", chars: string, code: number, shift: boolean, control: boolean, option: boolean, command: boolean, } | { "kind": "keyUp", chars: string, code: number, shift: boolean, control: boolean, option: boolean, command: boolean, };
+
+/**
+ * What sending a `HarnessEvent` left of the user's own: where the system's
+ * cursor was before and after, in screen points, and whether this window
+ * was the key window after. A harness that disturbed neither reads two
+ * equal points and `false`.
+ */
+export type HarnessSent = { cursorBefore: [number, number], cursorAfter: [number, number], keyWindow: boolean, };
+
+/**
  * What placing an import's attachments came to.
  */
 export type ImportPlaced = { 

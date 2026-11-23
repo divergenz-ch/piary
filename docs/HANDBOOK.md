@@ -324,9 +324,11 @@ for the next layer only when the one below cannot express the setup. Full ladder
   `tauri-plugin-dialog` (the system's open and save panels for import and export, pinned exactly
   and called from Rust only: the page is granted none of its commands, ADR 0049; it brings `rfd`
   and `tauri-plugin-fs`), `objc2` + `objc2-app-kit` + `objc2-foundation` (the menu bar's key equivalents, read back
-  from AppKit, ADR 0051, and the print operation that writes a page as a PDF, ADR 0066; ranges
-  rather than pins, because they must stay the versions Tauri resolves or the binary carries
-  two copies),
+  from AppKit, ADR 0051, the print operation that writes a page as a PDF, ADR 0066, and, in a
+  debug `e2e` build only, the events a driven run hands its own window, for whose points and
+  rects `objc2-foundation` has the `NSGeometry` and `objc2-core-foundation` features, ADR 0068;
+  ranges rather than pins, because they must stay the versions Tauri resolves or the binary
+  carries two copies),
   and `tauri-plugin-wdio-webdriver`, optional behind the `e2e` feature.
 - **Utilities:** extend `src/utils/*`. No `lodash`-class libraries.
 - **Never a platform-specific binary in runtime `dependencies`** — `optionalDependencies` plus a
@@ -372,6 +374,11 @@ TEST ENV         PIARY_E2E=1 arms the app's embedded WebDriver server (one of th
                  during which it does fails), and makes every window transparent and
                  click-through — a known hack, chosen over costlier options (TEST_ARCHITECTURE.md
                  §6). PIARY_E2E_SHOW=1 keeps the windows visible, for debugging a spec.
+                 The same build has `harness_pointer`: a spec hands the window a pointer,
+                 wheel or key event made in the process and given to the web view itself,
+                 so WebKit hovers, clicks, types and scrolls as for a hand while the
+                 user's cursor and front app are untouched (ADR 0068,
+                 `e2e-app/pointer.spec.ts`).
                  PIARY_E2E_PICK (what an import opens) and PIARY_E2E_EXPORT_DIR (the folder
                  an export goes into) are what a driven debug build answers a system panel
                  with, instead of showing one WebDriver cannot drive.

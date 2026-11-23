@@ -23,9 +23,10 @@ zip = { version = "=9.6.0", default-features = false, features = ["deflate-flate
 # The menu bar's own key equivalents, read back from AppKit: macOS moves a
 # shortcut to another key under some keyboard layouts and tells the app
 # nothing (ADR 0051). Ranges, not pins: these must stay the versions Tauri
-# resolves, or the binary carries two copies.
+# resolves, or the binary carries two copies. `NSGeometry` is for the points
+# and rects of the events a driven run hands its own window (ADR 0068).
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSArray", "NSURL"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSArray", "NSURL", "NSGeometry", "objc2-core-foundation"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder", "NSMenu", "NSMenuItem", "NSEvent", "NSPrintInfo"] }
 
 [profile.release]

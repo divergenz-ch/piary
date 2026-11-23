@@ -6,11 +6,13 @@
 // and the process's own life — what a quit ends, a real outside write, a Finder
 // launch's log — for which a spec launches an app of its own
 // (`e2e-app/helpers/instance.ts`) beside the one this service holds.
-// **No text entry and no chords** — WebDriver's keyboard injection on macOS
-// cannot deliver them reliably (ADR 0014), so a spec that typed would be
-// asserting a synthetic event rather than a keystroke. Keys are a pure question
-// answered by `tests/unit/keymap.test.ts`, and real key events belong to the
-// Playwright layer against the page.
+// **No text entry and no chords through WebDriver** — its keyboard injection on
+// macOS cannot deliver them reliably (ADR 0014), so a spec that typed that way
+// would be asserting a synthetic event rather than a keystroke. Keys are a pure
+// question answered by `tests/unit/keymap.test.ts`, and key handling belongs to
+// the Playwright layer against the page. A real hover, click, wheel or key in
+// this layer is handed to the window from inside the app (`Driver.pointer`,
+// ADR 0068).
 //
 // This cannot be display-less: WebKit suspends rendering and timers for a window
 // that is ordered out, so a real window opens on a real WindowServer session. No
