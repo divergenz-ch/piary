@@ -307,7 +307,7 @@ layer too low cannot see the bug.
 | 1. Pure core | `node:test` | the grammar, caret resolution, cells, modes, **which command a key means** | anything needing layout or a process |
 | 2. Rust | `cargo test` | path guards, PTY ownership, window geometry, the capture helper's lifetime | anything needing a webview |
 | 3. The page | Playwright, headless | real CodeMirror geometry, focus, **real key events**, the canvas | the real IPC boundary, the real shell |
-| 4. The real app | WDIO, a real window | IPC end to end, a real PTY, the sidecar, the overlay primitives, **what a quit ends, a real outside write, a Finder launch's log** | **keys, text entry, chords** |
+| 4. The real app | WDIO, a real window | IPC end to end, a real PTY, the sidecar, the overlay primitives, **what a quit ends, a real outside write, a Finder launch's log**, a real hover, click, wheel and key handed to the window (`harness_pointer`) | **which command a chord means, a drag, composed text** |
 | (in-app) The probe | `app/probe.ts`, `?probe=1` | the app's own self-test, run in the real window and reporting through `report`: the store and its watcher, a real PTY, the capture helper, the overlay primitives and a real pi, asked from inside the webview | anything it was not written to ask — it is a test, so it is not itself tested |
 
 **The seam between layers 2 and 3 is a contract test, not a layer.** Rust's
@@ -345,13 +345,27 @@ the app ships. A module with no test of its own names where its behaviour is
 tested only when that is not obvious from the spec titles. No module→test table
 is kept here: it would drift the first time either side moved.
 
-**Why layer 4 must never assert a keystroke.** WebDriver's keyboard injection on
-macOS cannot deliver text or `Mod-Shift-<letter>` reliably (ADR 0014). A spec up
-there that typed would pass or fail on the driver rather than on the app. So
+**Why layer 4 never types through WebDriver.** WebDriver's keyboard injection on
+macOS cannot deliver text or `Mod-Shift-<letter>` reliably (ADR 0014), and its
+click is made in the page by script: nothing hovers, the engine places no caret,
+and the page is told the event is not trusted. A spec that leaned on either
+would pass or fail on the driver rather than on the app. So
 **which command a chord means is a pure question** answered as data in
 `tests/unit/keymap.test.ts`, the editor is held to that table by
-`tests/contract/keymap-wiring.test.ts`, and **real key events are layer 3's job**, where a
-real engine delivers them.
+`tests/contract/keymap-wiring.test.ts`, and **key handling is layer 3's job**, where a
+real engine delivers the keys.
+
+**A real event in the real app is handed over from inside it.** A driven build has
+one command, `harness_pointer`, that makes a pointer, wheel or key event in the
+process and gives it to the web view's own responder methods (ADR 0068). WebKit
+then hovers, focuses, places the caret, clicks, types and scrolls as it does for a
+hand, and the event never enters the system's stream, so the user's cursor and
+the app in front are left alone; the command's answer says so, and a spec holds
+it. `Driver.pointer` and `Driver.click` (`e2e-app/helpers/instance.ts`) are the
+way to it, and `e2e-app/pointer.spec.ts` is what holds it. It is for what only
+the real app joins: it does not drag with the button held or compose a
+character, and it cannot make a window that is not being drawn finish a
+transition, so a spec holds what script sets and not what fades in.
 
 **Why layer 4 must never assert a refusal's message.** A `#[tauri::command]`
 returning `Err` reaches the driver as a protocol-level `WebDriverError` *before*

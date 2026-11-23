@@ -17,6 +17,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSy
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { HarnessEvent, HarnessSent } from "../../src/bridge-types.ts";
 
 export const REPO = join(import.meta.dirname, "..", "..");
 
@@ -36,6 +37,10 @@ const SERVER_READY_MS = 30_000;
 const CANVAS_READY_MS = 15_000;
 /** How often a condition outside the process is re-read. */
 const POLL_MS = 100;
+/** How long a press is held. A hand's lasts longer; a release in the same
+ *  instant gives the page no time to answer the press before it, which hides
+ *  what a real press does. */
+const PRESS_HELD_MS = 40;
 
 /** The shared temp root every scratch directory goes under. */
 export function scratch(prefix: string): string {
@@ -138,6 +143,23 @@ export class Driver {
 	/** Makes `handle`'s window the one every later command acts in. */
 	async switchTo(handle: string): Promise<void> {
 		await this.command("POST", "/window", { handle });
+	}
+
+	/** Hands the window one event as the system would: a real hover, press,
+	 *  wheel or key, none of which WebDriver's own makes on macOS, and none of
+	 *  which moves the user's cursor (`harness_pointer`, ADR 0068). The answer
+	 *  is what it left of the user's own, for a spec to hold. */
+	pointer(event: HarnessEvent): Promise<HarnessSent> {
+		return this.invoke("harness_pointer", { event });
+	}
+
+	/** A click as a hand makes one: the pointer comes to the point, the button
+	 *  goes down, is held, and comes up. */
+	async click(x: number, y: number): Promise<HarnessSent[]> {
+		const sent = [await this.pointer({ kind: "move", x, y }), await this.pointer({ kind: "down", x, y, clicks: 1 })];
+		await new Promise((resolve) => setTimeout(resolve, PRESS_HELD_MS));
+		sent.push(await this.pointer({ kind: "up", x, y, clicks: 1 }));
+		return sent;
 	}
 
 	/** Runs an IPC command the way the page would, resolving a refusal to a

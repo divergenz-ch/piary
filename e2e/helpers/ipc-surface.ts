@@ -46,6 +46,7 @@ export const APP_COMMANDS = [
 	"preferences_write",
 	"open_preferences",
 	"face_source",
+	"harness_pointer",
 	"update_state",
 	"update_claim",
 	"update_found",

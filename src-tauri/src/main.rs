@@ -25,6 +25,8 @@ mod harness;
 mod lines;
 mod menu;
 mod menu_keys;
+#[cfg(all(feature = "e2e", debug_assertions))]
+mod native_input;
 mod pi_cli;
 mod preferences;
 mod print;
@@ -255,6 +257,7 @@ fn main() {
             commands::preferences_write,
             commands::open_preferences,
             commands::face_source,
+            commands::harness_pointer,
             commands::update_state,
             commands::update_claim,
             commands::update_found,

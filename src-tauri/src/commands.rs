@@ -48,8 +48,8 @@ use crate::update::{self, Updates};
 use crate::windows::{self, Geometry};
 use crate::wire::{
     format_report, DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource,
-    ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest,
-    UpdateSource, UpdateState, Verdict, WindowBox,
+    HarnessEvent, HarnessSent, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report,
+    Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox,
 };
 
 /// Writes one line to stdout and makes sure it is actually out.
@@ -901,6 +901,44 @@ pub fn face_source() -> FaceSource {
         .filter(|_| driven)
         .and_then(|path| std::fs::read_to_string(path).ok());
     harness::face_source(driven, script)
+}
+
+/// Hands this window one pointer, wheel or key event as the system would, in
+/// a driven run and no other (ADR 0068): a spec's way to a real hover, a real
+/// click and a real key, none of which WebDriver's own can make on macOS.
+/// The event never passes through the system, so the user's cursor and the
+/// app in front are left as they were, which the answer lets a spec hold.
+#[tauri::command]
+pub fn harness_pointer<R: Runtime>(
+    window: tauri::WebviewWindow<R>,
+    event: HarnessEvent,
+) -> Result<HarnessSent, String> {
+    let driven = harness::driven(
+        cfg!(all(feature = "e2e", debug_assertions)),
+        std::env::var("PIARY_E2E").ok().as_deref(),
+    );
+    if !driven {
+        return Err("events are handed to a window in a driven run only".into());
+    }
+    #[cfg(all(feature = "e2e", debug_assertions))]
+    {
+        let ns_window = window.ns_window().map_err(|e| e.to_string())? as usize;
+        // A message AppKit refuses is a panic in a debug build, and a panic
+        // here would leave the caller waiting for an answer that never comes.
+        std::panic::catch_unwind(move || {
+            // SAFETY: a command that is not `async` runs on the main thread,
+            // and the pointer is this live window's `NSWindow`.
+            unsafe { crate::native_input::send(ns_window as *mut std::ffi::c_void, &event) }
+        })
+        .unwrap_or_else(|_| Err("AppKit refused the event".into()))
+    }
+    #[cfg(not(all(feature = "e2e", debug_assertions)))]
+    {
+        // Unreachable: without the feature no run is driven. Named so the
+        // two builds have one signature.
+        let _ = (window, event);
+        Err("this build has no test harness".into())
+    }
 }
 
 /// The version this app is, and the newest release a check has read since

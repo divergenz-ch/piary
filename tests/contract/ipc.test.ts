@@ -104,7 +104,9 @@ const snake = (key: string) => key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}
 // Commands Rust registers that the page does not invoke, and why. A command
 // nothing calls is dead code; one listed here is called by something else on
 // purpose. Never add to this to make the test pass — delete the command.
-const NOT_FROM_THE_PAGE: Record<string, string> = {};
+const NOT_FROM_THE_PAGE: Record<string, string> = {
+	harness_pointer: "a spec of the real app calls it through the driver (e2e-app/helpers/instance.ts, ADR 0068); a page has no use for it and it refuses outside a driven run",
+};
 
 const commands = parseCommands(read("src-tauri/src/commands.rs"));
 const registered = parseRegistered(read("src-tauri/src/main.rs"));

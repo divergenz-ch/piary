@@ -311,6 +311,67 @@ pub enum FaceSource {
     None,
 }
 
+/// One event a driven run hands its own window as the system would
+/// (`harness_pointer`, ADR 0068). A point is in the page's CSS pixels, from
+/// the page's top left.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum HarnessEvent {
+    /// The pointer comes to rest at a point, no button down.
+    Move { x: f64, y: f64 },
+    /// The left button goes down. `clicks` is 1 for a click and 2 for the
+    /// second press of a double click.
+    #[serde(rename_all = "camelCase")]
+    Down { x: f64, y: f64, clicks: u8 },
+    #[serde(rename_all = "camelCase")]
+    Up { x: f64, y: f64, clicks: u8 },
+    /// The wheel turns over a point: `dy` down and `dx` right, in CSS pixels
+    /// of content scrolled.
+    Wheel { x: f64, y: f64, dx: f64, dy: f64 },
+    /// A key goes down. `chars` is what it types (`"q"`, `"\t"`), `code` the
+    /// virtual key code, and the modifiers are those held with it.
+    #[serde(rename_all = "camelCase")]
+    KeyDown {
+        chars: String,
+        code: u16,
+        #[serde(default)]
+        shift: bool,
+        #[serde(default)]
+        control: bool,
+        #[serde(default)]
+        option: bool,
+        #[serde(default)]
+        command: bool,
+    },
+    #[serde(rename_all = "camelCase")]
+    KeyUp {
+        chars: String,
+        code: u16,
+        #[serde(default)]
+        shift: bool,
+        #[serde(default)]
+        control: bool,
+        #[serde(default)]
+        option: bool,
+        #[serde(default)]
+        command: bool,
+    },
+}
+
+/// What sending a `HarnessEvent` left of the user's own: where the system's
+/// cursor was before and after, in screen points, and whether this window
+/// was the key window after. A harness that disturbed neither reads two
+/// equal points and `false`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct HarnessSent {
+    pub cursor_before: (f64, f64),
+    pub cursor_after: (f64, f64),
+    pub key_window: bool,
+}
+
 /// Where a window that was given the turn asks whether a newer Piary exists
 /// (`harness::update_source`): GitHub, an answer standing in for GitHub's, or
 /// nowhere.
