@@ -8,7 +8,8 @@
 // (`docs/packaging.md`).
 //
 // Signing is the environment's alone: with `APPLE_SIGNING_IDENTITY` and the
-// notarization variables set, Tauri signs and notarizes this same build. With
+// notarization variables set, Tauri signs and notarizes this same build, and
+// the disk image is notarized here, which Tauri leaves undone. With
 // none the identity is `-`, an ad-hoc signature: Tauri leaves a bundle with no
 // identity unsigned, and an ad-hoc one is sealed, carries the entitlements and
 // runs under the Hardened Runtime as a Developer ID build does, though
@@ -18,7 +19,7 @@
 //      pnpm app:release --dmg    and a disk image of it (needs a logged-in
 //                                session: the step drives Finder)
 import { execFileSync, spawnSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -57,6 +58,13 @@ const app = join(BUNDLE, "macos", `${config.productName}.app`);
 const dmg = process.argv.includes("--dmg");
 const identity = process.env.APPLE_SIGNING_IDENTITY || "-";
 
+// The disk image step mounts its working image under the product's name and
+// arranges that volume through Finder. With a volume of that name already
+// mounted, an earlier image left open, it gets another name and fails, after
+// the whole build and the app's notarization.
+const volume = join("/Volumes", config.productName);
+if (dmg && existsSync(volume)) fail(`${volume} is mounted, and the disk image step needs that name: eject it first`);
+
 step("node", [join(ROOT, "scripts", "sidecar-build.ts"), "--universal"]);
 step("pnpm", ["tauri", "build", "--target", TARGET, "--bundles", dmg ? "app,dmg" : "app"], { APPLE_SIGNING_IDENTITY: identity });
 
@@ -82,8 +90,45 @@ try {
 	fail(`the bundle's signature does not verify:\n${String((error as { stderr?: unknown }).stderr)}`);
 }
 
+// Tauri notarizes the app and signs the disk image, and stops there: the image
+// is what is downloaded, so it is the image Gatekeeper judges first, and it
+// refuses one with no ticket of its own as unnotarized.
+const version: string = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
+const image = dmg ? readdirSync(join(BUNDLE, "dmg")).find((name) => name.endsWith(".dmg") && name.includes(`_${version}_`)) : undefined;
+const credentials = identity === "-" ? null : notaryArgs();
+let notarized = false;
+if (dmg && !image) fail(`no disk image of ${version} was built`);
+if (image && credentials) {
+	const file = join(BUNDLE, "dmg", image);
+	// Not `step`, which names its arguments when it fails: one of these is a password.
+	const sent = spawnSync("xcrun", ["notarytool", "submit", file, "--wait", ...credentials], { cwd: ROOT, stdio: "inherit" });
+	if (sent.status !== 0) fail(`the notary service did not take ${image}`);
+	// `notarytool` exits 0 on a submission Apple refused; the ticket is the proof.
+	step("xcrun", ["stapler", "staple", file]);
+	step("spctl", ["-a", "-t", "open", "--context", "context:primary-signature", file]);
+	notarized = true;
+}
+
+/** What tells `notarytool` who is asking, from the variables Tauri reads, or null with none set. */
+function notaryArgs(): string[] | null {
+	const { APPLE_API_KEY, APPLE_API_ISSUER, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID } = process.env;
+	if (APPLE_API_KEY && APPLE_API_ISSUER) {
+		const home = process.env.HOME ?? "";
+		const name = `AuthKey_${APPLE_API_KEY}.p8`;
+		// Where Tauri looks for a key whose path is not named.
+		const places = [join(ROOT, "private_keys"), join(home, "private_keys"), join(home, ".private_keys"), join(home, ".appstoreconnect", "private_keys")];
+		const key = process.env.APPLE_API_KEY_PATH || places.map((place) => join(place, name)).find((path) => existsSync(path));
+		if (!key) fail(`no ${name} was found, and APPLE_API_KEY_PATH names none`);
+		return ["--key", key, "--key-id", APPLE_API_KEY, "--issuer", APPLE_API_ISSUER];
+	}
+	if (APPLE_ID && APPLE_PASSWORD && APPLE_TEAM_ID) {
+		return ["--apple-id", APPLE_ID, "--password", APPLE_PASSWORD, "--team-id", APPLE_TEAM_ID];
+	}
+	return null;
+}
+
 process.stdout.write(
 	`app:release: ${app}\n` +
 		`  ${ARCHS.join(" and ")}, macOS ${minimum} or newer, ${identity === "-" ? "ad-hoc signed: Gatekeeper refuses it on any other Mac" : `signed as ${identity}`}\n` +
-		(dmg ? `  ${join(BUNDLE, "dmg")}\n` : ""),
+		(image ? `  ${join(BUNDLE, "dmg", image)}\n  ${notarized ? "notarized, with its ticket stapled" : "not notarized: Gatekeeper refuses it on any other Mac"}\n` : ""),
 );

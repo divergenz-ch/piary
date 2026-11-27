@@ -4,10 +4,10 @@ How `Piary.app` is built, what is in it, and what the release path still needs.
 Running it in development is `running-the-app.md`. The framework decision and its costs are ADR 0014; capture's
 permission model is ADR 0015.
 
-**Status: a build for both kinds of Mac is made and checked by one command.
-Signing and notarization are not done** — they wait on an Apple Developer
-certificate, and §4 is what to do when one arrives. ADR 0062 is how the app
-reaches other people.
+**Status: a build for both kinds of Mac is made, signed, notarized and checked
+by one command**, given a Developer ID certificate and notarization credentials
+in the environment (§4). What that build does on a Mac that has never run it
+has not been looked at (§6). ADR 0062 is how the app reaches other people.
 
 ---
 
@@ -73,16 +73,27 @@ Failed running AppleScript
 That reads as a packaging bug and is not one — the `.app` built fine. On a
 headless runner, or over SSH, build the `.app` and make the DMG elsewhere.
 
+**The step also needs the volume name `Piary` free.** It mounts its working
+image as `/Volumes/Piary` and arranges that volume; with an earlier disk image
+still open in Finder the working image is mounted under another name and the
+step fails with `error running bundle_dmg.sh`, after the whole build.
+`pnpm app:release --dmg` checks for the volume before it builds anything and
+says to eject it.
+
 **A release is the disk image under a version tag** (ADR 0062). The version is written in
 `package.json`, which `src-tauri/tauri.conf.json` names as its own; `src-tauri/Cargo.toml` and
 `Cargo.lock` repeat it, and `tests/contract/version.test.ts` fails while they differ. The tag is
 that version with a `v`, and must be: the app reads a release's tag as its version (ADR 0064).
 
 ```sh
-pnpm app:release --dmg
+pnpm app:release --dmg   # with §4's variables set: signed, notarized, stapled
 git tag -a v0.0.1 -m "Piary 0.0.1" && git push origin v0.0.1
 gh release create v0.0.1 src-tauri/target/universal-apple-darwin/release/bundle/dmg/Piary_0.0.1_universal.dmg --prerelease --title "Piary 0.0.1" --notes-file <notes>
 ```
+
+`--prerelease` is for a build not meant for everyone: the app never announces a
+pre-release as the newest version (ADR 0064), and until a release without the flag
+exists its check for one is answered with 404.
 
 ## 3. Running the built app
 
@@ -99,42 +110,73 @@ development tax, not a shipping problem, and the sign of hitting it is a
 permission that was granted a minute ago being denied now. `tccutil reset
 ScreenCapture ch.divergenz.piary` clears the slate.
 
-## 4. Signing and notarization — what to do when the certificate arrives
+## 4. Signing and notarization
 
-Not done, and **not to be trusted until verified end to end**, because of one
-specific upstream problem.
+A build other people can open is signed with a **Developer ID Application**
+certificate and notarized by Apple. Both come from the environment and nothing
+names them in the repository (ADR 0062): with the variables below set,
+`pnpm app:release --dmg` does all of it, and with none it makes the ad-hoc
+build.
 
 0. **The entitlements are in place** (`src-tauri/Entitlements.plist`, named in
    `tauri.conf.json`): the camera, and nothing for the microphone, which the
    app does not use (ADR 0062). A Developer ID build runs under the Hardened
    Runtime, where a process without the entitlement is refused the camera with
-   no prompt. **Verify on the first signed build that the camera is asked for
-   once and then works** (step 19 of `docs/running-the-app.md`).
-   `pnpm app:release` with no identity makes an ad-hoc build that runs hardened
-   with the same entitlements, so the refusal can be rehearsed on the build
-   machine; `pnpm app:bundle` signs nothing and cannot show it.
-1. **Set the credentials.** `APPLE_SIGNING_IDENTITY` (or
-   `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD`), plus either
-   `APPLE_API_KEY`/`APPLE_API_ISSUER`/`APPLE_API_KEY_PATH` or
-   `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` for notarization. Tauri signs
-   every Mach-O inside the bundle and then the bundle, so the Swift helper is
-   signed with the same identity automatically.
-2. **Expect [tauri#11992] and verify it.** Notarization has been reported to
-   reject an `externalBin` in `Contents/MacOS/` as *"nested code is modified or
-   invalid"*. **Still open upstream.** The reported workaround is keychain trust
-   configuration rather than a code change — sign with
-   `--keychain $HOME/Library/Keychains/login.keychain-db` and set the
-   certificate to *Always Trust*. **Verify a notarized build with the helper in
-   it before relying on the release path**, because this is the one step that
-   has no local rehearsal.
-3. **Nothing but Mach-O binaries in `Contents/MacOS/`.** Developer ID signing
+   no prompt. `pnpm app:release` with no identity makes an ad-hoc build that
+   runs hardened with the same entitlements, so the refusal can be rehearsed on
+   the build machine; `pnpm app:bundle` signs nothing and cannot show it.
+1. **The certificate is a Developer ID Application one**, the kind for an app
+   given out outside the App Store; an Apple Distribution or Mac App
+   Distribution certificate signs a build Gatekeeper refuses. Only the team's
+   Account Holder can create it, from a signing request made in Keychain
+   Access on the Mac that will sign, which is where the private key stays.
+   Apple's *Developer ID - G2* intermediate certificate must be in the keychain
+   too: a Mac with no Xcode has none, and the identity is not valid without
+   it. `security find-identity -v -p codesigning` lists the identity once both
+   are there. Never set the certificate to *Always Trust*.
+2. **Set the credentials.** `APPLE_SIGNING_IDENTITY` is the identity as that
+   command prints it, `Developer ID Application: <team> (<team id>)`. For
+   notarization, either `APPLE_ID`, `APPLE_PASSWORD` and `APPLE_TEAM_ID`, or
+   `APPLE_API_KEY`, `APPLE_API_ISSUER` and `APPLE_API_KEY_PATH`. The first is an
+   Apple ID of the team with an app-specific password, never the account's own,
+   and any member with the Developer role or more is accepted; the second is a
+   team key, which an Account Holder or Admin creates. Keep them in a file
+   outside the checkout and `source` it for the one command.
+   `xcrun notarytool history` with the same credentials says whether Apple
+   takes them, before any build.
+3. **What the command does with them.** Tauri signs every Mach-O inside the
+   bundle and then the bundle, so the Swift helper is signed with the same
+   identity and entitlements; it sends the app to the notary service, waits,
+   and staples the ticket. It signs the disk image and stops there, so
+   `scripts/release-build.ts` notarizes and staples the image too, and fails
+   unless Gatekeeper then accepts it: the image is what is downloaded. The
+   command ends by saying whether the image is notarized.
+4. **Checking a build by hand.**
+
+   ```sh
+   spctl -a -vv Piary.app                 # accepted, source=Notarized Developer ID
+   spctl -a -vv -t open --context context:primary-signature Piary_<version>_universal.dmg
+   xcrun stapler validate Piary.app       # and the .dmg
+   codesign -d --entitlements - Piary.app/Contents/MacOS/piary-capture
+   ```
+
+   A submission Apple refused says why in `xcrun notarytool log <id>`, by file.
+5. **The helper in `Contents/MacOS/` is notarized as it is.** [tauri#11992]
+   reports notarization rejecting an `externalBin` there as *"nested code is
+   modified or invalid"*; this bundle is accepted with no workaround. If a
+   later Tauri brings the rejection, the reported remedy is to sign with
+   `--keychain $HOME/Library/Keychains/login.keychain-db`.
+6. **Nothing but Mach-O binaries in `Contents/MacOS/`.** Developer ID signing
    treats any regular file there as nested code and rejects a non-binary, so
    never park a script or a data file beside the helper.
-4. **Then check the permission story on a machine that has never run it**, which
-   is the only place it is observable: Screen Recording prompts once, the prompt
-   names **Piary** and not `piary-capture`, and the grant survives a relaunch.
-   `docs/TEST_ARCHITECTURE.md` §7 carries this as a checklist item because no
-   automated layer can see it.
+7. **What only a person can check**, on a machine that has never run the app,
+   which is the only place it is observable: the disk image downloaded through
+   a browser opens with no warning to override; the camera is asked for once
+   and then works (step 19 of `docs/running-the-app.md`); Screen Recording
+   prompts once, the prompt names **Piary** and not `piary-capture`, and the
+   grant survives a relaunch. `docs/TEST_ARCHITECTURE.md` §7 carries the
+   permission prompts as a checklist item because no automated layer can see
+   them.
 
 ## 5. What a shipped build can tell you
 
@@ -199,19 +241,18 @@ here and not as an ADR.
 
 ## 6. Not done yet
 
-- **A release anyone can open.** `v0.0.1` is a pre-release holding an ad-hoc signed disk
-  image: Gatekeeper refuses it on another Mac until its quarantine mark is removed
-  (`xattr -dr com.apple.quarantine /Applications/Piary.app`), so it is for people who know what
-  they are running. The first release for everyone waits on §4.
+- **A release anyone can open.** The one release published, `v0.0.1`, is a pre-release
+  holding an ad-hoc signed disk image: Gatekeeper refuses it on another Mac until its
+  quarantine mark is removed (`xattr -dr com.apple.quarantine /Applications/Piary.app`), so it
+  is for people who know what they are running. No notarized build has been published.
 - **An update that installs itself.** The app says when a newer version exists
   and opens its download page (ADR 0064); installing it is Tauri's updater, a
   new crate, a signing keypair and an endpoint, and is not decided (ADR 0062).
   Until a release that is not a pre-release is published, GitHub answers the
   app's check with 404, which is a line in the log and nothing on screen.
 - **A second machine.** The build has only ever run on the machine that made it,
-  so the "works on a clean Mac" half of the phase gate is open. An ad-hoc signed
-  app will be refused by Gatekeeper elsewhere, which is exactly what signing
-  fixes — so this is blocked on §4 rather than being a separate task.
+  so the "works on a clean Mac" half of the phase gate is open: §4's last step, on a
+  notarized build, is what closes it.
 - **Linux and Windows.** Out of scope (ADR 0014): macOS only until someone asks,
   and the webview-engine matrix is the cost that buys.
 

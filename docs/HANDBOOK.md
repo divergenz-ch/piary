@@ -64,7 +64,7 @@ Durable docs only — each owns its own status, so this list never tracks per-ta
   defined) · `evals/README.md` (the system-prompt evals: what a case is, running them, reading a
   report).
 - **The app:** `docs/running-the-app.md` — how to run it and the manual smoke test ·
-  `docs/packaging.md` — how `Piary.app` is built and what signing still needs. ADR 0010 is what
+  `docs/packaging.md` — how `Piary.app` is built, signed and notarized. ADR 0010 is what
   the interaction is held to and why; ADR 0014 is the framework choice and its costs.
 - **Showcase:** `docs/markdown-showcase.md` (what the renderer must handle).
 
