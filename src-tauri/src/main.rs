@@ -30,6 +30,7 @@ mod preferences;
 mod print;
 mod pty;
 mod session;
+mod shell_env;
 mod store;
 mod teardown;
 mod transcript;
@@ -153,6 +154,12 @@ fn main() {
                 }
                 Err(e) => eprintln!("piary: no log directory: {e}"),
             }
+            // Asked now and off the main thread, so the first send does not wait
+            // for the shell (ADR 0068).
+            std::thread::spawn(|| match commands::login_path() {
+                Some(path) => diag::record(&format!("SHELL PATH {path}")),
+                None => diag::record("SHELL gave no PATH; the app's own is all there is"),
+            });
             let store = store::Store::from_env();
             // The page is told which document changed; what to do about it is
             // the page's decision, not the shell's.
@@ -268,6 +275,7 @@ fn main() {
             commands::open_url,
             commands::open_camera_settings,
             commands::pi_which,
+            commands::pi_choose,
             commands::pi_start,
             commands::pi_send,
             commands::pi_stop,

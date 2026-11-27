@@ -85,9 +85,10 @@ Durable docs only — each owns its own status, so this list never tracks per-ta
 4. **The transcript is pi's alone.** The app reads it over pi's RPC (`get_entries`) and Rust writes
    it whole, knowing only its header — no JSONL hand-parsing. A document is rebuilt into a session,
    never diffed against one (ADR 0002, ADR 0021).
-5. **It is the user's own pi that runs** — the `pi` on PATH, the version their
-   `~/.pi/agent/settings.json` packages were installed against (`src-tauri/src/pi_cli.rs`). The app
-   bundles no Node and so no fallback pi: none found is a failure that names the fix (ADR 0004).
+5. **It is the user's own pi that runs** — the `pi` a terminal would run, or the one they chose
+   in Settings: the version their `~/.pi/agent/settings.json` packages were installed against
+   (`src-tauri/src/pi_cli.rs`). The app bundles no Node and so no fallback pi: none found is a
+   failure that names the fix (ADR 0004, ADR 0068).
 6. **Pure core, DOM at the edges.** `src/document/*` (format, run, cells, views, live-views, modes,
    branch) is pure — no DOM, no RPC — which is what makes the suite real instead of mocked (ADR 0006).
 7. **Placeholders fail visibly.** A missing credential makes the first prompt fail in the open, with
@@ -173,7 +174,8 @@ RUST  src-tauri/src/
    │            other modules allowed to name `tauri::` (lint-enforced)
    ├── session.rs     one resident `pi --mode rpc` per session; relays its wire
    │                   and knows no shapes (ADR 0020)
-   ├── pi_cli.rs      which pi runs: the user's own (ADR 0004)
+   ├── pi_cli.rs      which pi runs: the user's own (ADR 0004, ADR 0068)
+   ├── shell_env.rs   the `PATH` the user's login shell sets, asked once (ADR 0068)
    ├── extension.rs   `--extension pi-extension/` + the appended system prompt
    ├── transcript.rs  writes a rebuilt transcript whole, header only (ADR 0021)
    ├── docs.rs / store.rs / watch.rs  the document store and its watcher
@@ -317,7 +319,8 @@ for the next layer only when the one below cannot express the setup. Full ladder
   and pi wires), `ts-rs` (`src/bridge-types.ts` generated from the Rust types), `notify` (the
   store's watcher), `portable-pty` (the terminals), `libc` (the account's
   login shell from the password database, for a terminal opened from a Finder
-  launch whose environment carries no `SHELL`), `signal-hook` (SIGINT/SIGTERM enter the exit
+  launch whose environment carries no `SHELL`, and the session of its own that the shell
+  asked for its `PATH` runs in, with the signal that ends it: ADR 0068), `signal-hook` (SIGINT/SIGTERM enter the exit
   sequence — std cannot install a signal handler, ADR 0019 §2; `iterator` feature only),
   `zip` (a bundle's archive, written and read in the process so import and export need no
   platform's own tool; pinned exactly, `deflate-flate2` only, ADR 0049),
@@ -388,9 +391,22 @@ TEST ENV         PIARY_E2E=1 arms the app's embedded WebDriver server (one of th
                  PI_E2E_DISABLED=1 (or =true) turns OFF the one
                  `pnpm test:app` spec that spends a real model call — on by default, because the
                  boundary it covers is the product. It skips loudly either way.
-PI SELECTION     the `pi` on PATH, or PI_CLI; the app bundles no fallback. `Class extends value
+PI SELECTION     in order: `PI_CLI`; the pi the user chose (the `piPath` preference); `pi` on the
+                 app's own PATH; `pi` on the PATH the user's login shell sets
+                 (`pi_cli::resolve`). The last is how a `Piary.app` opened from the Finder,
+                 whose PATH is launchd's four system directories, finds what a terminal runs:
+                 at startup the app asks `$SHELL -lic` for its PATH, once, bounded at 5 s, and
+                 not in a driven run (`src-tauri/src/shell_env.rs`). A pi session and a
+                 terminal are started with the shell's PATH when it names every directory
+                 of the app's own (a Finder launch), else with the app's followed by the
+                 shell's directories it lacks (`shell_env::merged`), so pi finds its Node
+                 and its commands the user's tools. Settings has a `pi` topic that names the pi that would run and how it
+                 was found, with `Choose…` (the system's panel, shown by Rust: `pi_choose`)
+                 and `Find it for me`; a change stops each window's pi once no turn runs
+                 (`app/pi-choice.ts`). A chosen pi that is gone is said and no other is run
+                 in its place. The app bundles no fallback. `Class extends value
                  undefined` on session start is the signature of a pi other than the one the user's
-                 packages were installed against (ADR 0004).
+                 packages were installed against (ADR 0004, ADR 0068).
 TURN CONTEXT     every message the app hands pi ends with a `[now: …]` line — local weekday, date,
                  time, IANA zone and UTC offset (`app/now.ts`). The document never holds it:
                  `serializeUser` drops a trailing one when a transcript is written as a document, so
@@ -474,7 +490,8 @@ PREFERENCES      how the user chose the app to behave: `preferences.json` in the
                  under Camera), `faceSpeaks` (off, under Camera), and `faceExplained`,
                  `faceCamera` and `faceTuning`, which have no row there: FACE below.
                  `updateCheck` (on, under Updates) and `updateDismissed`, which has no row
-                 there: UPDATES below.
+                 there: UPDATES below. `piPath` (empty: the app finds one) is not a
+                 switch and has a topic of its own in the window: PI SELECTION above.
 UPDATES          the app says when a newer version exists (ADR 0064). A document's window asks
                  Rust for the turn to check (`update_claim`) at launch, when a preference
                  changes and every five minutes; Rust grants one an hour for the whole app

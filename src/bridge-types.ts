@@ -129,6 +129,17 @@ attachments: Array<string>, };
 export type OverlaySupport = { alwaysOnTop: boolean, clickThrough: boolean, allWorkspaces: boolean, undecorated: boolean, };
 
 /**
+ * Where the pi that would run was found.
+ */
+export type PiSource = "override" | "chosen" | "path" | "shell";
+
+/**
+ * The pi that would run, and how it came to be that one (`pi_cli::resolve`,
+ * ADR 0068).
+ */
+export type PiWhich = { path: string, source: PiSource, };
+
+/**
  * How the user chose the app to behave (ADR 0048). Every window gets the
  * whole of it, at boot and again on each change.
  *
@@ -180,7 +191,12 @@ updateCheck: boolean,
  * The version the user dismissed the notice of, as `0.2.0`. That one is
  * not announced again; a later one is. Empty, none was dismissed.
  */
-updateDismissed: string, };
+updateDismissed: string, 
+/**
+ * The pi the user chose to run, as a path. Empty, the app finds one:
+ * on its own `PATH`, then on the login shell's (ADR 0068).
+ */
+piPath: string, };
 
 /**
  * One assertion's outcome, as the page reports it to whoever launched the app.

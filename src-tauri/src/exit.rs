@@ -372,6 +372,7 @@ mod tests {
             session_id: sid.into(),
             args: vec!["--fake".into(), "linger".into()],
             draw: "a2ui".into(),
+            path: None,
         };
         sessions.start(sid, &spawn, Arc::new(Quiet)).expect("pi");
     }
@@ -393,6 +394,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: None,
                 rows: None,
+                path: None,
             },
             Arc::new(sink),
         )

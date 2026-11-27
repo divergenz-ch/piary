@@ -11,7 +11,7 @@ import "../src/forward-console.ts";
 import "../src/styles/styles.css";
 import "./preferences.css";
 
-import { exitFlushed, onExitFlush, onMenu, preferencesWrite, type Preferences } from "../src/bridge.ts";
+import { exitFlushed, onExitFlush, onMenu, piChoose, piWhich, preferencesWrite, type PiSource, type Preferences } from "../src/bridge.ts";
 import { windowVerbs } from "./transfer.ts";
 import { preferences, watchPreferences } from "./preferences.ts";
 
@@ -62,6 +62,9 @@ const ROWS: { [Key in keyof Preferences]: (Key extends Switch ? Row : never) | n
 	},
 	// Set by dismissing the notice itself, beside the model (`app/update.ts`).
 	updateDismissed: null,
+	// A path, not a switch: drawn by `drawPi` under its own topic, and chosen
+	// in the system's panel, which Rust shows.
+	piPath: null,
 };
 
 /** Said when a change could not be kept; the control stays where it was. */
@@ -122,9 +125,86 @@ function show(kept: Preferences): void {
 		input.checked = kept[key];
 		input.disabled = false;
 	}
+	showPi(kept);
 }
 
-draw(document.getElementById("preferences")!);
+/** How the pi that would run came to be that one, said after its path. */
+const FOUND: Record<PiSource, string> = {
+	override: "named by PI_CLI, which wins over a choice here",
+	chosen: "chosen here",
+	path: "found on PATH",
+	shell: "found on your shell's PATH",
+};
+
+const pi = {
+	which: document.createElement("span"),
+	choose: document.createElement("button"),
+	find: document.createElement("button"),
+};
+
+/** The topic that says which pi runs and lets the user choose another
+ *  (ADR 0068). Not a switch, so not a row of `ROWS`. */
+function drawPi(root: HTMLElement): void {
+	const section = document.createElement("section");
+	section.className = "prefs-group";
+	const title = document.createElement("h2");
+	title.textContent = "pi";
+	const row = document.createElement("div");
+	row.className = "prefs-row prefs-pi";
+	const label = document.createElement("span");
+	label.className = "prefs-label";
+	label.textContent = "The pi Piary runs";
+	pi.which.className = "prefs-pi-which";
+	const hint = document.createElement("span");
+	hint.className = "prefs-hint";
+	hint.textContent = "Piary runs your own pi: the one a terminal would run, unless you choose another here. A change applies from the next message. In the panel, ⇧⌘G takes a typed path and ⇧⌘. shows hidden folders.";
+	const words = document.createElement("span");
+	words.className = "prefs-words";
+	words.append(label, pi.which, hint);
+	const actions = document.createElement("span");
+	actions.className = "prefs-actions";
+	pi.choose.type = "button";
+	pi.choose.textContent = "Choose…";
+	pi.find.type = "button";
+	pi.find.textContent = "Find it for me";
+	// As the switches: nothing to change until what is kept has been read.
+	pi.choose.disabled = true;
+	pi.find.hidden = true;
+	actions.append(pi.choose, pi.find);
+	row.append(words, actions);
+	section.append(title, row);
+	root.append(section);
+	const failed = (error: unknown): void => void (status.textContent = `${NOT_KEPT}: ${String(error)}`);
+	pi.choose.addEventListener("click", () => {
+		status.textContent = "";
+		piChoose().catch(failed);
+	});
+	pi.find.addEventListener("click", () => {
+		status.textContent = "";
+		preferencesWrite({ ...preferences(), piPath: "" }).catch(failed);
+	});
+}
+
+/** Says which pi would run now, as Rust resolves it: asked again at every
+ *  change, since the choice is one of the things that decide it. */
+function showPi(kept: Preferences): void {
+	pi.choose.disabled = false;
+	pi.find.hidden = kept.piPath === "";
+	void piWhich().then(
+		(found) => {
+			pi.which.classList.remove("prefs-pi-missing");
+			pi.which.textContent = `${found.path} (${FOUND[found.source]})`;
+		},
+		(error: unknown) => {
+			pi.which.classList.add("prefs-pi-missing");
+			pi.which.textContent = String(error);
+		},
+	);
+}
+
+const root = document.getElementById("preferences")!;
+draw(root);
+drawPi(root);
 watchPreferences(show);
 
 // The menu's clicks come here while this window is focused. It answers the

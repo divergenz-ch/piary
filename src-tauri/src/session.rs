@@ -116,6 +116,10 @@ pub struct Spawn {
     pub args: Vec<String>,
     /// How pi is told to draw an answer: what `draw_mode` answered.
     pub draw: String,
+    /// The `PATH` pi runs with, when it is not this process's own: the login
+    /// shell's directories after it, so a pi the Finder launch could not have
+    /// found also finds its Node and the tools its commands name (ADR 0068).
+    pub path: Option<String>,
 }
 
 struct Live {
@@ -195,13 +199,16 @@ impl Sessions {
             // swallowed.
             .stderr(Stdio::inherit());
 
+        if let Some(path) = &spawn.path {
+            command.env("PATH", path);
+        }
+
         let mut child = command.spawn().map_err(|e| {
-            // The message names what to install, because a Tauri app bundles no
-            // Node and there is no fallback pi to quietly use instead
-            // (ADR 0004).
+            // Says what to do about it, where a user who launched the app from
+            // the Finder can do it (ADR 0068).
             format!(
-                "could not start `{}`: {e}. Piary runs your own pi — install it, or set PI_CLI to \
-                 point at one.",
+                "could not start `{}`: {e}. Choose the pi to run in Piary → Settings…, or install \
+                 pi (https://pi.dev).",
                 spawn.cli
             )
         })?;
@@ -553,6 +560,7 @@ mod tests {
             session_id: "s".into(),
             args: vec!["--fake".into(), mode.into(), who.into()],
             draw: "a2ui".into(),
+            path: None,
         }
     }
 
@@ -970,12 +978,13 @@ mod tests {
             session_id: "s".into(),
             args: vec![],
             draw: "a2ui".into(),
+            path: None,
         };
         let error = sessions.start("s1", &spawn, sink).expect_err("should fail");
         assert!(error.contains("install"), "unhelpful message: {error}");
         assert!(
-            error.contains("PI_CLI"),
-            "the override is not mentioned: {error}"
+            error.contains("Settings"),
+            "where to choose another is not said: {error}"
         );
     }
 

@@ -1,6 +1,9 @@
 # ADR 0004 — The user's own pi runs; the app bundles none
 
-**Status:** accepted. Implementation: `src-tauri/src/pi_cli.rs`.
+**Status:** accepted. Amended by
+[ADR 0068](0068-pi-is-found-where-a-terminal-finds-it-or-chosen.md): the pi is also looked for on
+the login shell's `PATH`, and the user can choose one in Settings. Implementation:
+`src-tauri/src/pi_cli.rs`.
 
 ## Context
 

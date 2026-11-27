@@ -135,6 +135,9 @@ pub struct Preferences {
     /// The version the user dismissed the notice of, as `0.2.0`. That one is
     /// not announced again; a later one is. Empty, none was dismissed.
     pub update_dismissed: String,
+    /// The pi the user chose to run, as a path. Empty, the app finds one:
+    /// on its own `PATH`, then on the login shell's (ADR 0068).
+    pub pi_path: String,
 }
 
 /// How the user tuned the reading of their face: what is too weak or too
@@ -186,6 +189,7 @@ impl Default for Preferences {
             face_speaks: false,
             update_check: true,
             update_dismissed: String::new(),
+            pi_path: String::new(),
         }
     }
 }
@@ -324,6 +328,31 @@ pub enum UpdateSource {
         answer: String,
     },
     None,
+}
+
+/// The pi that would run, and how it came to be that one (`pi_cli::resolve`,
+/// ADR 0068).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct PiWhich {
+    pub path: String,
+    pub source: PiSource,
+}
+
+/// Where the pi that would run was found.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bridge-types.ts")]
+#[serde(rename_all = "camelCase")]
+pub enum PiSource {
+    /// `PI_CLI` names it.
+    Override,
+    /// The user chose it in the Preferences window.
+    Chosen,
+    /// On the `PATH` the app was started with.
+    Path,
+    /// On the `PATH` the user's login shell sets.
+    Shell,
 }
 
 /// The version this app is, and the newest release tag a check has read since

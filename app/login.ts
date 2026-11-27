@@ -13,12 +13,14 @@
 // beside the model chip, which blinks the chip with it until pi has a provider
 // (ADR 0037). When a flow changes what pi is
 // signed in with, this window's pi is stopped, so the next send starts one
-// that reads it.
+// that reads it. The same goes for which pi runs at all, once the user
+// chooses another (`app/pi-choice.ts`).
 
 import { focusWindow, onPiEvent, openUrl, piSend, piStart } from "../src/bridge.ts";
 import { cancelQuestion } from "./ask.ts";
 import type { AppContext } from "./context.ts";
 import { doneText, type LoginEvent, type LoginOffer, type LoginQuestion, loginNews, loginQuestion, offerNote, orderOffers } from "./login-flow.ts";
+import { followPiChoice } from "./pi-choice.ts";
 import type { ModelPicker } from "./picks.ts";
 
 /** The commands Piary's extension registers (`pi-extension/login.ts`). */
@@ -57,8 +59,9 @@ function button(text: string, className = ""): HTMLButtonElement {
 }
 
 /** Once per window. `model.forget` repaints the chip after pi is stopped. */
-export function mountLogin(host: Pick<AppContext, "chat" | "sid" | "turn" | "notify">, model: Pick<ModelPicker, "forget" | "addRow" | "chip">): Login {
+export function mountLogin(host: Pick<AppContext, "chat" | "sid" | "turn" | "notify" | "busy">, model: Pick<ModelPicker, "forget" | "addRow" | "chip">): Login {
 	const { chat, sid, turn, notify } = host;
+	followPiChoice(host, model);
 
 	/** Raised by a refusal pi gave for want of a provider; nothing stores it,
 	 *  so a reload loses it and the next refused send raises it again. */

@@ -59,6 +59,7 @@ export const APP_COMMANDS = [
 	"open_url",
 	"open_camera_settings",
 	"pi_which",
+	"pi_choose",
 	"pi_start",
 	"pi_send",
 	"pi_stop",

@@ -16,9 +16,9 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 // Generated from src-tauri/src/wire.rs by `cargo test export_bindings`. The
 // wire types are declared once, in Rust, so the two ends cannot disagree about
 // a payload without the compiler saying so. Never hand-edit.
-import type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox } from "./bridge-types.ts";
+import type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, PiSource, PiWhich, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox } from "./bridge-types.ts";
 
-export type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox };
+export type { DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource, FlushRequest, ImportPlaced, ImportStaged, OverlaySupport, PiSource, PiWhich, Preferences, Report, Stored, TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox };
 
 /**
  * What pi answers a command with.
@@ -458,14 +458,22 @@ export function onCaptureEnded(handler: (code: number | null) => void): Promise<
 }
 
 /**
- * Which `pi` would run, or a message naming the fix when there is none.
+ * Which `pi` would run and where it was found, or a message saying what to do
+ * when there is none.
  *
- * It is the user's own pi that runs (ADR 0004), and the app bundles no fallback
- * — so an absent one is a notice the page shows before a first prompt rather
- * than a failed send.
+ * It is the user's own pi that runs (ADR 0004): the one they chose in the
+ * Preferences window, else the one a terminal would find (ADR 0068). The app
+ * bundles no fallback.
  */
-export function piWhich(): Promise<string> {
+export function piWhich(): Promise<PiWhich> {
 	return invoke("pi_which");
+}
+
+/** Asks the user which pi to run, in the system's own panel; `false` is a
+ *  cancelled one. Rust keeps the answer as the `piPath` preference, which
+ *  every window then hears: the page names no path (ADR 0068). */
+export function piChoose(): Promise<boolean> {
+	return invoke("pi_choose");
 }
 
 /** Starts a session's `pi --mode rpc`. Idempotent. */

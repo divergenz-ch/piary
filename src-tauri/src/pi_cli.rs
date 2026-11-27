@@ -7,22 +7,31 @@
 //! `Class extends value undefined is not a constructor` — the process exits and
 //! no session can start.
 //!
-//! The app bundles no Node, so unlike the browser bridge **there is no bundled
-//! fallback**: nothing on PATH is a failure that has to name the fix rather
-//! than being silently worked around.
+//! Which one that is has four answers, in order (ADR 0068): the one `PI_CLI`
+//! names, the one the user chose in the Preferences window, the first on the
+//! process's `PATH`, and the first on the `PATH` the user's login shell sets,
+//! which is where an app the Finder launched finds it (`shell_env.rs`).
+//!
+//! The app bundles no Node, so **there is no bundled fallback**: none found is
+//! a failure that has to name the fix rather than being silently worked
+//! around.
 //!
 //! Pure — it reads only the environment it is handed and the files that
 //! environment names.
 
 use std::path::{Path, PathBuf};
 
-/// Where `pi` was found, so the startup line can say which one is running.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Where `pi` was found, so the user can be told which one is running.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
     /// `PI_CLI` named it.
     Override,
-    /// Found on `PATH`.
+    /// The user chose it in the Preferences window.
+    Chosen,
+    /// Found on the process's `PATH`.
     Path,
+    /// Found on the `PATH` the user's login shell sets.
+    Shell,
 }
 
 /// The `pi` to run, and how it was chosen.
@@ -32,41 +41,96 @@ pub struct Resolved {
     pub source: Source,
 }
 
-/// Resolves `pi` from `PI_CLI`, else from `PATH`.
-///
-/// `path_var` and `pi_cli` are arguments rather than reads of the process
-/// environment, which is what lets every branch be tested without changing the
-/// environment a parallel test is also reading.
+/// Why there is no `pi` to run.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Missing {
+    /// The user chose one, and no file is there. Not looked past: a pi the
+    /// user pointed at and another one running instead is the failure
+    /// ADR 0004 is about, reached quietly.
+    Chosen(PathBuf),
+    /// None was named, and neither `PATH` holds one.
+    Nowhere,
+}
+
+impl Missing {
+    /// What to tell the user: what was looked for, and what to do about it
+    /// (ADR 0011).
+    pub fn message(&self) -> String {
+        match self {
+            Self::Chosen(path) => format!(
+                "The pi chosen in Piary → Settings… is not there: {}. Choose another one there, \
+                 or let Piary find one.",
+                path.display()
+            ),
+            Self::Nowhere => "Piary found no pi to run. It looked where a terminal would, on \
+                              your shell's PATH. Install pi (https://pi.dev), or choose the one \
+                              to run in Piary → Settings…."
+                .into(),
+        }
+    }
+}
+
+/// What a search for `pi` is handed. Arguments rather than reads of the
+/// process environment, which is what lets every branch be tested without
+/// changing the environment a parallel test is also reading.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Search<'a> {
+    /// `PI_CLI`, if set.
+    pub pi_cli: Option<&'a str>,
+    /// The user's choice, if they made one (`Preferences::pi_path`).
+    pub chosen: Option<&'a str>,
+    /// The process's `PATH`.
+    pub path_var: &'a str,
+    /// The login shell's `PATH`, if it gave one (`shell_env::login_path`).
+    pub login_path: Option<&'a str>,
+}
+
+/// Resolves `pi`: `PI_CLI`, else the user's choice, else the first on the
+/// process's `PATH`, else the first on the login shell's.
 ///
 /// Package-manager bin directories are skipped: `npm`, `pnpm` and friends
 /// prepend a project's `node_modules/.bin` to PATH, and what lives there is
 /// the pinned dependency rather than the user's own pi. Looking past them is
 /// the whole point of ADR 0004.
-pub fn resolve(
-    path_var: &str,
-    pi_cli: Option<&str>,
-    exists: &dyn Fn(&Path) -> bool,
-) -> Option<Resolved> {
-    if let Some(explicit) = pi_cli.filter(|value| !value.is_empty()) {
-        return Some(Resolved {
+pub fn resolve(search: &Search, exists: &dyn Fn(&Path) -> bool) -> Result<Resolved, Missing> {
+    if let Some(explicit) = search.pi_cli.filter(|value| !value.is_empty()) {
+        return Ok(Resolved {
             path: PathBuf::from(explicit),
             source: Source::Override,
         });
     }
-    for dir in path_var.split(':').filter(|dir| !dir.is_empty()) {
-        let dir = Path::new(dir);
-        if is_dependency_bin(dir) {
-            continue;
-        }
-        let candidate = dir.join("pi");
-        if exists(&candidate) {
-            return Some(Resolved {
-                path: candidate,
-                source: Source::Path,
-            });
+    if let Some(chosen) = search.chosen.filter(|value| !value.is_empty()) {
+        let path = PathBuf::from(chosen);
+        return if exists(&path) {
+            Ok(Resolved {
+                path,
+                source: Source::Chosen,
+            })
+        } else {
+            Err(Missing::Chosen(path))
+        };
+    }
+    let places = [
+        (search.path_var, Source::Path),
+        (search.login_path.unwrap_or_default(), Source::Shell),
+    ];
+    for (path_var, source) in places {
+        if let Some(path) = on_path(path_var, exists) {
+            return Ok(Resolved { path, source });
         }
     }
-    None
+    Err(Missing::Nowhere)
+}
+
+/// The first `pi` in `path_var`'s directories, dependency bins aside.
+fn on_path(path_var: &str, exists: &dyn Fn(&Path) -> bool) -> Option<PathBuf> {
+    path_var
+        .split(':')
+        .filter(|dir| !dir.is_empty())
+        .map(Path::new)
+        .filter(|dir| !is_dependency_bin(dir))
+        .map(|dir| dir.join("pi"))
+        .find(|candidate| exists(candidate))
 }
 
 /// Whether this PATH entry is a package manager's project-local bin directory.
@@ -78,13 +142,6 @@ fn is_dependency_bin(dir: &Path) -> bool {
             .is_some_and(|name| name == "node_modules")
 }
 
-/// What to tell the user when there is no `pi` to run.
-///
-/// Names the fix, because a Tauri app has nothing to fall back on and a bare
-/// "not found" leaves someone guessing (ADR 0004, ADR 0011).
-pub const MISSING: &str =
-    "Piary runs your own pi, and there is none on PATH. Install it, or set PI_CLI to point at one.";
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -94,11 +151,23 @@ mod tests {
         move |candidate: &Path| paths.iter().any(|p| Path::new(p) == candidate)
     }
 
+    /// A search of the process's `PATH` alone.
+    fn on(path_var: &'static str) -> Search<'static> {
+        Search {
+            path_var,
+            ..Search::default()
+        }
+    }
+
     #[test]
     fn pi_cli_wins_over_everything() {
         // The escape hatch: a locally built pi, or a test double.
-        let resolved =
-            resolve("/usr/bin", Some("/built/pi"), &only(&["/usr/bin/pi"])).expect("resolved");
+        let search = Search {
+            pi_cli: Some("/built/pi"),
+            chosen: Some("/chosen/pi"),
+            ..on("/usr/bin")
+        };
+        let resolved = resolve(&search, &only(&["/usr/bin/pi", "/chosen/pi"])).expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/built/pi"));
         assert_eq!(resolved.source, Source::Override);
     }
@@ -107,8 +176,69 @@ mod tests {
     fn an_empty_override_is_not_an_override() {
         // An unset variable arrives as an empty string often enough that
         // treating it as a path would try to run "".
-        let resolved = resolve("/usr/bin", Some(""), &only(&["/usr/bin/pi"])).expect("resolved");
+        let search = Search {
+            pi_cli: Some(""),
+            chosen: Some(""),
+            ..on("/usr/bin")
+        };
+        let resolved = resolve(&search, &only(&["/usr/bin/pi"])).expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/usr/bin/pi"));
+        assert_eq!(resolved.source, Source::Path);
+    }
+
+    #[test]
+    fn the_users_choice_wins_over_what_is_found() {
+        let search = Search {
+            chosen: Some("/chosen/pi"),
+            login_path: Some("/home/bin"),
+            ..on("/usr/bin")
+        };
+        let resolved = resolve(
+            &search,
+            &only(&["/chosen/pi", "/usr/bin/pi", "/home/bin/pi"]),
+        )
+        .expect("resolved");
+        assert_eq!(resolved.path, PathBuf::from("/chosen/pi"));
+        assert_eq!(resolved.source, Source::Chosen);
+    }
+
+    #[test]
+    fn a_choice_that_is_gone_is_said_and_not_looked_past() {
+        // Another pi is there to be found, and running it would be running a
+        // pi the user did not point at.
+        let search = Search {
+            chosen: Some("/chosen/pi"),
+            ..on("/usr/bin")
+        };
+        let missing = resolve(&search, &only(&["/usr/bin/pi"])).expect_err("missing");
+        assert_eq!(missing, Missing::Chosen(PathBuf::from("/chosen/pi")));
+        assert!(missing.message().contains("/chosen/pi"));
+        assert!(missing.message().contains("Settings"));
+    }
+
+    #[test]
+    fn a_pi_only_the_login_shell_knows_is_found() {
+        // An app the Finder launched: the process's PATH is launchd's, and
+        // the user's pi is where their shell's startup files put it.
+        let search = Search {
+            login_path: Some("/opt/homebrew/bin:/home/.local/bin"),
+            ..on("/usr/bin:/bin:/usr/sbin:/sbin")
+        };
+        let resolved = resolve(&search, &only(&["/home/.local/bin/pi"])).expect("resolved");
+        assert_eq!(resolved.path, PathBuf::from("/home/.local/bin/pi"));
+        assert_eq!(resolved.source, Source::Shell);
+    }
+
+    #[test]
+    fn the_process_path_is_searched_before_the_login_shells() {
+        // A launch from a terminal already says which pi is meant.
+        let search = Search {
+            login_path: Some("/home/bin"),
+            ..on("/usr/local/bin")
+        };
+        let resolved =
+            resolve(&search, &only(&["/home/bin/pi", "/usr/local/bin/pi"])).expect("resolved");
+        assert_eq!(resolved.path, PathBuf::from("/usr/local/bin/pi"));
         assert_eq!(resolved.source, Source::Path);
     }
 
@@ -117,25 +247,33 @@ mod tests {
         // The failure ADR 0004 exists for: a package script prepends
         // node_modules/.bin, which holds the PINNED pi rather than the user's,
         // and running that one loads their extensions into the wrong version.
-        let path = "/repo/node_modules/.bin:/usr/local/bin";
         let resolved = resolve(
-            path,
-            None,
+            &on("/repo/node_modules/.bin:/usr/local/bin"),
             &only(&["/repo/node_modules/.bin/pi", "/usr/local/bin/pi"]),
         )
         .expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/usr/local/bin/pi"));
 
+        // The login shell's PATH is held to the same rule.
+        let search = Search {
+            login_path: Some("/repo/node_modules/.bin"),
+            ..on("/usr/bin")
+        };
+        assert_eq!(
+            resolve(&search, &only(&["/repo/node_modules/.bin/pi"])),
+            Err(Missing::Nowhere)
+        );
+
         // The pair: a directory merely CALLED .bin, not under node_modules, is
         // an ordinary place for a binary and must still be searched.
-        let ordinary = resolve("/opt/.bin", None, &only(&["/opt/.bin/pi"])).expect("resolved");
+        let ordinary = resolve(&on("/opt/.bin"), &only(&["/opt/.bin/pi"])).expect("resolved");
         assert_eq!(ordinary.path, PathBuf::from("/opt/.bin/pi"));
     }
 
     #[test]
     fn the_first_match_on_path_wins() {
         // PATH order is the user's statement about which pi they mean.
-        let resolved = resolve("/a:/b", None, &only(&["/a/pi", "/b/pi"])).expect("resolved");
+        let resolved = resolve(&on("/a:/b"), &only(&["/a/pi", "/b/pi"])).expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/a/pi"));
     }
 
@@ -143,20 +281,19 @@ mod tests {
     fn empty_path_entries_are_ignored() {
         // A trailing or doubled colon is common and means the current
         // directory, which is not somewhere to look for the user's pi.
-        let resolved = resolve("::/usr/bin:", None, &only(&["/usr/bin/pi"])).expect("resolved");
+        let resolved = resolve(&on("::/usr/bin:"), &only(&["/usr/bin/pi"])).expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/usr/bin/pi"));
     }
 
     #[test]
-    fn nothing_on_path_resolves_to_nothing() {
+    fn no_pi_anywhere_names_what_to_do() {
         // There is no bundled fallback in a Tauri app, so this is a real
         // outcome the caller has to report rather than paper over.
-        assert!(resolve("/usr/bin:/bin", None, &only(&[])).is_none());
-    }
-
-    #[test]
-    fn the_missing_message_names_the_fix() {
-        assert!(MISSING.contains("Install"));
-        assert!(MISSING.contains("PI_CLI"));
+        let missing = resolve(&on("/usr/bin:/bin"), &only(&[])).expect_err("missing");
+        assert_eq!(missing, Missing::Nowhere);
+        // Nothing a user who launched the app from the Finder cannot do.
+        assert!(missing.message().contains("Install pi"));
+        assert!(missing.message().contains("Settings"));
+        assert!(!missing.message().contains("PI_CLI"));
     }
 }
