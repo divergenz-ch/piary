@@ -16,6 +16,8 @@ recovery/
 debug_img/
 # Local working files: never part of the project.
 /recordings/
+# A release being prepared: its plan and its notes (`make pre-release`).
+/release/
 .flow/
 /docs/plans/
 /.claude/

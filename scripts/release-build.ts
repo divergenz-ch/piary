@@ -18,6 +18,9 @@
 // Run: pnpm app:release          Piary.app
 //      pnpm app:release --dmg    and a disk image of it (needs a logged-in
 //                                session: the step drives Finder)
+//      --notarized               refuse, before building, to make anything
+//                                but a signed and notarized disk image: what
+//                                a release is built with (`scripts/release.ts`)
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -57,6 +60,10 @@ const minimum: string = config.bundle.macOS.minimumSystemVersion;
 const app = join(BUNDLE, "macos", `${config.productName}.app`);
 const dmg = process.argv.includes("--dmg");
 const identity = process.env.APPLE_SIGNING_IDENTITY || "-";
+const credentials = identity === "-" ? null : notaryArgs();
+if (process.argv.includes("--notarized") && !(dmg && credentials)) {
+	fail("--notarized needs --dmg, APPLE_SIGNING_IDENTITY and notarization credentials (docs/packaging.md §4)");
+}
 
 // The disk image step mounts its working image under the product's name and
 // arranges that volume through Finder. With a volume of that name already
@@ -95,7 +102,6 @@ try {
 // refuses one with no ticket of its own as unnotarized.
 const version: string = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 const image = dmg ? readdirSync(join(BUNDLE, "dmg")).find((name) => name.endsWith(".dmg") && name.includes(`_${version}_`)) : undefined;
-const credentials = identity === "-" ? null : notaryArgs();
 let notarized = false;
 if (dmg && !image) fail(`no disk image of ${version} was built`);
 if (image && credentials) {

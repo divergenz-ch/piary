@@ -13,6 +13,13 @@
 #   make e2e         the browser layer: WebKit and Chromium (Playwright)
 #   make rust        the app's Rust half: fmt, clippy -D warnings, cargo test, bindings
 #
+# A release is three more, each stopping where a person decides (scripts/release.ts,
+# docs/packaging.md §2):
+#
+#   make pre-release suggests the next version and writes the notes; VERSION=0.2.0 to choose
+#   make release     builds the signed, notarized disk image and uploads it as a draft; DRY=1 to rehearse
+#   make publish     pushes the tag and makes the draft public; DRY=1 to rehearse, PRERELEASE=1 for a build not for everyone
+#
 # Each target starts where a clean checkout would: dependencies installed exactly
 # as locked, and no `dist/` left over from an earlier build (see `build`). That is
 # what makes a local pass mean the same thing everywhere.
@@ -28,7 +35,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-.PHONY: help ci format install build lint typecheck test smoke e2e rust rust-inputs check-node
+.PHONY: help ci format install build lint typecheck test smoke e2e rust rust-inputs check-node pre-release release publish
 
 help:
 	@sed -n 's/^#   make /make /p' $(MAKEFILE_LIST)
@@ -142,3 +149,15 @@ e2e: build
 # src/bridge-types.ts matches what ts-rs regenerates.
 rust: rust-inputs
 	pnpm verify:rust
+
+# A release (scripts/release.ts). None of these is part of `make ci`: they act
+# on the repository and on GitHub, and the middle one needs a signing identity
+# and a logged-in session (docs/packaging.md §2, §4).
+pre-release: check-node
+	@node scripts/release.ts prepare $(if $(VERSION),--version $(VERSION)) $(if $(PLAIN),--plain)
+
+release: check-node
+	@node scripts/release.ts build $(if $(DRY),--dry-run)
+
+publish: check-node
+	@node scripts/release.ts publish $(if $(DRY),--dry-run) $(if $(PRERELEASE),--prerelease)

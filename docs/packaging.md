@@ -85,15 +85,46 @@ says to eject it.
 `Cargo.lock` repeat it, and `tests/contract/version.test.ts` fails while they differ. The tag is
 that version with a `v`, and must be: the app reads a release's tag as its version (ADR 0064).
 
+It is cut in three commands, each stopping where a person decides (`scripts/release.ts`):
+
 ```sh
-pnpm app:release --dmg   # with §4's variables set: signed, notarized, stapled
-git tag -a v0.0.1 -m "Piary 0.0.1" && git push origin v0.0.1
-gh release create v0.0.1 src-tauri/target/universal-apple-darwin/release/bundle/dmg/Piary_0.0.1_universal.dmg --prerelease --title "Piary 0.0.1" --notes-file <notes>
+make pre-release   # the version the commits call for, and the notes
+make release       # the signed, notarized disk image, uploaded as a draft
+make publish       # the tag, and the draft made public
 ```
 
-`--prerelease` is for a build not meant for everyone: the app never announces a
-pre-release as the newest version (ADR 0064), and until a release without the flag
-exists its check for one is answered with 404.
+1. **`make pre-release` changes nothing tracked.** It reads the commits since the last
+   `v*` tag and suggests the next version by what they are (semver.org): a new feature
+   moves the middle number, fixes alone the last, and a breaking change the first, or
+   the middle one before 1.0.0. A change under a scope no user sees (`test`, `release`,
+   `evals`, …) counts as neither. `VERSION=0.2.0` chooses another. It writes the notes
+   to `release/notes.md` and the decision to `release/plan.json`, both git-ignored, and
+   prints them. The notes are worded by `claude -p` from the commits when there is one
+   on PATH, run away from the checkout with no tool and none of the user's settings;
+   with none, or when what it wrote carries a foreign link, a machine's path, an
+   outside id or a commit hash, they are the commits' own summaries under *New* and
+   *Fixed* (`PLAIN=1` asks for those). The file is the notes: edit it freely.
+2. **`make release` builds what was prepared, and only that.** It refuses a checkout
+   that is not `main`, is not clean, has moved since `pre-release` or lacks origin's
+   commits; a tag or a release that already exists; and an environment without §4's
+   variables. Then it writes the version into the three files, commits that here
+   without pushing, builds with `pnpm app:release --dmg --notarized`, which fails
+   rather than make an image that is not notarized, and uploads the image with the
+   notes as a **draft** release. A draft is seen only by the repository's own people
+   and creates no tag: its page is the release as it will read, and the image beside
+   it is the file to try. The command ends with how to take it all back.
+3. **`make publish` builds nothing.** It refuses if the checkout moved since the build,
+   the draft is gone, or the image was rebuilt since it was uploaded. It pushes `main`,
+   tags the built commit, pushes the tag, checks origin's tag is that commit, and only
+   then makes the draft public: a release published before its tag exists is given
+   one by GitHub, unannotated and wherever `main` stands. `PRERELEASE=1` publishes a
+   build not meant for everyone: the app never announces a pre-release as the newest
+   version (ADR 0064), and until a release without it exists the app's check for one
+   is answered with 404.
+
+`DRY=1` on the last two runs every check and prints each command it would run,
+changing nothing. A published version is never built again or given another file: a
+mistake is the next version's to fix.
 
 ## 3. Running the built app
 
