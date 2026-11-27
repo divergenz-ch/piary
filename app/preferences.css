@@ -53,3 +53,45 @@ body {
 	font-size: 0.75rem;
 	color: var(--destructive);
 }
+
+/* Which pi runs: its path and how it was found, with what can be done about
+   it on the row's right. */
+.prefs-pi {
+	justify-content: space-between;
+}
+
+.prefs-pi-which {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	overflow-wrap: anywhere;
+	/* A path is worth copying, in a window where nothing else is. */
+	user-select: text;
+	-webkit-user-select: text;
+	cursor: text;
+}
+
+.prefs-pi-missing {
+	font-family: inherit;
+	color: var(--destructive);
+}
+
+.prefs-actions {
+	display: flex;
+	flex: none;
+	gap: 0.5rem;
+}
+
+.prefs-actions button {
+	border: 1px solid var(--border);
+	border-radius: 0.375rem;
+	background: var(--background);
+	padding: 0.25rem 0.625rem;
+	font: inherit;
+	color: var(--foreground);
+	cursor: pointer;
+}
+
+.prefs-actions button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}

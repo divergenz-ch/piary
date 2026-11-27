@@ -41,6 +41,7 @@ use crate::preferences;
 use crate::print;
 use crate::pty::{OpenRequest, PtyEvent, Ptys, Sink};
 use crate::session::{self, Sessions, Sink as SessionSink, Spawn};
+use crate::shell_env;
 use crate::store::Store;
 use crate::teardown;
 use crate::transcript;
@@ -48,8 +49,8 @@ use crate::update::{self, Updates};
 use crate::windows::{self, Geometry};
 use crate::wire::{
     format_report, DocEntry, ExportRequest, Exported, ExportedOne, ExtensionRow, FaceSource,
-    ImportPlaced, ImportStaged, OverlaySupport, Preferences, Report, Stored, TerminalRequest,
-    UpdateSource, UpdateState, Verdict, WindowBox,
+    ImportPlaced, ImportStaged, OverlaySupport, PiSource, PiWhich, Preferences, Report, Stored,
+    TerminalRequest, UpdateSource, UpdateState, Verdict, WindowBox,
 };
 
 /// Writes one line to stdout and makes sure it is actually out.
@@ -642,7 +643,7 @@ pub fn pty_open<R: Runtime>(
     // The same pi a session would start, so a terminal running it reads the
     // same settings and credentials (ADR 0004).
     let (command, args) = if request.pi {
-        (pi_which()?, request.args)
+        (pi_cli_path(&app)?, request.args)
     } else {
         (request.command, Vec::new())
     };
@@ -660,6 +661,7 @@ pub fn pty_open<R: Runtime>(
             cwd,
             cols: request.cols,
             rows: request.rows,
+            path: child_path(),
         },
         Arc::new(WindowSink { app }),
     )
@@ -1253,17 +1255,98 @@ fn opens_in_browser(url: &str) -> bool {
         && !url.chars().any(char::is_whitespace)
 }
 
-/// Which `pi` would run, and where it was found.
-///
-/// Asked by the page before a first send, so an absent pi is reported as a
-/// notice rather than as a failed prompt (ADR 0004).
-#[tauri::command]
-pub fn pi_which() -> Result<String, String> {
+/// Whether a test harness drives this run (`harness::driven`).
+fn driven() -> bool {
+    harness::driven(
+        cfg!(all(feature = "e2e", debug_assertions)),
+        std::env::var("PIARY_E2E").ok().as_deref(),
+    )
+}
+
+/// The `PATH` of the user's login shell, which is where an app the Finder
+/// launched finds what a terminal would (`shell_env.rs`, ADR 0068). The first
+/// call waits for the shell, so `main.rs` makes it at startup, off the main
+/// thread.
+pub fn login_path() -> Option<&'static str> {
+    shell_env::login_path(driven())
+}
+
+/// The `PATH` handed to what the app starts: its own, then the login shell's
+/// directories it lacks. A pi found only through the shell needs it to find
+/// its Node, and the commands pi runs need it to find the user's tools.
+fn child_path() -> Option<String> {
+    let own = std::env::var("PATH").unwrap_or_default();
+    login_path().map(|login| shell_env::merged(&own, Some(login)))
+}
+
+/// The pi that would run, or why there is none (`pi_cli::resolve`).
+fn found_pi<R: Runtime>(app: &AppHandle<R>) -> Result<pi_cli::Resolved, String> {
     let path_var = std::env::var("PATH").unwrap_or_default();
     let pi_cli = std::env::var("PI_CLI").ok();
-    pi_cli::resolve(&path_var, pi_cli.as_deref(), &|path| path.is_file())
-        .map(|resolved| resolved.path.to_string_lossy().into_owned())
-        .ok_or_else(|| pi_cli::MISSING.to_string())
+    // Preferences that cannot be found are the defaults: no pi is chosen.
+    let chosen = preferences_path(app)
+        .map(|path| preferences::read(&path).pi_path)
+        .unwrap_or_default();
+    pi_cli::resolve(
+        &pi_cli::Search {
+            pi_cli: pi_cli.as_deref(),
+            chosen: Some(&chosen),
+            path_var: &path_var,
+            login_path: login_path(),
+        },
+        &|path| path.is_file(),
+    )
+    .map_err(|missing| missing.message())
+}
+
+/// The path of the pi that would run, as a session and a terminal are given it.
+fn pi_cli_path<R: Runtime>(app: &AppHandle<R>) -> Result<String, String> {
+    found_pi(app).map(|found| found.path.to_string_lossy().into_owned())
+}
+
+/// Which `pi` would run and where it was found, or a message that says what
+/// to do when there is none (ADR 0004, ADR 0068).
+///
+/// Off the main thread: the first answer may wait for the login shell.
+#[tauri::command(async)]
+pub fn pi_which<R: Runtime>(app: AppHandle<R>) -> Result<PiWhich, String> {
+    let found = found_pi(&app)?;
+    Ok(PiWhich {
+        path: found.path.to_string_lossy().into_owned(),
+        source: match found.source {
+            pi_cli::Source::Override => PiSource::Override,
+            pi_cli::Source::Chosen => PiSource::Chosen,
+            pi_cli::Source::Path => PiSource::Path,
+            pi_cli::Source::Shell => PiSource::Shell,
+        },
+    })
+}
+
+/// Asks the user which pi to run, in the system's own panel, and keeps the
+/// answer as the `piPath` preference, telling every window (ADR 0068). `false`
+/// is a cancelled panel. The page names no path: it asks, and reads what was
+/// chosen back from the preferences.
+#[tauri::command]
+pub async fn pi_choose<R: Runtime>(
+    app: AppHandle<R>,
+    window: tauri::WebviewWindow<R>,
+) -> Result<bool, String> {
+    let picked = window
+        .dialog()
+        .file()
+        .set_parent(&window)
+        .set_title("Choose the pi to run")
+        .blocking_pick_file()
+        .and_then(|path| path.into_path().ok());
+    let Some(picked) = picked else {
+        return Ok(false);
+    };
+    let path = preferences_path(&app)?;
+    let kept = Preferences {
+        pi_path: picked.to_string_lossy().into_owned(),
+        ..preferences::read(&path)
+    };
+    preferences_write(app, kept).await.map(|()| true)
 }
 
 /// The directory pi runs in: the workspace the documents belong to, as the
@@ -1289,7 +1372,7 @@ pub fn pi_start<R: Runtime>(
         return Err(QUITTING.into());
     }
     exit.attach(window.label(), &sid);
-    let cli = pi_which()?;
+    let cli = pi_cli_path(&app)?;
     let cwd = pi_cwd(&store);
     let home = std::env::var_os("HOME")
         .filter(|home| !home.is_empty())
@@ -1330,6 +1413,7 @@ pub fn pi_start<R: Runtime>(
         session_id: sid.clone(),
         args,
         draw: session::draw_mode(std::env::var(session::DRAW_ENV).ok().as_deref()).into(),
+        path: child_path(),
     };
     // Asked before every send, so only a start that spawns is worth a line.
     let spawning = !sessions.is_live(&sid);
@@ -1558,6 +1642,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: Some(80),
                 rows: Some(24),
+                path: None,
             },
             sink,
         )

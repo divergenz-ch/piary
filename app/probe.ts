@@ -245,7 +245,7 @@ export async function runProbe({ chat, turn, start, params }: ProbeDeps): Promis
 	// agentic interface rather than an editor: a real `pi --mode rpc`, the real
 	// wire, the user's own install (ADR 0004).
 	const which = await piWhich().then(
-		(path) => path,
+		(found) => found.path,
 		(error: unknown) => `unavailable: ${String(error)}`,
 	);
 	check("the pi that would run is named", !which.startsWith("unavailable"), which);

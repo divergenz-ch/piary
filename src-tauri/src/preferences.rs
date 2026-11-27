@@ -108,6 +108,7 @@ mod tests {
             face_speaks: !Preferences::default().face_speaks,
             update_check: !Preferences::default().update_check,
             update_dismissed: "0.2.0".into(),
+            pi_path: "/opt/pi/bin/pi".into(),
         };
         write(&file, &chosen).expect("write");
         assert_eq!(read(&file), chosen);

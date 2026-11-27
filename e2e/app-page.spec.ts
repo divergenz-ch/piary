@@ -4871,7 +4871,7 @@ test("at a narrow window the chip stays on one line inside the window: the usage
 });
 
 /** Boots the Preferences window's page (`app/preferences.html`, ADR 0048). */
-const openPreferences = (page: import("@playwright/test").Page, answers: Answers = {}) => openAppAt(page, "/preferences.html", answers, ".prefs-row");
+const openPreferences = (page: import("@playwright/test").Page, answers: Answers = {}) => openAppAt(page, "/preferences.html", { pi_which: { path: "/usr/local/bin/pi", source: "path" }, ...answers }, ".prefs-row");
 
 test("the Preferences window shows what is kept, and a change is written and shown once Rust says it is kept", async ({ page }) => {
 	await openPreferences(page, {
@@ -4879,7 +4879,7 @@ test("the Preferences window shows what is kept, and a change is written and sho
 		// Rust keeps the change, then tells every window, this one included.
 		preferences_write: { emit: ["preferences-changed", { cellWorkPulse: false }] },
 	});
-	await expect(page.locator(".prefs-group h2")).toHaveText(["Runs", "Camera", "Updates"]);
+	await expect(page.locator(".prefs-group h2")).toHaveText(["Runs", "Camera", "Updates", "pi"]);
 	const pulse = page.getByLabel("Pulse the cell a run is working on");
 	await expect(pulse).toBeChecked();
 	// A key the file lacks is its default: the face is not read.
@@ -4887,7 +4887,7 @@ test("the Preferences window shows what is kept, and a change is written and sho
 	await pulse.click();
 	await expect(pulse).not.toBeChecked();
 	const writes = (await ipcCalls(page)).filter((call) => call.cmd === "preferences_write").map((call) => call.args);
-	expect(writes, "the whole of the preferences, with the one change").toEqual([{ preferences: { cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "" } }]);
+	expect(writes, "the whole of the preferences, with the one change").toEqual([{ preferences: { cellWorkPulse: false, face: false, faceExplained: false, faceCamera: "", faceTuning: { intensity: "C", minMs: 500, yaw: 12, pitch: 10 }, faceSpeaks: false, updateCheck: true, updateDismissed: "", piPath: "" } }]);
 	// Another window's change arrives the same way, and the control follows it.
 	await emitToPage(page, "preferences-changed", { cellWorkPulse: true });
 	await expect(pulse).toBeChecked();
@@ -4934,6 +4934,32 @@ test("a preference that could not be kept stays as it was, and the window says s
 	await pulse.click();
 	await expect(page.locator("#status")).toHaveText("That change could not be saved: the disk is full");
 	await expect(pulse, "the window shows what the file holds, not what was clicked").toBeChecked();
+});
+
+test("the Preferences window names the pi that runs and how it was found, and lets another be chosen", async ({ page }) => {
+	await openPreferences(page, {
+		pi_which: { path: "/home/.local/bin/pi", source: "shell" },
+		// Rust shows the panel, keeps what was picked and tells every window.
+		pi_choose: { emit: ["preferences-changed", { piPath: "/opt/pi/bin/pi" }], value: true },
+	});
+	const which = page.locator(".prefs-pi-which");
+	await expect(which).toHaveText("/home/.local/bin/pi (found on your shell's PATH)");
+	const find = page.getByRole("button", { name: "Find it for me" });
+	await expect(find, "nothing is chosen, so there is nothing to go back from").toBeHidden();
+	await answerFromNow(page, "pi_which", { path: "/opt/pi/bin/pi", source: "chosen" });
+	await page.getByRole("button", { name: "Choose…" }).click();
+	await expect(which, "asked again once the choice is kept").toHaveText("/opt/pi/bin/pi (chosen here)");
+	expect((await ipcCalls(page)).filter((call) => call.cmd === "pi_choose").map((call) => call.args), "the page names no path").toEqual([{}]);
+	// Back to the one Piary finds: the choice is emptied, and nothing else.
+	await find.click();
+	const writes = (await ipcCalls(page)).filter((call) => call.cmd === "preferences_write").map((call) => (call.args as { preferences: { piPath: string } }).preferences.piPath);
+	expect(writes).toEqual([""]);
+});
+
+test("the Preferences window says why no pi can run, where one can be chosen", async ({ page }) => {
+	await openPreferences(page, { pi_which: { reject: "Piary found no pi to run." } });
+	await expect(page.locator(".prefs-pi-which")).toHaveText("Piary found no pi to run.");
+	await expect(page.getByRole("button", { name: "Choose…" })).toBeEnabled();
 });
 
 test("the Preferences window answers the host's close at once: it holds nothing to write", async ({ page }) => {

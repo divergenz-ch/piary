@@ -76,6 +76,20 @@ own. Its history checks leave small transcripts under `probe-history-` and
 `probe-attachments-` ids in this workspace's pi sessions, and two `probe-` files
 in its `attachments/`.
 
+**The self-test as the Finder would launch it.** Every other run starts the app from a
+shell, with a developer's whole `PATH`, so none can show a pi that a Finder launch does not
+find (ADR 0068). This one can: build the app with the self-test as its page, then run the
+binary with launchd's environment.
+
+```sh
+npx tauri build --debug --no-bundle -c '{"app":{"windows":[{"title":"Piary","width":1100,"height":760,"minWidth":480,"minHeight":360,"url":"index.html?probe=1"}]}}'
+env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin src-tauri/target/debug/piary
+```
+
+`PROBE PASS the pi that would run is named` carries the path, and the session checks after
+it pass only if that pi also found its Node. The log's `SHELL PATH` line is what the login
+shell answered.
+
 **Where the output goes.** The window's console is forwarded to the terminal
 through Rust (`src/forward-console.ts`), so a page error appears as
 `PAGE error …` where you started it. Without that it would reach nothing —
@@ -628,6 +642,7 @@ or a symbolic link anywhere in a zip — is refused, and the window says why.
 | The window opens empty, no error | A page-side throw — look for `PAGE` in the terminal, or in `~/Library/Logs/ch.divergenz.piary/piary.log` for a build launched from Finder (`packaging.md` §5) |
 | A command rejects with "not allowed" | Its grant is missing from `src-tauri/capabilities/default.json`. Tauri denies every ungranted command, core ones included, and it fails silently in the page |
 | A prompt does nothing | `pi --version` first; then whether pi is authenticated (`pi` in a terminal) |
+| "Piary found no pi to run", and `pi` runs in a terminal | The login shell gave no `PATH`, or not the one a terminal has: look for `SHELL` in `piary.log`. Piary → Settings… → pi → `Choose…` names the pi outright (ADR 0068) |
 | Capture starts and delivers nothing | Not a permission problem as often as it looks. `SCStream` holds its outputs weakly and a configuration with no dimensions delivers nothing — both silently. |
 | A permission that worked yesterday is denied | The rebuild changed the signature. Expected; re-grant |
 

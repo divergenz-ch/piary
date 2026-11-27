@@ -130,6 +130,9 @@ pub struct OpenRequest {
     pub cwd: String,
     pub cols: Option<u16>,
     pub rows: Option<u16>,
+    /// The `PATH` the program runs with, when it is not this process's own
+    /// (`session::Spawn::path`).
+    pub path: Option<String>,
 }
 
 /// What the page is told about a terminal.
@@ -223,6 +226,9 @@ impl Ptys {
         // git opens its pager on a tty and would then wait for a keypress
         // nobody is about to send.
         cmd.env("GIT_PAGER", "cat");
+        if let Some(path) = &request.path {
+            cmd.env("PATH", path);
+        }
 
         let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
         // The slave fd must close here: while this process holds it open the
@@ -454,6 +460,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: Some(80),
                 rows: Some(24),
+                path: None,
             },
             Arc::new(Collector(tx)),
         )
@@ -530,6 +537,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: None,
                 rows: None,
+                path: None,
             },
             Arc::new(Collector(mpsc::channel().0)),
         );
@@ -620,6 +628,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: Some(80),
                 rows: Some(24),
+                path: None,
             },
             Arc::new(Collector(tx)),
         )
@@ -806,6 +815,7 @@ mod tests {
                 cwd: std::env::temp_dir().to_string_lossy().into_owned(),
                 cols: None,
                 rows: None,
+                path: None,
             },
             Arc::new(Stalled {
                 gate: Mutex::new(Some(gate)),
