@@ -29,9 +29,21 @@ its model, fetched once and held to a checksum (ADR 0058). A build that cannot
 get them fails there, by name. The first build on a machine needs the network
 for the model; later ones do not.
 
+**A release ships a pi, and only a release does** (ADR 0069). `pnpm app:release` runs
+`pnpm pi:bundle`, which fetches pi's standalone build for each architecture from pi's
+release, holds each to a checksum and unpacks it into the git-ignored
+`src-tauri/pi-bundled/`; the release build then signs their four Mach-O files and names
+the two directories as resources for that one `tauri build`. `pnpm app:bundle`, `pnpm app`
+and the driven build fetch nothing and ship no pi. The version is the
+`@earendil-works/pi-coding-agent` that `package.json` pins, and the script refuses a pin
+that moved without it. The first release build on a machine needs the network for 64 MB
+of archives.
+
 **Size: 13.9 MiB** for one architecture, of which about 8 are that wasm and
-model, compressed, and 28.8 MiB for both. Worth
-stating because size is most of why the shell is Tauri (ADR 0014) — a
+model, compressed, and 28.8 MiB for both, before the pi a release ships. That pi is
+167 MB on disk for the two architectures, so a release's `Piary.app` is 196 MB, most of
+it pi; the decision and what it buys are ADR 0069's. The app's own size is still worth
+stating because it is most of why the shell is Tauri (ADR 0014) — a
 bundled-Chromium equivalent is around 150 MB. The release profile does the
 work: `lto`, `codegen-units = 1`, `opt-level = "s"`, `strip`.
 
@@ -41,8 +53,10 @@ Piary.app/Contents/
 ├── MacOS/piary         the app
 ├── MacOS/piary-capture the Swift capture helper (ADR 0015)
 ├── Resources/          the built page, with `face/` (the detector's wasm and model)
-└── Resources/pi-extension/  Piary's own pi package (`view`, `cell`, the skill),
-                        passed to every pi the app starts (`src-tauri/src/extension.rs`)
+├── Resources/pi-extension/  Piary's own pi package (`view`, `cell`, the skill),
+│                       passed to every pi the app starts (`src-tauri/src/extension.rs`)
+└── Resources/pi/       a release only: pi's standalone build in `arm64/` and `x64/`, with
+                        its licence, run when the Mac has no pi of its own (ADR 0069)
 ```
 
 **The helper's placement is load-bearing, not tidy.** macOS resolves a privacy
@@ -178,7 +192,11 @@ build.
 3. **What the command does with them.** Tauri signs every Mach-O inside the
    bundle and then the bundle, so the Swift helper is signed with the same
    identity and entitlements; it sends the app to the notary service, waits,
-   and staples the ticket. It signs the disk image and stops there, so
+   and staples the ticket. The pi a release ships is under `Resources/`, so
+   `scripts/release-build.ts` signs its Mach-O files itself, before that
+   build, for the Hardened Runtime and with no entitlement: it runs as fast
+   without `allow-jit` (ADR 0069). **No Developer ID build holding it has been
+   notarized yet**; a refusal names the file in `xcrun notarytool log <id>`. It signs the disk image and stops there, so
    `scripts/release-build.ts` notarizes and staples the image too, and fails
    unless Gatekeeper then accepts it: the image is what is downloaded. The
    command ends by saying whether the image is notarized.
@@ -201,7 +219,9 @@ build.
    treats any regular file there as nested code and rejects a non-binary, so
    never park a script or a data file beside the helper.
 7. **What only a person can check**, on a machine that has never run the app,
-   which is the only place it is observable: the disk image downloaded through
+   which is the only place it is observable: on a Mac with no pi, a first
+   prompt is answered once signed in, and Settings names the pi as the one
+   Piary comes with (ADR 0069); the disk image downloaded through
    a browser opens with no warning to override; the camera is asked for once
    and then works (step 19 of `docs/running-the-app.md`); Screen Recording
    prompts once, the prompt names **Piary** and not `piary-capture`, and the

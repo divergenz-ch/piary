@@ -1,6 +1,8 @@
 # ADR 0068 — pi is found where a terminal would find it, or is the one the user chose
 
-**Status:** accepted (2026-11-27). Amends
+**Status:** accepted (2026-11-27). Extended by
+[ADR 0069](0069-a-release-ships-pi-for-a-mac-with-none.md), which adds the pi a release ships as a
+fifth place. Amends
 [ADR 0004](0004-the-users-own-pi-runs.md): which pi is "the user's own" has two more answers.
 Implementation: `src-tauri/src/pi_cli.rs`, `src-tauri/src/shell_env.rs`.
 

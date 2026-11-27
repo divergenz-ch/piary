@@ -32,6 +32,7 @@
 		"app:dev": "vite --config app/vite.config.ts",
 		"app:build": "pnpm build && pnpm face:assets && pnpm app:page",
 		"face:assets": "node scripts/face-assets.ts",
+		"pi:bundle": "node scripts/pi-bundle.ts",
 		"app:page": "vite build --config app/vite.config.ts",
 		"app:bundle": "tauri build",
 		"app:release": "node scripts/release-build.ts",

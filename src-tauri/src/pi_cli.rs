@@ -12,9 +12,13 @@
 //! process's `PATH`, and the first on the `PATH` the user's login shell sets,
 //! which is where an app the Finder launched finds it (`shell_env.rs`).
 //!
-//! The app bundles no Node, so **there is no bundled fallback**: none found is
-//! a failure that has to name the fix rather than being silently worked
-//! around.
+//! Then pi's own install is looked at directly, the launcher its installer
+//! keeps in the agent directory, so a shell that gave no `PATH` does not hide
+//! a pi the user has. A Mac with none of those has no pi of the user's, and so no packages
+//! installed against one: there a release runs **the pi it ships**, pi's own
+//! standalone build, which needs no Node (ADR 0069). It is the last answer and
+//! never a quiet substitute for a pi the user has. A build that ships none
+//! says there is no pi, and what to do about it.
 //!
 //! Pure — it reads only the environment it is handed and the files that
 //! environment names.
@@ -32,6 +36,11 @@ pub enum Source {
     Path,
     /// Found on the `PATH` the user's login shell sets.
     Shell,
+    /// pi's own install: the launcher its installer keeps in the agent
+    /// directory, whatever `PATH` it was linked onto.
+    Installed,
+    /// The one the app ships, there being none of the user's.
+    Bundled,
 }
 
 /// The `pi` to run, and how it was chosen.
@@ -48,7 +57,7 @@ pub enum Missing {
     /// user pointed at and another one running instead is the failure
     /// ADR 0004 is about, reached quietly.
     Chosen(PathBuf),
-    /// None was named, and neither `PATH` holds one.
+    /// None was named, neither `PATH` holds one, and this build ships none.
     Nowhere,
 }
 
@@ -83,10 +92,38 @@ pub struct Search<'a> {
     pub path_var: &'a str,
     /// The login shell's `PATH`, if it gave one (`shell_env::login_path`).
     pub login_path: Option<&'a str>,
+    /// Where pi's installer keeps its launcher (`installed_in`), if the agent
+    /// directory is known.
+    pub installed: Option<&'a Path>,
+    /// Where the pi the app ships would be (`bundled_in`), if the app knows
+    /// its resources.
+    pub bundled: Option<&'a Path>,
+}
+
+/// Where pi's own installer keeps the launcher of the pi it manages, under
+/// pi's agent directory. It is there whichever directory on `PATH` the
+/// installer linked it into, so it is found when the login shell gave no
+/// `PATH` to look on: without it, such a Mac would run the shipped pi beside
+/// the user's own (ADR 0069).
+pub fn installed_in(agent_dir: &Path) -> PathBuf {
+    agent_dir.join("bin").join("pi")
+}
+
+/// Where the pi a release ships is, under the app's resources: pi's
+/// standalone build for the architecture this process runs as, named as pi's
+/// releases name it (`scripts/pi-bundle.ts`).
+pub fn bundled_in(resource_dir: &Path, arch: &str) -> PathBuf {
+    let build = match arch {
+        "aarch64" => "arm64",
+        "x86_64" => "x64",
+        other => other,
+    };
+    resource_dir.join("pi").join(build).join("pi")
 }
 
 /// Resolves `pi`: `PI_CLI`, else the user's choice, else the first on the
-/// process's `PATH`, else the first on the login shell's.
+/// process's `PATH`, else the first on the login shell's, else pi's own
+/// install, else the one the app ships.
 ///
 /// Package-manager bin directories are skipped: `npm`, `pnpm` and friends
 /// prepend a project's `node_modules/.bin` to PATH, and what lives there is
@@ -117,6 +154,18 @@ pub fn resolve(search: &Search, exists: &dyn Fn(&Path) -> bool) -> Result<Resolv
     for (path_var, source) in places {
         if let Some(path) = on_path(path_var, exists) {
             return Ok(Resolved { path, source });
+        }
+    }
+    let fallbacks = [
+        (search.installed, Source::Installed),
+        (search.bundled, Source::Bundled),
+    ];
+    for (place, source) in fallbacks {
+        if let Some(path) = place.filter(|path| exists(path)) {
+            return Ok(Resolved {
+                path: path.to_path_buf(),
+                source,
+            });
         }
     }
     Err(Missing::Nowhere)
@@ -240,6 +289,87 @@ mod tests {
             resolve(&search, &only(&["/home/bin/pi", "/usr/local/bin/pi"])).expect("resolved");
         assert_eq!(resolved.path, PathBuf::from("/usr/local/bin/pi"));
         assert_eq!(resolved.source, Source::Path);
+    }
+
+    const SHIPPED: &str = "/Piary.app/Contents/Resources/pi/arm64/pi";
+
+    #[test]
+    fn with_no_pi_of_the_users_the_one_the_app_ships_runs() {
+        let search = Search {
+            login_path: Some("/home/bin"),
+            bundled: Some(Path::new(SHIPPED)),
+            ..on("/usr/bin")
+        };
+        let resolved = resolve(&search, &only(&[SHIPPED])).expect("resolved");
+        assert_eq!(resolved.path, Path::new(SHIPPED));
+        assert_eq!(resolved.source, Source::Bundled);
+    }
+
+    #[test]
+    fn the_users_own_pi_always_runs_before_the_one_the_app_ships() {
+        // ADR 0004: their packages were installed against theirs.
+        let exists = only(&[SHIPPED, "/home/bin/pi"]);
+        let found = Search {
+            login_path: Some("/home/bin"),
+            bundled: Some(Path::new(SHIPPED)),
+            ..on("/usr/bin")
+        };
+        assert_eq!(
+            resolve(&found, &exists).expect("resolved").source,
+            Source::Shell
+        );
+        // A choice that is gone is still said: the shipped pi is not what the
+        // user pointed at.
+        let chosen = Search {
+            chosen: Some("/chosen/pi"),
+            bundled: Some(Path::new(SHIPPED)),
+            ..on("/usr/bin")
+        };
+        assert_eq!(
+            resolve(&chosen, &exists),
+            Err(Missing::Chosen(PathBuf::from("/chosen/pi")))
+        );
+    }
+
+    #[test]
+    fn a_pi_its_installer_put_there_runs_though_no_shell_said_where() {
+        // The login shell gave no PATH: it took too long, or takes no `-lic`.
+        // The user's pi is still theirs, and the shipped one must not run in
+        // its place against packages installed for another version.
+        let search = Search {
+            installed: Some(Path::new("/home/.pi/agent/bin/pi")),
+            bundled: Some(Path::new(SHIPPED)),
+            ..on("/usr/bin")
+        };
+        let resolved =
+            resolve(&search, &only(&[SHIPPED, "/home/.pi/agent/bin/pi"])).expect("resolved");
+        assert_eq!(resolved.path, Path::new("/home/.pi/agent/bin/pi"));
+        assert_eq!(resolved.source, Source::Installed);
+        assert_eq!(
+            installed_in(Path::new("/home/.pi/agent")),
+            Path::new("/home/.pi/agent/bin/pi")
+        );
+    }
+
+    #[test]
+    fn a_build_that_ships_no_pi_has_none_to_fall_back_on() {
+        // A development build: the resources hold no pi.
+        let search = Search {
+            bundled: Some(Path::new("/target/debug/pi/arm64/pi")),
+            ..on("/usr/bin")
+        };
+        assert_eq!(resolve(&search, &only(&[])), Err(Missing::Nowhere));
+    }
+
+    #[test]
+    fn the_shipped_pi_is_the_build_for_the_architecture_running() {
+        let resources = Path::new("/Piary.app/Contents/Resources");
+        assert_eq!(bundled_in(resources, "aarch64"), Path::new(SHIPPED));
+        // The Intel slice, on an Intel Mac or under Rosetta.
+        assert_eq!(
+            bundled_in(resources, "x86_64"),
+            Path::new("/Piary.app/Contents/Resources/pi/x64/pi")
+        );
     }
 
     #[test]

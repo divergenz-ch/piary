@@ -15,6 +15,7 @@ are other people's work, under their own licences, which that licence does not c
 | --- | --- | --- |
 | MediaPipe Face Landmarker model, `face_landmarker.task` | Google's model storage, held to a checksum (`scripts/face-assets.ts`) | Apache-2.0 |
 | MediaPipe's WebAssembly runtime | the `@mediapipe/tasks-vision` package | Apache-2.0 |
+| pi, the coding agent, as its standalone build for each architecture | pi's releases, held to a checksum (`scripts/pi-bundle.ts`); a release build only | MIT (`src-tauri/licences/pi-LICENSE.txt`, shipped beside it) |
 
 ## Libraries built into the app's page
 

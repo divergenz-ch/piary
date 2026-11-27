@@ -131,13 +131,19 @@ export type OverlaySupport = { alwaysOnTop: boolean, clickThrough: boolean, allW
 /**
  * Where the pi that would run was found.
  */
-export type PiSource = "override" | "chosen" | "path" | "shell";
+export type PiSource = "override" | "chosen" | "path" | "shell" | "installed" | "bundled";
 
 /**
  * The pi that would run, and how it came to be that one (`pi_cli::resolve`,
  * ADR 0068).
  */
-export type PiWhich = { path: string, source: PiSource, };
+export type PiWhich = { path: string, source: PiSource, 
+/**
+ * Whether the login shell said where it looks for programs. When it did
+ * not, a pi installed somewhere only the shell knows was not looked for,
+ * and the page says so beside a pi that was fallen back on.
+ */
+shellAnswered: boolean, };
 
 /**
  * How the user chose the app to behave (ADR 0048). Every window gets the

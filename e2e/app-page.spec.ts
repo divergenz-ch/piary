@@ -4871,7 +4871,7 @@ test("at a narrow window the chip stays on one line inside the window: the usage
 });
 
 /** Boots the Preferences window's page (`app/preferences.html`, ADR 0048). */
-const openPreferences = (page: import("@playwright/test").Page, answers: Answers = {}) => openAppAt(page, "/preferences.html", { pi_which: { path: "/usr/local/bin/pi", source: "path" }, ...answers }, ".prefs-row");
+const openPreferences = (page: import("@playwright/test").Page, answers: Answers = {}) => openAppAt(page, "/preferences.html", { pi_which: { path: "/usr/local/bin/pi", source: "path", shellAnswered: true }, ...answers }, ".prefs-row");
 
 test("the Preferences window shows what is kept, and a change is written and shown once Rust says it is kept", async ({ page }) => {
 	await openPreferences(page, {
@@ -4938,7 +4938,7 @@ test("a preference that could not be kept stays as it was, and the window says s
 
 test("the Preferences window names the pi that runs and how it was found, and lets another be chosen", async ({ page }) => {
 	await openPreferences(page, {
-		pi_which: { path: "/home/.local/bin/pi", source: "shell" },
+		pi_which: { path: "/home/.local/bin/pi", source: "shell", shellAnswered: true },
 		// Rust shows the panel, keeps what was picked and tells every window.
 		pi_choose: { emit: ["preferences-changed", { piPath: "/opt/pi/bin/pi" }], value: true },
 	});
@@ -4946,7 +4946,7 @@ test("the Preferences window names the pi that runs and how it was found, and le
 	await expect(which).toHaveText("/home/.local/bin/pi (found on your shell's PATH)");
 	const find = page.getByRole("button", { name: "Find it for me" });
 	await expect(find, "nothing is chosen, so there is nothing to go back from").toBeHidden();
-	await answerFromNow(page, "pi_which", { path: "/opt/pi/bin/pi", source: "chosen" });
+	await answerFromNow(page, "pi_which", { path: "/opt/pi/bin/pi", source: "chosen", shellAnswered: true });
 	await page.getByRole("button", { name: "Choose…" }).click();
 	await expect(which, "asked again once the choice is kept").toHaveText("/opt/pi/bin/pi (chosen here)");
 	expect((await ipcCalls(page)).filter((call) => call.cmd === "pi_choose").map((call) => call.args), "the page names no path").toEqual([{}]);
@@ -4954,6 +4954,19 @@ test("the Preferences window names the pi that runs and how it was found, and le
 	await find.click();
 	const writes = (await ipcCalls(page)).filter((call) => call.cmd === "preferences_write").map((call) => (call.args as { preferences: { piPath: string } }).preferences.piPath);
 	expect(writes).toEqual([""]);
+});
+
+test("on a Mac with no pi, the Preferences window says the one Piary comes with runs", async ({ page }) => {
+	await openPreferences(page, { pi_which: { path: "/Applications/Piary.app/Contents/Resources/pi/arm64/pi", source: "bundled", shellAnswered: true } });
+	await expect(page.locator(".prefs-pi-which")).toHaveText("/Applications/Piary.app/Contents/Resources/pi/arm64/pi (the one Piary comes with: none was found on this Mac)");
+	await expect(page.getByRole("button", { name: "Choose…" }), "another can still be chosen").toBeEnabled();
+});
+
+test("a pi fallen back on because the shell gave no PATH is not said to be the only one on this Mac", async ({ page }) => {
+	await openPreferences(page, { pi_which: { path: "/Applications/Piary.app/Contents/Resources/pi/arm64/pi", source: "bundled", shellAnswered: false } });
+	const which = page.locator(".prefs-pi-which");
+	await expect(which).toContainText("your shell did not say where it keeps programs");
+	await expect(which).not.toContainText("none was found on this Mac");
 });
 
 test("the Preferences window says why no pi can run, where one can be chosen", async ({ page }) => {

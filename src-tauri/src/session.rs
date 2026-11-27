@@ -194,10 +194,10 @@ impl Sessions {
             .process_group(0)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            // Inherited: pi's stderr is how a startup failure explains itself,
+            // Read below: pi's stderr is how a startup failure explains itself,
             // and ADR 0011 wants a credential problem visible rather than
             // swallowed.
-            .stderr(Stdio::inherit());
+            .stderr(Stdio::piped());
 
         if let Some(path) = &spawn.path {
             command.env("PATH", path);
@@ -215,6 +215,24 @@ impl Sessions {
 
         let stdout = child.stdout.take().ok_or("pi has no stdout")?;
         let stdin = child.stdin.take().ok_or("pi has no stdin")?;
+        // Said on this process's stderr, as it was when pi's was inherited,
+        // and kept in the log: an app the Finder launched has no stderr
+        // anyone reads, and a pi that would not start says why nowhere else.
+        if let Some(stderr) = child.stderr.take() {
+            let said_by = sid.to_string();
+            std::thread::spawn(move || {
+                for line in lines::bounded(BufReader::new(stderr), LINE_CAP) {
+                    match line {
+                        Ok(Line::Whole(line)) => diag::note(&format!(
+                            "PI {said_by} stderr: {}",
+                            String::from_utf8_lossy(&line).trim_end()
+                        )),
+                        Ok(Line::TooLong(_)) => {}
+                        Err(_) => break,
+                    }
+                }
+            });
+        }
         let pending: Arc<Mutex<HashMap<String, Sender<Value>>>> = Arc::default();
         let generation = self.starts.fetch_add(1, Ordering::Relaxed);
 

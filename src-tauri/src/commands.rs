@@ -1283,6 +1283,21 @@ fn child_path() -> Option<String> {
 fn found_pi<R: Runtime>(app: &AppHandle<R>) -> Result<pi_cli::Resolved, String> {
     let path_var = std::env::var("PATH").unwrap_or_default();
     let pi_cli = std::env::var("PI_CLI").ok();
+    // Where a release keeps the pi it ships; a build that ships none has no
+    // file there (ADR 0069).
+    let bundled = app
+        .path()
+        .resource_dir()
+        .ok()
+        .map(|resources| pi_cli::bundled_in(&resources, std::env::consts::ARCH));
+    let home = std::env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .map(PathBuf::from);
+    let installed = extension::agent_dir(
+        std::env::var("PI_CODING_AGENT_DIR").ok().as_deref(),
+        home.as_deref(),
+    )
+    .map(|agent| pi_cli::installed_in(&agent));
     // Preferences that cannot be found are the defaults: no pi is chosen.
     let chosen = preferences_path(app)
         .map(|path| preferences::read(&path).pi_path)
@@ -1293,6 +1308,8 @@ fn found_pi<R: Runtime>(app: &AppHandle<R>) -> Result<pi_cli::Resolved, String> 
             chosen: Some(&chosen),
             path_var: &path_var,
             login_path: login_path(),
+            installed: installed.as_deref(),
+            bundled: bundled.as_deref(),
         },
         &|path| path.is_file(),
     )
@@ -1318,7 +1335,10 @@ pub fn pi_which<R: Runtime>(app: AppHandle<R>) -> Result<PiWhich, String> {
             pi_cli::Source::Chosen => PiSource::Chosen,
             pi_cli::Source::Path => PiSource::Path,
             pi_cli::Source::Shell => PiSource::Shell,
+            pi_cli::Source::Installed => PiSource::Installed,
+            pi_cli::Source::Bundled => PiSource::Bundled,
         },
+        shell_answered: login_path().is_some(),
     })
 }
 

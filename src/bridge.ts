@@ -462,8 +462,8 @@ export function onCaptureEnded(handler: (code: number | null) => void): Promise<
  * when there is none.
  *
  * It is the user's own pi that runs (ADR 0004): the one they chose in the
- * Preferences window, else the one a terminal would find (ADR 0068). The app
- * bundles no fallback.
+ * Preferences window, else the one a terminal would find (ADR 0068). With
+ * none, a release runs the pi it ships (ADR 0069).
  */
 export function piWhich(): Promise<PiWhich> {
 	return invoke("pi_which");
