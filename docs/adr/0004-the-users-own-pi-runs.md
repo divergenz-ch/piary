@@ -2,7 +2,9 @@
 
 **Status:** accepted. Amended by
 [ADR 0068](0068-pi-is-found-where-a-terminal-finds-it-or-chosen.md): the pi is also looked for on
-the login shell's `PATH`, and the user can choose one in Settings. Implementation:
+the login shell's `PATH`, and the user can choose one in Settings; and by
+[ADR 0069](0069-a-release-ships-pi-for-a-mac-with-none.md): a release ships a pi, run only on a
+Mac with none of the user's. Implementation:
 `src-tauri/src/pi_cli.rs`.
 
 ## Context

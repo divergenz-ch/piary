@@ -54,3 +54,6 @@ sidecar/bin/
 # What the face detector loads: MediaPipe's wasm and model, put here by
 # `pnpm face:assets` (ADR 0058).
 app/public/face/
+# The pi a release ships, one standalone build per architecture, put here by
+# `pnpm pi:bundle` (ADR 0069).
+src-tauri/pi-bundled/

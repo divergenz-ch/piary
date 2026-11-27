@@ -11,7 +11,8 @@ it, history included.
 
 You need **Rust** (`cargo` on your PATH), **Node 22.18 or newer**, **pnpm**, and **your own `pi`**
 on your PATH. The app runs your pi, the one your `~/.pi/agent/settings.json` packages were installed
-against, and bundles none of its own.
+against. A build from this checkout bundles none of its own; a released `Piary.app` ships one, which
+it runs only on a Mac with no pi.
 
 ```sh
 pnpm install

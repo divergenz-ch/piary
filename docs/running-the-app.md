@@ -26,9 +26,10 @@ It writes two names into `sidecar/bin/` — one with the target triple, which is
 what `externalBin` looks for, and one without, which is what a dev build finds.
 Rerun it after editing `sidecar/capture.swift`; nothing else triggers it.
 
-**`pi` must be on your PATH.** The app runs *your* pi, not a bundled one
-(ADR 0004), and there is no fallback — an absent one is reported as a notice
-naming the fix. Check with `pi --version`.
+**A build from this checkout needs your own `pi`.** The app runs *your* pi (ADR 0004):
+the one a terminal finds, or the one chosen in Piary → Settings… (ADR 0068). Only a
+release ships a pi to fall back on (ADR 0069), so here an absent one is reported as a
+notice naming the fix. Check with `pi --version`.
 
 ## 1. Run it
 

@@ -87,8 +87,8 @@ Durable docs only — each owns its own status, so this list never tracks per-ta
    never diffed against one (ADR 0002, ADR 0021).
 5. **It is the user's own pi that runs** — the `pi` a terminal would run, or the one they chose
    in Settings: the version their `~/.pi/agent/settings.json` packages were installed against
-   (`src-tauri/src/pi_cli.rs`). The app bundles no Node and so no fallback pi: none found is a
-   failure that names the fix (ADR 0004, ADR 0068).
+   (`src-tauri/src/pi_cli.rs`). On a Mac with no pi, a release runs the one it ships, pi's own
+   standalone build; it never runs in place of a pi the user has (ADR 0004, ADR 0068, ADR 0069).
 6. **Pure core, DOM at the edges.** `src/document/*` (format, run, cells, views, live-views, modes,
    branch) is pure — no DOM, no RPC — which is what makes the suite real instead of mocked (ADR 0006).
 7. **Placeholders fail visibly.** A missing credential makes the first prompt fail in the open, with
@@ -174,7 +174,8 @@ RUST  src-tauri/src/
    │            other modules allowed to name `tauri::` (lint-enforced)
    ├── session.rs     one resident `pi --mode rpc` per session; relays its wire
    │                   and knows no shapes (ADR 0020)
-   ├── pi_cli.rs      which pi runs: the user's own (ADR 0004, ADR 0068)
+   ├── pi_cli.rs      which pi runs: the user's own, else the one a release ships
+   │                   (ADR 0004, ADR 0068, ADR 0069)
    ├── shell_env.rs   the `PATH` the user's login shell sets, asked once (ADR 0068)
    ├── extension.rs   `--extension pi-extension/` + the appended system prompt
    ├── transcript.rs  writes a rebuilt transcript whole, header only (ADR 0021)
@@ -303,7 +304,8 @@ for the next layer only when the one below cannot express the setup. Full ladder
 - **The pi peers (`pi-agent-core`, `pi-ai`) are `"*"` on purpose** (ADR 0020 §6): `src/` imports
   them only as types, and what runs is the user's own pi, which no range here can know. The
   version the typecheck reads is the devDependencies', kept in step with the pinned
-  `pi-coding-agent` — a pi upgrade moves all three together.
+  `pi-coding-agent` — a pi upgrade moves all three together, and with them the pi a release
+  ships: `scripts/pi-bundle.ts`'s version and checksums (ADR 0069).
 - **Dev deps:** `esbuild`, `typescript`, `jsdom`, `@types/node`, `@types/jsdom`, `@playwright/test`,
   and the `pi` packages. The runner for every node tier is **`node:test` + `node:assert/strict`** —
   no `vitest`/`jest`, no `testing-library`, no `sinon`. That ban is about a second model of the DOM
@@ -392,8 +394,9 @@ TEST ENV         PIARY_E2E=1 arms the app's embedded WebDriver server (one of th
                  `pnpm test:app` spec that spends a real model call — on by default, because the
                  boundary it covers is the product. It skips loudly either way.
 PI SELECTION     in order: `PI_CLI`; the pi the user chose (the `piPath` preference); `pi` on the
-                 app's own PATH; `pi` on the PATH the user's login shell sets
-                 (`pi_cli::resolve`). The last is how a `Piary.app` opened from the Finder,
+                 app's own PATH; `pi` on the PATH the user's login shell sets; pi's own
+                 install, `<agent dir>/bin/pi`, which is found though the shell gave no PATH;
+                 the pi a release ships (`pi_cli::resolve`). The fourth is how a `Piary.app` opened from the Finder,
                  whose PATH is launchd's four system directories, finds what a terminal runs:
                  at startup the app asks `$SHELL -lic` for its PATH, once, bounded at 5 s, and
                  not in a driven run (`src-tauri/src/shell_env.rs`). A pi session and a
@@ -404,7 +407,14 @@ PI SELECTION     in order: `PI_CLI`; the pi the user chose (the `piPath` prefere
                  was found, with `Choose…` (the system's panel, shown by Rust: `pi_choose`)
                  and `Find it for me`; a change stops each window's pi once no turn runs
                  (`app/pi-choice.ts`). A chosen pi that is gone is said and no other is run
-                 in its place. The app bundles no fallback. `Class extends value
+                 in its place. A release ships pi's standalone build, which needs no Node, for
+                 both architectures under `Resources/pi/<arm64|x64>/`, and runs it only when
+                 none of the user's is found; it uses pi's own `~/.pi/agent`. It is the
+                 version `package.json` pins: `scripts/pi-bundle.ts` holds each build to a
+                 checksum, `tests/contract/pi-bundle.test.ts` holds the script to the pin,
+                 and only `pnpm app:release` fetches, signs and ships it, so every other
+                 build ships none and says so when no pi is found (ADR 0069). What a pi says on stderr is
+                 kept in the log as `PI <session> stderr: …`. `Class extends value
                  undefined` on session start is the signature of a pi other than the one the user's
                  packages were installed against (ADR 0004, ADR 0068).
 TURN CONTEXT     every message the app hands pi ends with a `[now: …]` line — local weekday, date,

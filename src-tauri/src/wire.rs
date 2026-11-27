@@ -338,6 +338,10 @@ pub enum UpdateSource {
 pub struct PiWhich {
     pub path: String,
     pub source: PiSource,
+    /// Whether the login shell said where it looks for programs. When it did
+    /// not, a pi installed somewhere only the shell knows was not looked for,
+    /// and the page says so beside a pi that was fallen back on.
+    pub shell_answered: bool,
 }
 
 /// Where the pi that would run was found.
@@ -353,6 +357,10 @@ pub enum PiSource {
     Path,
     /// On the `PATH` the user's login shell sets.
     Shell,
+    /// pi's own install, in its agent directory.
+    Installed,
+    /// The one the app ships, there being none of the user's (ADR 0069).
+    Bundled,
 }
 
 /// The version this app is, and the newest release tag a check has read since

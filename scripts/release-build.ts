@@ -73,7 +73,42 @@ const volume = join("/Volumes", config.productName);
 if (dmg && existsSync(volume)) fail(`${volume} is mounted, and the disk image step needs that name: eject it first`);
 
 step("node", [join(ROOT, "scripts", "sidecar-build.ts"), "--universal"]);
-step("pnpm", ["tauri", "build", "--target", TARGET, "--bundles", dmg ? "app,dmg" : "app"], { APPLE_SIGNING_IDENTITY: identity });
+// The pi a release ships, for a Mac with none of its own (ADR 0069): pi's
+// standalone build for each architecture, under `Resources/pi/`, with its
+// licence. Only this build names them as resources, so no other build needs
+// them fetched. They are signed here, before Tauri seals the bundle and sends
+// it to the notary service, which refuses an app holding a Mach-O file that is
+// not signed as the app is: each is its own code, under the Hardened Runtime.
+step("node", [join(ROOT, "scripts", "pi-bundle.ts")]);
+const PI_BUILDS = ["arm64", "x64"];
+const piFiles = (root: string, build: string) => [join(root, build, "native", "darwin", "prebuilds", `darwin-${build}`, "darwin-platform.node"), join(root, build, "pi")];
+for (const build of PI_BUILDS) {
+	for (const file of piFiles(join(ROOT, "src-tauri", "pi-bundled"), build)) {
+		if (!existsSync(file)) fail(`${file} is missing from the pi that ships`);
+		step("codesign", ["--force", "--options", "runtime", ...(identity === "-" ? [] : ["--timestamp"]), "--sign", identity, file]);
+	}
+}
+const shipsPi = JSON.stringify({
+	bundle: { resources: { ...Object.fromEntries(PI_BUILDS.map((build) => [`pi-bundled/${build}/`, `pi/${build}/`])), "licences/pi-LICENSE.txt": "pi/LICENSE.txt" } },
+});
+
+step("pnpm", ["tauri", "build", "--target", TARGET, "--bundles", dmg ? "app,dmg" : "app", "--config", shipsPi], { APPLE_SIGNING_IDENTITY: identity });
+
+// The pi that ships is one build per architecture, each a file the oldest
+// macOS the app accepts can load, still signed as it was sent.
+const SLICE: Record<string, string> = { arm64: "arm64", x64: "x86_64" };
+for (const build of PI_BUILDS) {
+	for (const file of piFiles(join(app, "Contents", "Resources", "pi"), build)) {
+		const name = file.slice(app.length + 1);
+		const archs = read("lipo", ["-archs", file])?.trim();
+		if (archs !== SLICE[build]) fail(`${name} is ${archs ?? "no Mach-O file"}, and ${SLICE[build]} is what a ${build} Mac runs`);
+		const built = read("otool", ["-l", file])?.match(/LC_BUILD_VERSION[\s\S]*?minos (\S+)/)?.[1];
+		if (!built) fail(`${name} does not say which macOS it needs`);
+		if (newer(built, minimum)) fail(`${name} needs macOS ${built}, and the app says it runs on ${minimum}`);
+		const signed = spawnSync("codesign", ["-dv", file], { encoding: "utf8" }).stderr;
+		if (!/flags=0x[0-9a-f]+\([^)]*runtime/.test(signed)) fail(`${name} is not signed for the Hardened Runtime, and the notary service refuses the app for it`);
+	}
+}
 
 // Every file beside the app's binary is code to a Developer ID signature, so
 // each must be a Mach-O file, holding both architectures, that the oldest macOS

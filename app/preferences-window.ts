@@ -134,7 +134,13 @@ const FOUND: Record<PiSource, string> = {
 	chosen: "chosen here",
 	path: "found on PATH",
 	shell: "found on your shell's PATH",
+	installed: "pi's own install",
+	bundled: "the one Piary comes with: none was found on this Mac",
 };
+
+/** Said of a pi that was fallen back on when the login shell gave no PATH: a
+ *  pi only the shell knows of was never looked for (ADR 0069). */
+const SHELL_SILENT = "the one Piary comes with: your shell did not say where it keeps programs, so a pi installed there was not looked for. Choose… names it";
 
 const pi = {
 	which: document.createElement("span"),
@@ -157,7 +163,7 @@ function drawPi(root: HTMLElement): void {
 	pi.which.className = "prefs-pi-which";
 	const hint = document.createElement("span");
 	hint.className = "prefs-hint";
-	hint.textContent = "Piary runs your own pi: the one a terminal would run, unless you choose another here. A change applies from the next message. In the panel, ⇧⌘G takes a typed path and ⇧⌘. shows hidden folders.";
+	hint.textContent = "Piary runs your own pi: the one a terminal would run, unless you choose another here. On a Mac with none, it runs the one it comes with. A change applies from the next message. In the panel, ⇧⌘G takes a typed path and ⇧⌘. shows hidden folders.";
 	const words = document.createElement("span");
 	words.className = "prefs-words";
 	words.append(label, pi.which, hint);
@@ -193,7 +199,7 @@ function showPi(kept: Preferences): void {
 	void piWhich().then(
 		(found) => {
 			pi.which.classList.remove("prefs-pi-missing");
-			pi.which.textContent = `${found.path} (${FOUND[found.source]})`;
+			pi.which.textContent = `${found.path} (${found.source === "bundled" && !found.shellAnswered ? SHELL_SILENT : FOUND[found.source]})`;
 		},
 		(error: unknown) => {
 			pi.which.classList.add("prefs-pi-missing");
